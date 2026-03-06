@@ -1,5 +1,6 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import api from "@/lib/api"
 
 type Investor = {
   id: number
@@ -23,11 +24,29 @@ export default function InvestorsPage() {
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState({ name: "", email: "", company: "", status: "Outreach" as Investor["status"], notes: "" })
 
-  const addInvestor = () => {
+  const getToken = () => localStorage.getItem("token")
+
+  useEffect(() => {
+    api.get("/investors", { headers: { Authorization: `Bearer ${getToken()}` } })
+      .then(res => setInvestors(res.data))
+      .catch(err => console.error(err))
+  }, [])
+
+  const addInvestor = async () => {
     if (!form.name || !form.email) return
-    setInvestors([...investors, { ...form, id: Date.now() }])
-    setForm({ name: "", email: "", company: "", status: "Outreach", notes: "" })
-    setShowModal(false)
+    try {
+      const res = await api.post("/investors", form, { headers: { Authorization: `Bearer ${getToken()}` } })
+      setInvestors([...investors, res.data])
+      setForm({ name: "", email: "", company: "", status: "Outreach", notes: "" })
+      setShowModal(false)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const deleteInvestor = async (id: number) => {
+    await api.delete(`/investors/${id}`, { headers: { Authorization: `Bearer ${getToken()}` } })
+    setInvestors(investors.filter(i => i.id !== id))
   }
 
   return (
@@ -38,7 +57,7 @@ export default function InvestorsPage() {
           <a href="/dashboard" className="text-gray-400 hover:text-white transition text-sm">Dashboard</a>
           <a href="/investors" className="text-white text-sm font-semibold">Investors</a>
           <a href="/pipeline" className="text-gray-400 hover:text-white transition text-sm">Pipeline</a>
-          <button className="bg-red-500 hover:bg-red-400 text-white text-sm px-4 py-2 rounded-lg transition">Logout</button>
+          <button onClick={() => { localStorage.clear(); window.location.href = "/login" }} className="bg-red-500 hover:bg-red-400 text-white text-sm px-4 py-2 rounded-lg transition">Logout</button>
         </div>
       </nav>
 
@@ -64,6 +83,7 @@ export default function InvestorsPage() {
                   <th className="text-left px-6 py-4 text-gray-400 text-sm font-medium">Email</th>
                   <th className="text-left px-6 py-4 text-gray-400 text-sm font-medium">Status</th>
                   <th className="text-left px-6 py-4 text-gray-400 text-sm font-medium">Notes</th>
+                  <th className="text-left px-6 py-4 text-gray-400 text-sm font-medium"></th>
                 </tr>
               </thead>
               <tbody>
@@ -78,6 +98,9 @@ export default function InvestorsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-gray-400 text-sm">{inv.notes || "—"}</td>
+                    <td className="px-6 py-4">
+                      <button onClick={() => deleteInvestor(inv.id)} className="text-red-400 hover:text-red-300 text-sm">Delete</button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
