@@ -1,404 +1,459 @@
 "use client"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import Link from "next/link"
 
+const TICKER = ["SEED $2.4M ▲", "SERIES-A $18M ▲", "PRE-SEED $800K ▲", "BRIDGE $5M ▲", "SERIES-B $40M ▲"]
+
+function useTypingEffect(text: string, speed = 40) {
+  const [displayed, setDisplayed] = useState("")
+  useEffect(() => {
+    setDisplayed("")
+    let i = 0
+    const interval = setInterval(() => {
+      if (i < text.length) { setDisplayed(text.slice(0, i + 1)); i++ }
+      else clearInterval(interval)
+    }, speed)
+    return () => clearInterval(interval)
+  }, [text])
+  return displayed
+}
+
 export default function Home() {
+  const [time, setTime] = useState("")
+  const [tickerPos, setTickerPos] = useState(0)
+  const [hoverBtn, setHoverBtn] = useState(false)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
-  const [scrollY, setScrollY] = useState(0)
-  const heroRef = useRef<HTMLDivElement>(null)
+  const typed = useTypingEffect("Track investors. Close rounds. Ship faster.")
 
   useEffect(() => {
-    const handleMouse = (e: MouseEvent) => setMousePos({ x: e.clientX, y: e.clientY })
-    const handleScroll = () => setScrollY(window.scrollY)
-    window.addEventListener("mousemove", handleMouse)
-    window.addEventListener("scroll", handleScroll)
-    return () => {
-      window.removeEventListener("mousemove", handleMouse)
-      window.removeEventListener("scroll", handleScroll)
-    }
+    const t = setInterval(() => {
+      const now = new Date()
+      setTime(now.toLocaleTimeString("en-US", { hour12: false }))
+    }, 1000)
+    const ticker = setInterval(() => setTickerPos(p => p - 1), 20)
+    const mouse = (e: MouseEvent) => setMousePos({ x: e.clientX, y: e.clientY })
+    window.addEventListener("mousemove", mouse)
+    return () => { clearInterval(t); clearInterval(ticker); window.removeEventListener("mousemove", mouse) }
   }, [])
 
   return (
-    <main className="bg-[#030508] min-h-screen overflow-x-hidden" style={{ fontFamily: "'DM Mono', monospace" }}>
+    <main style={{
+      background: "#080808",
+      minHeight: "100vh",
+      fontFamily: "'Courier New', Courier, monospace",
+      color: "#e8e8e8",
+      overflowX: "hidden",
+      cursor: "crosshair"
+    }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
 
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .glow-cursor {
-          position: fixed;
-          width: 400px;
-          height: 400px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(0,255,200,0.06) 0%, transparent 70%);
-          pointer-events: none;
-          z-index: 0;
-          transform: translate(-50%, -50%);
-          transition: left 0.1s ease, top 0.1s ease;
+        ::selection { background: #b4ff00; color: #080808; }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #080808; }
+        ::-webkit-scrollbar-thumb { background: #b4ff00; }
+
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+        .cursor { display: inline-block; width: 2px; height: 1em; background: #b4ff00; animation: blink 1s infinite; vertical-align: text-bottom; margin-left: 2px; }
+
+        @keyframes scanline {
+          0% { transform: translateY(-100%); }
+          100% { transform: translateY(100vh); }
+        }
+        .scanline {
+          position: fixed; left: 0; right: 0; height: 2px;
+          background: linear-gradient(transparent, rgba(180,255,0,0.03), transparent);
+          animation: scanline 8s linear infinite;
+          pointer-events: none; z-index: 999;
         }
 
-        .noise {
-          position: fixed;
-          inset: 0;
-          pointer-events: none;
-          z-index: 1;
-          opacity: 0.03;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        @keyframes flicker {
+          0%, 95%, 100% { opacity: 1; }
+          96% { opacity: 0.8; }
+          97% { opacity: 1; }
+          98% { opacity: 0.9; }
+        }
+        body { animation: flicker 10s infinite; }
+
+        .grid-line {
+          position: fixed; inset: 0; pointer-events: none; z-index: 0;
+          background-image:
+            linear-gradient(rgba(180,255,0,0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(180,255,0,0.02) 1px, transparent 1px);
+          background-size: 80px 80px;
         }
 
-        .grid-bg {
-          background-image: 
-            linear-gradient(rgba(0,255,180,0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0,255,180,0.03) 1px, transparent 1px);
-          background-size: 60px 60px;
+        @keyframes slide-in {
+          from { transform: translateX(-100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
         }
 
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(2deg); }
+        .stat-block {
+          border: 1px solid #1a1a1a;
+          padding: 20px 24px;
+          transition: all 0.15s;
+          position: relative;
+        }
+        .stat-block:hover {
+          border-color: #b4ff00;
+          background: rgba(180,255,0,0.03);
+        }
+        .stat-block:hover::before {
+          content: '▶';
+          position: absolute;
+          left: -12px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #b4ff00;
+          font-size: 10px;
         }
 
-        @keyframes pulse-ring {
-          0% { transform: scale(1); opacity: 0.6; }
-          100% { transform: scale(2.5); opacity: 0; }
+        .nav-link {
+          color: #555;
+          font-size: 11px;
+          letter-spacing: 0.15em;
+          text-transform: uppercase;
+          text-decoration: none;
+          transition: color 0.1s;
+          padding: 4px 0;
+          border-bottom: 1px solid transparent;
         }
+        .nav-link:hover { color: #b4ff00; border-bottom-color: #b4ff00; }
 
-        @keyframes slide-up {
-          from { opacity: 0; transform: translateY(40px); }
-          to { opacity: 1; transform: translateY(0); }
+        .feature-row {
+          display: grid;
+          grid-template-columns: 40px 1fr;
+          gap: 20px;
+          padding: 24px 0;
+          border-top: 1px solid #111;
+          align-items: start;
+          transition: all 0.15s;
         }
+        .feature-row:hover { background: rgba(180,255,0,0.02); margin: 0 -32px; padding-left: 32px; padding-right: 32px; }
 
-        @keyframes scan {
-          0% { top: 0%; }
-          100% { top: 100%; }
-        }
-
-        .animate-float { animation: float 6s ease-in-out infinite; }
-        .animate-slide-up { animation: slide-up 0.8s ease forwards; }
-
-        .card-hover {
-          transition: all 0.3s ease;
+        .terminal-box {
+          background: #0a0a0a;
+          border: 1px solid #1a1a1a;
+          padding: 24px;
+          font-size: 12px;
+          line-height: 1.8;
           position: relative;
           overflow: hidden;
         }
-        .card-hover::before {
+        .terminal-box::before {
           content: '';
           position: absolute;
-          inset: 0;
-          background: linear-gradient(135deg, rgba(0,255,180,0.05), transparent);
-          opacity: 0;
-          transition: opacity 0.3s;
+          top: 0; left: 0; right: 0;
+          height: 28px;
+          background: #111;
+          border-bottom: 1px solid #1a1a1a;
         }
-        .card-hover:hover::before { opacity: 1; }
-        .card-hover:hover { transform: translateY(-4px); border-color: rgba(0,255,180,0.3) !important; }
-
-        .btn-glow:hover {
-          box-shadow: 0 0 30px rgba(0,255,180,0.4), 0 0 60px rgba(0,255,180,0.2);
-        }
-
-        .stat-counter {
-          font-family: 'Syne', sans-serif;
-          font-size: 56px;
-          font-weight: 900;
-          background: linear-gradient(135deg, #00ffb4, #00c8ff);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-
-        .tag {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 4px 12px;
-          border-radius: 100px;
-          font-size: 11px;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          border: 1px solid rgba(0,255,180,0.2);
-          color: #00ffb4;
-          background: rgba(0,255,180,0.05);
-        }
-
-        .hero-title {
-          font-family: 'Syne', sans-serif;
-          font-weight: 900;
-          line-height: 1;
-          letter-spacing: -0.03em;
-        }
-
-        .gradient-text {
-          background: linear-gradient(135deg, #ffffff 0%, #00ffb4 50%, #00c8ff 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-
-        .scan-line {
+        .terminal-dots {
           position: absolute;
-          left: 0;
-          right: 0;
-          height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(0,255,180,0.4), transparent);
-          animation: scan 3s linear infinite;
+          top: 9px; left: 12px;
+          display: flex; gap: 5px;
         }
+        .dot { width: 9px; height: 9px; border-radius: 50%; }
+        .terminal-content { margin-top: 20px; }
 
-        .pipeline-card {
-          background: rgba(255,255,255,0.02);
-          border: 1px solid rgba(255,255,255,0.06);
-          border-radius: 12px;
-          padding: 16px;
+        .price-card {
+          border: 1px solid #1a1a1a;
+          padding: 32px;
           transition: all 0.2s;
         }
-        .pipeline-card:hover {
-          background: rgba(0,255,180,0.04);
-          border-color: rgba(0,255,180,0.2);
+        .price-card:hover { border-color: #b4ff00; }
+        .price-card.featured { border-color: #b4ff00; background: rgba(180,255,0,0.03); }
+
+        .btn-main {
+          display: inline-block;
+          padding: 14px 36px;
+          background: #b4ff00;
+          color: #080808;
+          font-family: 'Space Mono', monospace;
+          font-weight: 700;
+          font-size: 13px;
+          letter-spacing: 0.05em;
+          text-decoration: none;
+          border: none;
+          transition: all 0.1s;
+          position: relative;
+        }
+        .btn-main:hover {
+          background: #c8ff33;
+          transform: translate(-2px, -2px);
+          box-shadow: 4px 4px 0px #b4ff00;
+        }
+        .btn-main:active { transform: translate(0, 0); box-shadow: none; }
+
+        .btn-ghost {
+          display: inline-block;
+          padding: 14px 36px;
+          background: transparent;
+          color: #555;
+          font-family: 'Space Mono', monospace;
+          font-size: 13px;
+          letter-spacing: 0.05em;
+          text-decoration: none;
+          border: 1px solid #222;
+          transition: all 0.1s;
+        }
+        .btn-ghost:hover { border-color: #555; color: #e8e8e8; }
+
+        .number-big {
+          font-family: 'Bebas Neue', sans-serif;
+          font-size: 72px;
+          line-height: 1;
+          color: #b4ff00;
+          letter-spacing: 0.02em;
+        }
+
+        .section-label {
+          font-size: 10px;
+          letter-spacing: 0.25em;
+          text-transform: uppercase;
+          color: #333;
+          margin-bottom: 48px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .section-label::after {
+          content: '';
+          flex: 1;
+          height: 1px;
+          background: #1a1a1a;
+        }
+
+        @keyframes marquee {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
+        .marquee-inner {
+          display: flex;
+          gap: 48px;
+          animation: marquee 20s linear infinite;
+          white-space: nowrap;
+        }
+
+        .pipeline-col {
+          min-width: 140px;
+          border-right: 1px solid #111;
+          padding-right: 20px;
+        }
+        .pipeline-item {
+          background: #0f0f0f;
+          border: 1px solid #1a1a1a;
+          padding: 10px 12px;
+          margin-bottom: 8px;
+          font-size: 11px;
         }
       `}</style>
 
-      {/* Cursor glow */}
-      <div className="glow-cursor" style={{ left: mousePos.x, top: mousePos.y }} />
-      <div className="noise" />
+      <div className="scanline" />
+      <div className="grid-line" />
+
+      {/* TOP BAR */}
+      <div style={{
+        background: "#b4ff00", color: "#080808",
+        padding: "6px 32px",
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        fontSize: 11, letterSpacing: "0.1em", fontWeight: 700,
+        position: "relative", zIndex: 10
+      }}>
+        <span>FUNDFLOW TERMINAL v1.0</span>
+        <span>NYSE: SEED ▲ 2.4% — NASDAQ: WEB3 ▲ 8.1% — {time} UTC</span>
+        <span>● SYSTEM OPERATIONAL</span>
+      </div>
+
+      {/* TICKER */}
+      <div style={{
+        background: "#0d0d0d", borderBottom: "1px solid #1a1a1a",
+        padding: "8px 0", overflow: "hidden",
+        position: "relative", zIndex: 10
+      }}>
+        <div className="marquee-inner">
+          {[...TICKER, ...TICKER].map((t, i) => (
+            <span key={i} style={{ fontSize: 11, color: "#b4ff00", letterSpacing: "0.1em" }}>
+              {t} &nbsp;/&nbsp;
+            </span>
+          ))}
+        </div>
+      </div>
 
       {/* NAV */}
       <nav style={{
-        position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "20px 64px",
-        background: "rgba(3,5,8,0.8)", backdropFilter: "blur(20px)",
-        borderBottom: "1px solid rgba(0,255,180,0.08)"
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        borderBottom: "1px solid #111",
+        position: "relative", zIndex: 10
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{
-            width: 32, height: 32, borderRadius: 8,
-            background: "linear-gradient(135deg, #00ffb4, #00c8ff)",
+            width: 28, height: 28,
+            background: "#b4ff00",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 12, fontWeight: 900, color: "#030508"
+            fontSize: 11, fontWeight: 900, color: "#080808"
           }}>FF</div>
-          <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 18, color: "#fff" }}>FundFlow</span>
+          <span style={{ fontFamily: "Bebas Neue, sans-serif", fontSize: 22, letterSpacing: "0.1em", color: "#fff" }}>FUNDFLOW</span>
         </div>
-        <div style={{ display: "flex", gap: 40 }}>
-          {["Features", "Pricing", "About"].map(item => (
-            <a key={item} href="#" style={{ color: "#6b7b99", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", transition: "color 0.2s" }}
-              onMouseEnter={e => (e.target as HTMLElement).style.color = "#00ffb4"}
-              onMouseLeave={e => (e.target as HTMLElement).style.color = "#6b7b99"}
-            >{item}</a>
+        <div style={{ display: "flex", gap: 32 }}>
+          {["Terminal", "Features", "Pricing", "Docs"].map(l => (
+            <a key={l} href="#" className="nav-link">{l}</a>
           ))}
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <Link href="/login" style={{
-            padding: "8px 20px", borderRadius: 8, fontSize: 13,
-            border: "1px solid rgba(255,255,255,0.1)", color: "#c8d8f0",
-            fontFamily: "DM Mono, monospace", transition: "all 0.2s"
-          }}>Login</Link>
-          <Link href="/register" className="btn-glow" style={{
-            padding: "8px 20px", borderRadius: 8, fontSize: 13,
-            background: "#00ffb4", color: "#030508", fontWeight: 600,
-            fontFamily: "Syne, sans-serif", transition: "all 0.2s"
-          }}>Get Started</Link>
+        <div style={{ display: "flex", gap: 12 }}>
+          <Link href="/login" className="btn-ghost" style={{ padding: "8px 20px", fontSize: 11 }}>LOGIN_</Link>
+          <Link href="/register" className="btn-main" style={{ padding: "8px 20px", fontSize: 11 }}>ACCESS →</Link>
         </div>
       </nav>
 
       {/* HERO */}
-      <section ref={heroRef} className="grid-bg" style={{
-        minHeight: "100vh", display: "flex", alignItems: "center",
-        justifyContent: "center", padding: "120px 64px 80px",
-        position: "relative"
-      }}>
-        {/* Floating orbs */}
-        <div style={{
-          position: "absolute", top: "20%", left: "10%",
-          width: 300, height: 300, borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(0,255,180,0.08), transparent)",
-          filter: "blur(40px)", pointerEvents: "none"
-        }} className="animate-float" />
-        <div style={{
-          position: "absolute", bottom: "20%", right: "10%",
-          width: 400, height: 400, borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(0,200,255,0.06), transparent)",
-          filter: "blur(60px)", pointerEvents: "none",
-          animationDelay: "2s"
-        }} className="animate-float" />
+      <section style={{ padding: "80px 64px 64px", position: "relative", zIndex: 2 }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "start" }}>
+            <div>
+              <div style={{
+                fontSize: 10, letterSpacing: "0.3em", color: "#333",
+                marginBottom: 32, textTransform: "uppercase"
+              }}>// fundraising_os.exe — initialized</div>
 
-        <div style={{ maxWidth: 900, textAlign: "center", position: "relative", zIndex: 2 }}>
-          <div className="tag" style={{ marginBottom: 32 }}>
-            <span style={{
-              width: 6, height: 6, borderRadius: "50%",
-              background: "#00ffb4", display: "inline-block",
-              boxShadow: "0 0 8px #00ffb4"
-            }} />
-            Web3 Fundraising OS — Now Live
-          </div>
+              <h1 style={{
+                fontFamily: "Bebas Neue, sans-serif",
+                fontSize: "clamp(64px, 7vw, 96px)",
+                lineHeight: 0.95,
+                color: "#fff",
+                letterSpacing: "0.02em",
+                marginBottom: 32
+              }}>
+                CLOSE<br />
+                YOUR<br />
+                <span style={{ color: "#b4ff00" }}>ROUND.</span>
+              </h1>
 
-          <h1 className="hero-title" style={{ fontSize: "clamp(56px, 8vw, 96px)", color: "#fff", marginBottom: 24 }}>
-            Close your<br />
-            <span className="gradient-text">funding round.</span><br />
-            Not Excel sheets.
-          </h1>
+              <p style={{
+                fontSize: 13, color: "#555", lineHeight: 1.9,
+                marginBottom: 48, maxWidth: 420,
+                borderLeft: "2px solid #b4ff00",
+                paddingLeft: 16
+              }}>
+                {typed}<span className="cursor" />
+              </p>
 
-          <p style={{
-            fontSize: 18, color: "#6b7b99", maxWidth: 560, margin: "0 auto 48px",
-            lineHeight: 1.7, fontFamily: "DM Mono, monospace"
-          }}>
-            FundFlow is the CRM built for Web3 founders. Track investors, manage your pipeline, and close deals — all in one place.
-          </p>
-
-          <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
-            <Link href="/register" className="btn-glow" style={{
-              padding: "16px 40px", borderRadius: 12, fontSize: 16,
-              background: "#00ffb4", color: "#030508", fontWeight: 700,
-              fontFamily: "Syne, sans-serif", display: "flex", alignItems: "center", gap: 8,
-              transition: "all 0.2s"
-            }}>
-              Start for free →
-            </Link>
-            <a href="#features" style={{
-              padding: "16px 40px", borderRadius: 12, fontSize: 14,
-              border: "1px solid rgba(255,255,255,0.1)", color: "#c8d8f0",
-              fontFamily: "DM Mono, monospace", display: "flex", alignItems: "center", gap: 8,
-              transition: "all 0.2s"
-            }}>Watch demo ▶</a>
-          </div>
-
-          {/* Trust badges */}
-          <div style={{ marginTop: 64, display: "flex", gap: 40, justifyContent: "center", alignItems: "center", flexWrap: "wrap" }}>
-            {["No credit card", "Free to start", "Built for Web3"].map(badge => (
-              <div key={badge} style={{ display: "flex", alignItems: "center", gap: 8, color: "#6b7b99", fontSize: 12 }}>
-                <span style={{ color: "#00ffb4" }}>✓</span> {badge}
+              <div style={{ display: "flex", gap: 12, marginBottom: 48 }}>
+                <Link href="/register" className="btn-main">GET ACCESS →</Link>
+                <Link href="/login" className="btn-ghost">LOGIN_</Link>
               </div>
-            ))}
+
+              <div style={{ display: "flex", gap: 32, paddingTop: 32, borderTop: "1px solid #111" }}>
+                {[["2,400+", "Founders"], ["$840M", "Tracked"], ["94%", "Close Rate"]].map(([val, label]) => (
+                  <div key={label}>
+                    <div style={{ fontFamily: "Bebas Neue, sans-serif", fontSize: 28, color: "#b4ff00", letterSpacing: "0.05em" }}>{val}</div>
+                    <div style={{ fontSize: 10, color: "#333", letterSpacing: "0.15em", textTransform: "uppercase" }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Terminal preview */}
+            <div className="terminal-box" style={{ marginTop: 20 }}>
+              <div className="terminal-dots">
+                <div className="dot" style={{ background: "#333" }} />
+                <div className="dot" style={{ background: "#333" }} />
+                <div className="dot" style={{ background: "#b4ff00" }} />
+              </div>
+              <div className="terminal-content" style={{ color: "#555" }}>
+                <div><span style={{ color: "#b4ff00" }}>$</span> fundflow --status</div>
+                <br />
+                <div style={{ color: "#333" }}>── Investors tracked: <span style={{ color: "#fff" }}>47</span></div>
+                <div style={{ color: "#333" }}>── Pipeline stages: <span style={{ color: "#fff" }}>5</span></div>
+                <div style={{ color: "#333" }}>── Active deals: <span style={{ color: "#b4ff00" }}>12</span></div>
+                <div style={{ color: "#333" }}>── Meetings this week: <span style={{ color: "#fff" }}>3</span></div>
+                <br />
+                <div><span style={{ color: "#b4ff00" }}>$</span> pipeline --list</div>
+                <br />
+                {[
+                  { name: "a16z", stage: "MEETING", val: "$5M", color: "#fbbf24" },
+                  { name: "Paradigm", stage: "TERM_SHEET", val: "$12M", color: "#00c8ff" },
+                  { name: "Sequoia", stage: "OUTREACH", val: "TBD", color: "#555" },
+                  { name: "Coinbase Ventures", stage: "CLOSED ✓", val: "$2.4M", color: "#b4ff00" },
+                ].map((item, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <span style={{ color: "#888" }}>{item.name}</span>
+                    <span style={{ color: item.color, fontSize: 11 }}>[{item.stage}]</span>
+                    <span style={{ color: "#444" }}>{item.val}</span>
+                  </div>
+                ))}
+                <br />
+                <div><span style={{ color: "#b4ff00" }}>$</span> <span className="cursor" /></div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* STATS */}
-      <section style={{ padding: "80px 64px", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-        <div style={{ maxWidth: 1000, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 40 }}>
+      {/* STATS ROW */}
+      <section style={{ borderTop: "1px solid #111", borderBottom: "1px solid #111", position: "relative", zIndex: 2 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
           {[
-            { value: "2,400+", label: "Founders using FundFlow" },
-            { value: "$840M", label: "Funding tracked on platform" },
-            { value: "94%", label: "Faster deal flow" },
-          ].map(stat => (
-            <div key={stat.label} style={{ textAlign: "center" }}>
-              <div className="stat-counter">{stat.value}</div>
-              <div style={{ color: "#6b7b99", fontSize: 13, marginTop: 8 }}>{stat.label}</div>
+            { num: "47ms", label: "Avg response time" },
+            { num: "99.9%", label: "Uptime SLA" },
+            { num: "2.4K", label: "Active founders" },
+            { num: "$840M", label: "Funding tracked" },
+          ].map((s, i) => (
+            <div key={i} className="stat-block" style={{ borderLeft: i > 0 ? "1px solid #111" : "none" }}>
+              <div className="number-big">{s.num}</div>
+              <div style={{ fontSize: 11, color: "#333", letterSpacing: "0.15em", textTransform: "uppercase", marginTop: 8 }}>{s.label}</div>
             </div>
           ))}
         </div>
       </section>
 
       {/* FEATURES */}
-      <section id="features" style={{ padding: "80px 64px" }}>
+      <section style={{ padding: "80px 64px", position: "relative", zIndex: 2 }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 64 }}>
-            <div className="tag" style={{ marginBottom: 16 }}>Features</div>
-            <h2 style={{ fontFamily: "Syne, sans-serif", fontSize: 48, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
-              Everything you need to<br />
-              <span className="gradient-text">close your round</span>
-            </h2>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
-            {[
-              {
-                icon: "⚡",
-                title: "Investor CRM",
-                desc: "Track every investor, their status, notes, and follow-ups in one clean dashboard."
-              },
-              {
-                icon: "🎯",
-                title: "Pipeline Kanban",
-                desc: "Drag & drop investors through your pipeline from Outreach to Closed."
-              },
-              {
-                icon: "📊",
-                title: "Live Analytics",
-                desc: "Real-time stats on your deal flow, conversion rates, and pipeline health."
-              },
-              {
-                icon: "🔗",
-                title: "Web3 Native",
-                desc: "Built specifically for crypto and Web3 projects. Understands your world."
-              },
-              {
-                icon: "🤝",
-                title: "Investor Network",
-                desc: "Connect with investors actively looking for Web3 projects to fund."
-              },
-              {
-                icon: "🔒",
-                title: "Secure & Private",
-                desc: "Your deal flow is your competitive advantage. We keep it locked down."
-              },
-            ].map(feature => (
-              <div key={feature.title} className="card-hover" style={{
-                padding: 28, borderRadius: 16,
-                background: "rgba(255,255,255,0.02)",
-                border: "1px solid rgba(255,255,255,0.06)"
-              }}>
-                <div style={{ fontSize: 28, marginBottom: 16 }}>{feature.icon}</div>
-                <h3 style={{ fontFamily: "Syne, sans-serif", fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 8 }}>
-                  {feature.title}
-                </h3>
-                <p style={{ color: "#6b7b99", fontSize: 13, lineHeight: 1.7 }}>{feature.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* PIPELINE PREVIEW */}
-      <section style={{ padding: "80px 64px", background: "rgba(0,255,180,0.02)" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center" }}>
+          <div className="section-label">01 — Core modules</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80 }}>
             <div>
-              <div className="tag" style={{ marginBottom: 16 }}>Pipeline</div>
-              <h2 style={{ fontFamily: "Syne, sans-serif", fontSize: 42, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em", marginBottom: 20 }}>
-                Your entire round,<br />
-                <span className="gradient-text">at a glance.</span>
-              </h2>
-              <p style={{ color: "#6b7b99", fontSize: 15, lineHeight: 1.8, marginBottom: 32 }}>
-                See exactly where every investor stands. Move deals forward with one click. Never lose track of a warm lead again.
-              </p>
-              <Link href="/register" style={{
-                display: "inline-flex", alignItems: "center", gap: 8,
-                padding: "12px 28px", borderRadius: 10,
-                background: "rgba(0,255,180,0.1)", color: "#00ffb4",
-                border: "1px solid rgba(0,255,180,0.2)",
-                fontFamily: "Syne, sans-serif", fontWeight: 600, fontSize: 14
-              }}>Try it free →</Link>
+              {[
+                { n: "01", title: "Investor CRM", desc: "Every investor, their status, emails, notes, and follow-ups. Never lose a warm lead again." },
+                { n: "02", title: "Kanban Pipeline", desc: "Outreach → Interested → Meeting → Term Sheet → Closed. Move deals forward in one click." },
+                { n: "03", title: "Live Dashboard", desc: "Real-time stats. Total investors, active leads, meetings, and closed deals — all live." },
+                { n: "04", title: "Secure by default", desc: "Your deal flow is your moat. End-to-end encrypted, zero third-party data sharing." },
+              ].map(f => (
+                <div key={f.n} className="feature-row">
+                  <div style={{ fontSize: 10, color: "#b4ff00", letterSpacing: "0.1em", paddingTop: 2 }}>{f.n}</div>
+                  <div>
+                    <div style={{ fontSize: 14, color: "#fff", fontWeight: 700, marginBottom: 8, letterSpacing: "0.05em" }}>{f.title}</div>
+                    <div style={{ fontSize: 12, color: "#444", lineHeight: 1.7 }}>{f.desc}</div>
+                  </div>
+                </div>
+              ))}
             </div>
 
-            {/* Pipeline visual mockup */}
-            <div style={{ position: "relative" }}>
+            {/* Pipeline visual */}
+            <div>
               <div style={{
-                background: "rgba(255,255,255,0.02)",
-                border: "1px solid rgba(255,255,255,0.06)",
-                borderRadius: 16, padding: 24, overflow: "hidden"
+                border: "1px solid #1a1a1a", padding: "24px",
+                background: "#0a0a0a", position: "relative"
               }}>
-                <div className="scan-line" />
-                <div style={{ display: "flex", gap: 12, overflowX: "auto" }}>
+                <div style={{ fontSize: 10, color: "#333", letterSpacing: "0.2em", marginBottom: 20 }}>PIPELINE // LIVE VIEW</div>
+                <div style={{ display: "flex", gap: 16, overflowX: "auto" }}>
                   {[
-                    { label: "Outreach", color: "#6b7b99", count: 5 },
-                    { label: "Interested", color: "#00c8ff", count: 3 },
-                    { label: "Meeting", color: "#fbbf24", count: 2 },
-                    { label: "Closed", color: "#00ffb4", count: 1 },
+                    { label: "OUTREACH", color: "#333", items: ["a16z", "Multicoin"] },
+                    { label: "MEETING", color: "#fbbf24", items: ["Paradigm"] },
+                    { label: "CLOSED", color: "#b4ff00", items: ["Coinbase V."] },
                   ].map(col => (
-                    <div key={col.label} style={{ minWidth: 140 }}>
-                      <div style={{
-                        display: "flex", alignItems: "center", justifyContent: "space-between",
-                        marginBottom: 12, paddingBottom: 8,
-                        borderBottom: `1px solid ${col.color}40`
-                      }}>
-                        <span style={{ fontSize: 11, color: col.color, textTransform: "uppercase", letterSpacing: "0.08em" }}>{col.label}</span>
-                        <span style={{ fontSize: 11, background: `${col.color}20`, color: col.color, padding: "2px 8px", borderRadius: 100 }}>{col.count}</span>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        {Array.from({ length: col.count > 2 ? 2 : col.count }).map((_, i) => (
-                          <div key={i} className="pipeline-card">
-                            <div style={{ width: 60 + i * 20, height: 8, background: "rgba(255,255,255,0.1)", borderRadius: 4, marginBottom: 6 }} />
-                            <div style={{ width: 40, height: 6, background: "rgba(255,255,255,0.05)", borderRadius: 4 }} />
-                          </div>
-                        ))}
-                      </div>
+                    <div key={col.label} className="pipeline-col">
+                      <div style={{ fontSize: 9, color: col.color, letterSpacing: "0.2em", marginBottom: 12 }}>{col.label}</div>
+                      {col.items.map(item => (
+                        <div key={item} className="pipeline-item" style={{ color: "#555" }}>{item}</div>
+                      ))}
                     </div>
                   ))}
                 </div>
@@ -409,54 +464,38 @@ export default function Home() {
       </section>
 
       {/* PRICING */}
-      <section style={{ padding: "80px 64px" }}>
-        <div style={{ maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
-          <div className="tag" style={{ marginBottom: 16 }}>Pricing</div>
-          <h2 style={{ fontFamily: "Syne, sans-serif", fontSize: 48, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em", marginBottom: 16 }}>
-            Simple pricing.
-          </h2>
-          <p style={{ color: "#6b7b99", marginBottom: 48 }}>Start free. Scale when you're ready.</p>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, maxWidth: 700, margin: "0 auto" }}>
+      <section style={{ padding: "80px 64px", borderTop: "1px solid #111", position: "relative", zIndex: 2 }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <div className="section-label">02 — Pricing</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
             {[
               {
-                name: "Starter", price: "Free", desc: "Perfect to get started",
-                features: ["Up to 25 investors", "Pipeline tracking", "Basic analytics"],
-                cta: "Get started", primary: false
+                name: "STARTER", price: "FREE", sub: "forever",
+                features: ["25 investors max", "Pipeline tracking", "Basic dashboard", "Community support"],
+                cta: "GET ACCESS →", featured: false
               },
               {
-                name: "Pro", price: "$99", desc: "For serious fundraisers",
-                features: ["Unlimited investors", "Advanced analytics", "Investor network access", "Priority support"],
-                cta: "Start free trial", primary: true
+                name: "PRO", price: "$99", sub: "/month",
+                features: ["Unlimited investors", "Advanced analytics", "Investor network", "Priority support", "API access"],
+                cta: "START TRIAL →", featured: true
               },
             ].map(plan => (
-              <div key={plan.name} className="card-hover" style={{
-                padding: 32, borderRadius: 20,
-                background: plan.primary ? "rgba(0,255,180,0.05)" : "rgba(255,255,255,0.02)",
-                border: plan.primary ? "1px solid rgba(0,255,180,0.3)" : "1px solid rgba(255,255,255,0.06)",
-                textAlign: "left"
-              }}>
-                <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "#fff", marginBottom: 4 }}>{plan.name}</div>
-                <div style={{ fontSize: 40, fontFamily: "Syne, sans-serif", fontWeight: 900, color: plan.primary ? "#00ffb4" : "#fff", marginBottom: 4 }}>
-                  {plan.price}<span style={{ fontSize: 14, color: "#6b7b99", fontWeight: 400 }}>{plan.price !== "Free" ? "/mo" : ""}</span>
+              <div key={plan.name} className={`price-card ${plan.featured ? "featured" : ""}`}>
+                <div style={{ fontSize: 10, color: plan.featured ? "#b4ff00" : "#333", letterSpacing: "0.2em", marginBottom: 16 }}>{plan.name}</div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 32 }}>
+                  <span style={{ fontFamily: "Bebas Neue, sans-serif", fontSize: 56, color: "#fff", letterSpacing: "0.02em" }}>{plan.price}</span>
+                  <span style={{ color: "#333", fontSize: 12 }}>{plan.sub}</span>
                 </div>
-                <div style={{ color: "#6b7b99", fontSize: 13, marginBottom: 24 }}>{plan.desc}</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
                   {plan.features.map(f => (
-                    <div key={f} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#c8d8f0" }}>
-                      <span style={{ color: "#00ffb4", fontSize: 16 }}>✓</span> {f}
+                    <div key={f} style={{ display: "flex", gap: 12, fontSize: 12, color: "#555" }}>
+                      <span style={{ color: "#b4ff00" }}>+</span> {f}
                     </div>
                   ))}
                 </div>
-                <Link href="/register" className={plan.primary ? "btn-glow" : ""} style={{
-                  display: "block", textAlign: "center",
-                  padding: "12px 24px", borderRadius: 10,
-                  background: plan.primary ? "#00ffb4" : "rgba(255,255,255,0.05)",
-                  color: plan.primary ? "#030508" : "#c8d8f0",
-                  fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 14,
-                  border: plan.primary ? "none" : "1px solid rgba(255,255,255,0.1)",
-                  transition: "all 0.2s"
-                }}>{plan.cta}</Link>
+                <Link href="/register" className={plan.featured ? "btn-main" : "btn-ghost"} style={{ display: "block", textAlign: "center" }}>
+                  {plan.cta}
+                </Link>
               </div>
             ))}
           </div>
@@ -464,40 +503,27 @@ export default function Home() {
       </section>
 
       {/* CTA */}
-      <section style={{ padding: "80px 64px 120px" }}>
-        <div style={{
-          maxWidth: 800, margin: "0 auto", textAlign: "center",
-          padding: "64px 48px", borderRadius: 24,
-          background: "rgba(0,255,180,0.04)",
-          border: "1px solid rgba(0,255,180,0.15)",
-          position: "relative", overflow: "hidden"
-        }}>
-          <div style={{
-            position: "absolute", top: "-50%", left: "50%", transform: "translateX(-50%)",
-            width: 400, height: 400, borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(0,255,180,0.08), transparent)",
-            pointerEvents: "none"
-          }} />
-          <h2 style={{ fontFamily: "Syne, sans-serif", fontSize: 48, fontWeight: 900, color: "#fff", marginBottom: 16, position: "relative" }}>
-            Ready to close your<br /><span className="gradient-text">funding round?</span>
+      <section style={{ padding: "80px 64px 120px", borderTop: "1px solid #111", position: "relative", zIndex: 2 }}>
+        <div style={{ maxWidth: 800, margin: "0 auto", textAlign: "center" }}>
+          <div style={{ fontSize: 10, color: "#333", letterSpacing: "0.3em", marginBottom: 24, textTransform: "uppercase" }}>// ready to ship?</div>
+          <h2 style={{ fontFamily: "Bebas Neue, sans-serif", fontSize: 80, color: "#fff", letterSpacing: "0.02em", lineHeight: 1, marginBottom: 16 }}>
+            CLOSE YOUR<br /><span style={{ color: "#b4ff00" }}>FUNDING ROUND.</span>
           </h2>
-          <p style={{ color: "#6b7b99", marginBottom: 40, position: "relative" }}>Join thousands of Web3 founders managing their investor pipeline on FundFlow.</p>
-          <Link href="/register" className="btn-glow" style={{
-            display: "inline-flex", padding: "16px 48px", borderRadius: 12,
-            background: "#00ffb4", color: "#030508",
-            fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 16,
-            position: "relative", transition: "all 0.2s"
-          }}>Start for free — it's free →</Link>
+          <p style={{ color: "#333", fontSize: 13, marginBottom: 48 }}>Join 2,400+ Web3 founders who track their investor pipeline on FundFlow.</p>
+          <Link href="/register" className="btn-main" style={{ fontSize: 15, padding: "18px 56px" }}>GET ACCESS NOW →</Link>
         </div>
       </section>
 
       {/* FOOTER */}
       <footer style={{
-        padding: "32px 64px", borderTop: "1px solid rgba(255,255,255,0.04)",
-        display: "flex", justifyContent: "space-between", alignItems: "center"
+        padding: "24px 64px",
+        borderTop: "1px solid #111",
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        background: "#050505"
       }}>
-        <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, color: "#fff" }}>FundFlow</div>
-        <div style={{ color: "#6b7b99", fontSize: 12 }}>© 2026 FundFlow. Built for Web3 founders.</div>
+        <span style={{ fontFamily: "Bebas Neue, sans-serif", fontSize: 18, letterSpacing: "0.1em", color: "#222" }}>FUNDFLOW</span>
+        <span style={{ fontSize: 10, color: "#222", letterSpacing: "0.1em" }}>© 2026 — BUILT FOR WEB3 FOUNDERS</span>
+        <span style={{ fontSize: 10, color: "#b4ff00", letterSpacing: "0.1em" }}>● LIVE</span>
       </footer>
     </main>
   )
