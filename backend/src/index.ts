@@ -3,6 +3,7 @@ import cors from "cors"
 import dotenv from "dotenv"
 import authRoutes from "./routes/auth"
 import investorRoutes from "./routes/investors"
+import { initDB } from "./database"
 
 dotenv.config()
 
@@ -22,6 +23,11 @@ app.get("/", (req, res) => {
   res.json({ message: "FundFlow API is running" })
 })
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
+initDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`)
+  })
+}).catch(err => {
+  console.error("DB init failed:", err)
+  process.exit(1)
 })
