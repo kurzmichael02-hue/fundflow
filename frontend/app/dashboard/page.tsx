@@ -1,9 +1,28 @@
 "use client"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import api from "@/lib/api"
 
 export default function DashboardPage() {
   const router = useRouter()
+  const [stats, setStats] = useState({ total: 0, active: 0, meetings: 0, closed: 0 })
+
+  useEffect(() => {
+    const token = localStorage.getItem("token")
+    if (!token) { router.push("/login"); return }
+
+    api.get("/investors", { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => {
+        const investors = res.data
+        setStats({
+          total: investors.length,
+          active: investors.filter((i: any) => i.status === "interested" || i.status === "outreach").length,
+          meetings: investors.filter((i: any) => i.status === "meeting").length,
+          closed: investors.filter((i: any) => i.status === "closed").length,
+        })
+      })
+      .catch(() => { router.push("/login") })
+  }, [])
 
   const handleLogout = () => {
     localStorage.clear()
@@ -18,9 +37,7 @@ export default function DashboardPage() {
           <a href="/dashboard" className="text-white text-sm font-semibold">Dashboard</a>
           <a href="/investors" className="text-gray-400 hover:text-white transition text-sm">Investors</a>
           <a href="/pipeline" className="text-gray-400 hover:text-white transition text-sm">Pipeline</a>
-          <button onClick={handleLogout} className="bg-red-500 hover:bg-red-400 text-white text-sm px-4 py-2 rounded-lg transition">
-            Logout
-          </button>
+          <button onClick={handleLogout} className="bg-red-500 hover:bg-red-400 text-white text-sm px-4 py-2 rounded-lg transition">Logout</button>
         </div>
       </nav>
 
@@ -28,10 +45,10 @@ export default function DashboardPage() {
         <h2 className="text-2xl font-bold mb-6">Welcome back 👋</h2>
         <div className="grid grid-cols-4 gap-4 mb-8">
           {[
-            { label: "Total Investors", value: "0" },
-            { label: "Active Leads", value: "0" },
-            { label: "Meetings Booked", value: "0" },
-            { label: "Deals Closed", value: "0" },
+            { label: "Total Investors", value: stats.total },
+            { label: "Active Leads", value: stats.active },
+            { label: "Meetings Booked", value: stats.meetings },
+            { label: "Deals Closed", value: stats.closed },
           ].map((stat) => (
             <div key={stat.label} className="bg-[#111118] border border-gray-800 rounded-xl p-5">
               <p className="text-gray-400 text-sm mb-1">{stat.label}</p>
