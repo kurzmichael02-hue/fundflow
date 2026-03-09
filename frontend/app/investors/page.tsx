@@ -1,138 +1,136 @@
 "use client"
 import { useState, useEffect } from "react"
-import api from "@/lib/api"
+import { useRouter } from "next/navigation"
+import { api } from "@/lib/api"
 
-type Investor = {
-  id: number
+interface Investor {
+  id: string
   name: string
   email: string
   company: string
-  status: "Outreach" | "Interested" | "Meeting" | "Term Sheet" | "Closed"
+  status: string
+  amount: number
   notes: string
 }
 
-const STATUS_COLORS: Record<Investor["status"], string> = {
-  Outreach: "bg-gray-700 text-gray-300",
-  Interested: "bg-blue-900 text-blue-300",
-  Meeting: "bg-yellow-900 text-yellow-300",
-  "Term Sheet": "bg-purple-900 text-purple-300",
-  Closed: "bg-green-900 text-green-300",
-}
-
 export default function InvestorsPage() {
+  const router = useRouter()
   const [investors, setInvestors] = useState<Investor[]>([])
-  const [showModal, setShowModal] = useState(false)
-  const [form, setForm] = useState({ name: "", email: "", company: "", status: "Outreach" as Investor["status"], notes: "" })
-
-  const getToken = () => localStorage.getItem("token")
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState({ name: "", email: "", company: "", status: "outreach", amount: "", notes: "" })
 
   useEffect(() => {
-    api.get("/investors", { headers: { Authorization: `Bearer ${getToken()}` } })
-      .then(res => setInvestors(res.data))
-      .catch(err => console.error(err))
+    const token = localStorage.getItem("token")
+    if (!token) { router.push("/login"); return }
+    fetchInvestors()
   }, [])
 
-  const addInvestor = async () => {
-    if (!form.name || !form.email) return
+  async function fetchInvestors() {
     try {
-      const res = await api.post("/investors", form, { headers: { Authorization: `Bearer ${getToken()}` } })
-      setInvestors([...investors, res.data])
-      setForm({ name: "", email: "", company: "", status: "Outreach", notes: "" })
-      setShowModal(false)
-    } catch (err) {
-      console.error(err)
+      const data = await api.getInvestors()
+      setInvestors(data)
+    } catch {
+      router.push("/login")
+    } finally {
+      setLoading(false)
     }
   }
 
-  const deleteInvestor = async (id: number) => {
-    await api.delete(`/investors/${id}`, { headers: { Authorization: `Bearer ${getToken()}` } })
-    setInvestors(investors.filter(i => i.id !== id))
+  async function handleAdd() {
+    try {
+      await api.addInvestor({ ...form, amount: Number(form.amount) })
+      setForm({ name: "", email: "", company: "", status: "outreach", amount: "", notes: "" })
+      setShowForm(false)
+      fetchInvestors()
+    } catch (err: any) {
+      alert(err.message)
+    }
   }
 
-  return (
-    <main className="min-h-screen bg-[#0a0a0f] text-white">
-      <nav className="border-b border-gray-800 px-8 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-cyan-500">FundFlow</h1>
-        <div className="flex items-center gap-6">
-          <a href="/dashboard" className="text-gray-400 hover:text-white transition text-sm">Dashboard</a>
-          <a href="/investors" className="text-white text-sm font-semibold">Investors</a>
-          <a href="/pipeline" className="text-gray-400 hover:text-white transition text-sm">Pipeline</a>
-          <button onClick={() => { localStorage.clear(); window.location.href = "/login" }} className="bg-red-500 hover:bg-red-400 text-white text-sm px-4 py-2 rounded-lg transition">Logout</button>
-        </div>
-      </nav>
+  async function handleDelete(id: string) {
+    try {
+      await api.deleteInvestor(id)
+      fetchInvestors()
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
 
-      <div className="px-8 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Investors</h2>
-          <button onClick={() => setShowModal(true)} className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold px-4 py-2 rounded-lg transition">
+  if (loading) return <div style={{ color: "#fff", padding: 40 }}>Loading...</div>
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#080c14", color: "#e6edf3", padding: "40px 48px" }}>
+      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 600 }}>Investors</h1>
+          <button onClick={() => setShowForm(!showForm)}
+            style={{ background: "#58a6ff", color: "#0d1117", border: "none", borderRadius: 6, padding: "8px 18px", fontWeight: 600, cursor: "pointer" }}>
             + Add Investor
           </button>
         </div>
 
-        {investors.length === 0 ? (
-          <div className="bg-[#111118] border border-gray-800 rounded-xl p-12 text-center">
-            <p className="text-gray-500">No investors yet. Add your first one!</p>
-          </div>
-        ) : (
-          <div className="bg-[#111118] border border-gray-800 rounded-xl overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-800">
-                  <th className="text-left px-6 py-4 text-gray-400 text-sm font-medium">Name</th>
-                  <th className="text-left px-6 py-4 text-gray-400 text-sm font-medium">Company</th>
-                  <th className="text-left px-6 py-4 text-gray-400 text-sm font-medium">Email</th>
-                  <th className="text-left px-6 py-4 text-gray-400 text-sm font-medium">Status</th>
-                  <th className="text-left px-6 py-4 text-gray-400 text-sm font-medium">Notes</th>
-                  <th className="text-left px-6 py-4 text-gray-400 text-sm font-medium"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {investors.map((inv) => (
-                  <tr key={inv.id} className="border-b border-gray-800 hover:bg-[#1a1a25] transition">
-                    <td className="px-6 py-4 text-white font-medium">{inv.name}</td>
-                    <td className="px-6 py-4 text-gray-300">{inv.company}</td>
-                    <td className="px-6 py-4 text-gray-300">{inv.email}</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[inv.status]}`}>
-                        {inv.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-gray-400 text-sm">{inv.notes || "—"}</td>
-                    <td className="px-6 py-4">
-                      <button onClick={() => deleteInvestor(inv.id)} className="text-red-400 hover:text-red-300 text-sm">Delete</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {showForm && (
+          <div style={{ background: "#0d1117", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: 24, marginBottom: 24 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {["name", "email", "company", "amount"].map(field => (
+                <input key={field} placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+                  value={(form as any)[field]}
+                  onChange={e => setForm({ ...form, [field]: e.target.value })}
+                  style={{ background: "#161b22", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "8px 12px", color: "#e6edf3", fontSize: 14 }} />
+              ))}
+              <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}
+                style={{ background: "#161b22", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "8px 12px", color: "#e6edf3", fontSize: 14 }}>
+                <option value="outreach">Outreach</option>
+                <option value="interested">Interested</option>
+                <option value="meeting">Meeting</option>
+                <option value="term_sheet">Term Sheet</option>
+                <option value="closed">Closed</option>
+              </select>
+              <input placeholder="Notes" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
+                style={{ background: "#161b22", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "8px 12px", color: "#e6edf3", fontSize: 14 }} />
+            </div>
+            <button onClick={handleAdd}
+              style={{ marginTop: 16, background: "#58a6ff", color: "#0d1117", border: "none", borderRadius: 6, padding: "8px 18px", fontWeight: 600, cursor: "pointer" }}>
+              Save
+            </button>
           </div>
         )}
-      </div>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-[#111118] border border-gray-800 rounded-2xl p-8 w-full max-w-md">
-            <h3 className="text-xl font-bold mb-6">Add Investor</h3>
-            <div className="flex flex-col gap-4">
-              <input placeholder="Name *" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} className="bg-[#1a1a25] border border-gray-700 text-white rounded-lg px-4 py-3 outline-none focus:border-cyan-500 transition" />
-              <input placeholder="Email *" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} className="bg-[#1a1a25] border border-gray-700 text-white rounded-lg px-4 py-3 outline-none focus:border-cyan-500 transition" />
-              <input placeholder="Company" value={form.company} onChange={(e) => setForm({...form, company: e.target.value})} className="bg-[#1a1a25] border border-gray-700 text-white rounded-lg px-4 py-3 outline-none focus:border-cyan-500 transition" />
-              <select value={form.status} onChange={(e) => setForm({...form, status: e.target.value as Investor["status"]})} className="bg-[#1a1a25] border border-gray-700 text-white rounded-lg px-4 py-3 outline-none focus:border-cyan-500 transition">
-                <option>Outreach</option>
-                <option>Interested</option>
-                <option>Meeting</option>
-                <option>Term Sheet</option>
-                <option>Closed</option>
-              </select>
-              <textarea placeholder="Notes" value={form.notes} onChange={(e) => setForm({...form, notes: e.target.value})} className="bg-[#1a1a25] border border-gray-700 text-white rounded-lg px-4 py-3 outline-none focus:border-cyan-500 transition resize-none h-24" />
-              <div className="flex gap-3">
-                <button onClick={addInvestor} className="flex-1 bg-cyan-500 hover:bg-cyan-400 text-black font-semibold py-3 rounded-lg transition">Add</button>
-                <button onClick={() => setShowModal(false)} className="flex-1 border border-gray-700 text-gray-300 hover:bg-gray-800 py-3 rounded-lg transition">Cancel</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </main>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", textAlign: "left" }}>
+              {["Name", "Company", "Status", "Amount", ""].map(h => (
+                <th key={h} style={{ padding: "8px 12px", fontSize: 11, color: "#7d8590", textTransform: "uppercase", letterSpacing: "0.08em" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {investors.map(inv => (
+              <tr key={inv.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
+                <td style={{ padding: "12px", fontSize: 13, color: "#e6edf3", fontWeight: 500 }}>{inv.name}</td>
+                <td style={{ padding: "12px", fontSize: 13, color: "#7d8590" }}>{inv.company}</td>
+                <td style={{ padding: "12px" }}>
+                  <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 100, background: "rgba(88,166,255,0.1)", color: "#58a6ff", border: "1px solid rgba(88,166,255,0.2)" }}>
+                    {inv.status}
+                  </span>
+                </td>
+                <td style={{ padding: "12px", fontSize: 13, color: "#e6edf3" }}>{inv.amount ? `$${inv.amount}` : "—"}</td>
+                <td style={{ padding: "12px" }}>
+                  <button onClick={() => handleDelete(inv.id)}
+                    style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 4, color: "#7d8590", padding: "4px 10px", fontSize: 12, cursor: "pointer" }}>
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {investors.length === 0 && (
+          <div style={{ textAlign: "center", color: "#7d8590", padding: 60, fontSize: 14 }}>No investors yet. Add your first one.</div>
+        )}
+      </div>
+    </div>
   )
 }

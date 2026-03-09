@@ -1,81 +1,75 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { api } from "@/lib/api"
 
-type Investor = {
-  id: number
-  name: string
-  company: string
-  status: "Outreach" | "Interested" | "Meeting" | "Term Sheet" | "Closed"
-}
+type Status = "outreach" | "interested" | "meeting" | "term_sheet" | "closed"
 
-const COLUMNS: Investor["status"][] = ["Outreach", "Interested", "Meeting", "Term Sheet", "Closed"]
-
-const COLUMN_COLORS: Record<Investor["status"], string> = {
-  Outreach: "border-gray-600",
-  Interested: "border-blue-600",
-  Meeting: "border-yellow-600",
-  "Term Sheet": "border-purple-600",
-  Closed: "border-green-600",
-}
-
-const BADGE_COLORS: Record<Investor["status"], string> = {
-  Outreach: "bg-gray-700 text-gray-300",
-  Interested: "bg-blue-900 text-blue-300",
-  Meeting: "bg-yellow-900 text-yellow-300",
-  "Term Sheet": "bg-purple-900 text-purple-300",
-  Closed: "bg-green-900 text-green-300",
-}
-
-const DEMO: Investor[] = [
-  { id: 1, name: "John Smith", company: "a16z", status: "Outreach" },
-  { id: 2, name: "Sarah Lee", company: "Sequoia", status: "Interested" },
-  { id: 3, name: "Mike Johnson", company: "Paradigm", status: "Meeting" },
+const COLUMNS: { key: Status; label: string; color: string }[] = [
+  { key: "outreach", label: "Outreach", color: "#6b7280" },
+  { key: "interested", label: "Interested", color: "#3b82f6" },
+  { key: "meeting", label: "Meeting", color: "#f59e0b" },
+  { key: "term_sheet", label: "Term Sheet", color: "#8b5cf6" },
+  { key: "closed", label: "Closed", color: "#10b981" },
 ]
 
 export default function PipelinePage() {
-  const [investors, setInvestors] = useState<Investor[]>(DEMO)
+  const router = useRouter()
+  const [investors, setInvestors] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const moveInvestor = (id: number, newStatus: Investor["status"]) => {
-    setInvestors(investors.map(inv => inv.id === id ? { ...inv, status: newStatus } : inv))
+  useEffect(() => {
+    const token = localStorage.getItem("token")
+    if (!token) { router.push("/login"); return }
+    api.getInvestors().then(data => { setInvestors(data); setLoading(false) }).catch(() => router.push("/login"))
+  }, [])
+
+  async function moveInvestor(id: string, status: Status) {
+    setInvestors(prev => prev.map(i => i.id === id ? { ...i, status } : i))
   }
 
+  if (loading) return <div style={{ color: "#fff", padding: 40 }}>Loading...</div>
+
   return (
-    <main className="min-h-screen bg-[#0a0a0f] text-white">
-      <nav className="border-b border-gray-800 px-8 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-cyan-500">FundFlow</h1>
-        <div className="flex items-center gap-6">
-          <a href="/dashboard" className="text-gray-400 hover:text-white transition text-sm">Dashboard</a>
-          <a href="/investors" className="text-gray-400 hover:text-white transition text-sm">Investors</a>
-          <a href="/pipeline" className="text-white text-sm font-semibold">Pipeline</a>
-          <button className="bg-red-500 hover:bg-red-400 text-white text-sm px-4 py-2 rounded-lg transition">Logout</button>
+    <main style={{ minHeight: "100vh", background: "#04070f", color: "#e2e8f0" }}>
+      <nav style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "0 48px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 16, fontWeight: 700, color: "#0ea5e9" }}>FundFlow</span>
+        <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
+          {[["Dashboard", "/dashboard"], ["Investors", "/investors"], ["Pipeline", "/pipeline"]].map(([l, h]) => (
+            <a key={l} href={h} style={{ fontSize: 13, color: h === "/pipeline" ? "#fff" : "#64748b", textDecoration: "none", fontWeight: h === "/pipeline" ? 600 : 400 }}>{l}</a>
+          ))}
+          <button onClick={() => { localStorage.removeItem("token"); router.push("/") }}
+            style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", borderRadius: 6, padding: "6px 14px", fontSize: 12, cursor: "pointer" }}>
+            Logout
+          </button>
         </div>
       </nav>
 
-      <div className="px-8 py-8">
-        <h2 className="text-2xl font-bold mb-6">Pipeline</h2>
-        <div className="grid grid-cols-5 gap-4">
+      <div style={{ padding: "40px 48px" }}>
+        <h2 style={{ fontSize: 24, fontWeight: 600, marginBottom: 32 }}>Pipeline</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16 }}>
           {COLUMNS.map(col => (
-            <div key={col} className={`bg-[#111118] border-t-2 ${COLUMN_COLORS[col]} rounded-xl p-4`}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-sm">{col}</h3>
-                <span className="text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded-full">
-                  {investors.filter(i => i.status === col).length}
+            <div key={col.key} style={{ background: "rgba(255,255,255,0.02)", borderRadius: 12, borderTop: `2px solid ${col.color}`, padding: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: col.color }}>{col.label}</span>
+                <span style={{ fontSize: 11, background: "rgba(255,255,255,0.06)", borderRadius: 100, padding: "2px 8px", color: "#64748b" }}>
+                  {investors.filter(i => i.status === col.key).length}
                 </span>
               </div>
-              <div className="flex flex-col gap-3">
-                {investors.filter(i => i.status === col).map(inv => (
-                  <div key={inv.id} className="bg-[#1a1a25] border border-gray-700 rounded-lg p-3">
-                    <p className="font-medium text-sm text-white">{inv.name}</p>
-                    <p className="text-xs text-gray-400 mb-3">{inv.company}</p>
-                    <select
-                      value={inv.status}
-                      onChange={(e) => moveInvestor(inv.id, e.target.value as Investor["status"])}
-                      className="w-full bg-[#0a0a0f] border border-gray-700 text-xs text-gray-300 rounded px-2 py-1 outline-none"
-                    >
-                      {COLUMNS.map(c => <option key={c}>{c}</option>)}
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {investors.filter(i => i.status === col.key).map(inv => (
+                  <div key={inv.id} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 12 }}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: "#e2e8f0", marginBottom: 2 }}>{inv.name}</div>
+                    <div style={{ fontSize: 11, color: "#475569", marginBottom: 10 }}>{inv.company || "—"}</div>
+                    <select value={inv.status} onChange={e => moveInvestor(inv.id, e.target.value as Status)}
+                      style={{ width: "100%", background: "#0d1117", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, color: "#94a3b8", fontSize: 11, padding: "4px 8px", outline: "none" }}>
+                      {COLUMNS.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
                     </select>
                   </div>
                 ))}
+                {investors.filter(i => i.status === col.key).length === 0 && (
+                  <div style={{ fontSize: 11, color: "#1e293b", textAlign: "center", padding: "20px 0" }}>Empty</div>
+                )}
               </div>
             </div>
           ))}
