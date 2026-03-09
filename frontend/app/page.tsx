@@ -28,10 +28,12 @@ export default function Home() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
   const [time, setTime] = useState("")
   const [visible, setVisible] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const typed = useTypingEffect("The CRM built for founders who close.")
 
   useEffect(() => {
     setTimeout(() => setVisible(true), 100)
+    setIsLoggedIn(!!localStorage.getItem("token"))
     const t = setInterval(() => {
       const now = new Date()
       setTime(now.toLocaleTimeString("en-US", { hour12: false }))
@@ -324,8 +326,14 @@ export default function Home() {
 
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <div style={{ fontSize: 11, color: "#334155", fontFamily: "JetBrains Mono, monospace", marginRight: 8 }}>{time}</div>
-          <Link href="/login" className="btn-secondary" style={{ padding: "8px 20px", fontSize: 13 }}>Login</Link>
-          <Link href="/register" className="btn-primary" style={{ padding: "8px 20px", fontSize: 13 }}>Get started →</Link>
+          {isLoggedIn ? (
+  <Link href="/dashboard" className="btn-primary" style={{ padding: "8px 20px", fontSize: 13 }}>Go to Dashboard →</Link>
+) : (
+  <>
+    <Link href="/login" className="btn-secondary" style={{ padding: "8px 20px", fontSize: 13 }}>Login</Link>
+    <Link href="/register" className="btn-primary" style={{ padding: "8px 20px", fontSize: 13 }}>Get started →</Link>
+  </>
+)}
         </div>
       </nav>
 
@@ -367,8 +375,14 @@ export default function Home() {
           </p>
 
           <div style={{ display: "flex", gap: 12, marginBottom: 64, animation: "fadeUp 0.8s 0.2s ease both" }}>
-            <Link href="/register" className="btn-primary">Start for free →</Link>
-            <Link href="/login" className="btn-secondary">View demo ▶</Link>
+            {typeof window !== "undefined" && localStorage.getItem("token") ? (
+  <Link href="/dashboard" className="btn-primary">Go to Dashboard →</Link>
+) : (
+  <>
+    <Link href="/register" className="btn-primary">Start for free →</Link>
+    <Link href="/login" className="btn-secondary">View demo ▶</Link>
+  </>
+)}
           </div>
 
           {/* Social proof */}
