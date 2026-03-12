@@ -12,6 +12,7 @@ import {
   RiUserLine,
   RiSearchLine,
   RiFilterLine,
+  RiDownloadLine,
 } from "react-icons/ri"
 
 interface Investor {
@@ -35,6 +36,26 @@ const STATUS_STYLES: Record<string, { bg: string; color: string; border: string;
 }
 
 const EMPTY_FORM = { name: "", email: "", company: "", status: "outreach", amount: "", notes: "" }
+
+function exportToCSV(investors: Investor[]) {
+  const headers = ["Name", "Email", "Company", "Status", "Amount", "Notes"]
+  const rows = investors.map(inv => [
+    inv.name || "",
+    inv.email || "",
+    inv.company || "",
+    STATUS_STYLES[inv.status]?.label || inv.status,
+    inv.amount ? String(inv.amount) : "",
+    inv.notes || "",
+  ])
+  const csv = [headers, ...rows].map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(",")).join("\n")
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `fundflow-investors-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 export default function InvestorsPage() {
   const router = useRouter()
@@ -139,12 +160,22 @@ export default function InvestorsPage() {
             <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">Investors</h1>
             <p className="text-xs md:text-sm text-slate-500 mt-0.5">{investors.length} investor{investors.length !== 1 ? "s" : ""} in your pipeline</p>
           </div>
-          <button
-            onClick={() => { setShowForm(!showForm); setEditingId(null) }}
-            className="flex items-center gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold text-white cursor-pointer border-0"
-            style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
-            <RiAddLine size={15} /> Add Investor
-          </button>
+          <div className="flex items-center gap-2">
+            {investors.length > 0 && (
+              <button
+                onClick={() => exportToCSV(filtered.length > 0 ? filtered : investors)}
+                className="flex items-center gap-1.5 px-3 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-medium text-slate-400 border border-white/[0.08] cursor-pointer transition-all hover:text-slate-200"
+                style={{ background: "rgba(255,255,255,0.03)" }}>
+                <RiDownloadLine size={14} /> Export
+              </button>
+            )}
+            <button
+              onClick={() => { setShowForm(!showForm); setEditingId(null) }}
+              className="flex items-center gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold text-white cursor-pointer border-0"
+              style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+              <RiAddLine size={15} /> Add Investor
+            </button>
+          </div>
         </div>
 
         {/* Search + Filter */}
@@ -164,7 +195,7 @@ export default function InvestorsPage() {
             <select
               value={filterStatus}
               onChange={e => setFilterStatus(e.target.value)}
-              className="rounded-xl pl-9 pr-4 py-2.5 text-sm border border-white/[0.07] outline-none cursor-pointer appearance-none pr-8"
+              className="rounded-xl pl-9 pr-4 py-2.5 text-sm border border-white/[0.07] outline-none cursor-pointer"
               style={{ background: "rgba(255,255,255,0.03)", color: filterStatus === "all" ? "#64748b" : STATUS_STYLES[filterStatus]?.color }}>
               <option value="all">All statuses</option>
               {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_STYLES[s].label}</option>)}
