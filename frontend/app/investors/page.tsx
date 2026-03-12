@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { api } from "@/lib/api"
 import Navbar from "@/components/Navbar"
@@ -10,6 +10,8 @@ import {
   RiCheckLine,
   RiCloseLine,
   RiUserLine,
+  RiSearchLine,
+  RiFilterLine,
 } from "react-icons/ri"
 
 interface Investor {
@@ -43,6 +45,8 @@ export default function InvestorsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<Partial<Investor>>({})
   const [saving, setSaving] = useState(false)
+  const [search, setSearch] = useState("")
+  const [filterStatus, setFilterStatus] = useState("all")
 
   useEffect(() => {
     const token = localStorage.getItem("token")
@@ -104,6 +108,17 @@ export default function InvestorsPage() {
     }
   }
 
+  const filtered = useMemo(() => {
+    return investors.filter(inv => {
+      const matchSearch = search === "" ||
+        inv.name?.toLowerCase().includes(search.toLowerCase()) ||
+        inv.company?.toLowerCase().includes(search.toLowerCase()) ||
+        inv.email?.toLowerCase().includes(search.toLowerCase())
+      const matchStatus = filterStatus === "all" || inv.status === filterStatus
+      return matchSearch && matchStatus
+    })
+  }, [investors, search, filterStatus])
+
   if (loading) return (
     <div className="min-h-screen bg-[#04070f] flex items-center justify-center">
       <div className="flex items-center gap-3 text-slate-500 text-sm">
@@ -118,6 +133,7 @@ export default function InvestorsPage() {
       <Navbar />
       <div className="px-4 md:px-12 py-8 max-w-5xl mx-auto">
 
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">Investors</h1>
@@ -131,6 +147,32 @@ export default function InvestorsPage() {
           </button>
         </div>
 
+        {/* Search + Filter */}
+        <div className="flex flex-col sm:flex-row gap-2.5 mb-5">
+          <div className="relative flex-1">
+            <RiSearchLine size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search by name, company or email..."
+              className="w-full rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-300 border border-white/[0.07] outline-none"
+              style={{ background: "rgba(255,255,255,0.03)" }}
+            />
+          </div>
+          <div className="relative">
+            <RiFilterLine size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600" />
+            <select
+              value={filterStatus}
+              onChange={e => setFilterStatus(e.target.value)}
+              className="rounded-xl pl-9 pr-4 py-2.5 text-sm border border-white/[0.07] outline-none cursor-pointer appearance-none pr-8"
+              style={{ background: "rgba(255,255,255,0.03)", color: filterStatus === "all" ? "#64748b" : STATUS_STYLES[filterStatus]?.color }}>
+              <option value="all">All statuses</option>
+              {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_STYLES[s].label}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Add form */}
         {showForm && (
           <div className="rounded-2xl border border-white/[0.08] p-4 md:p-6 mb-5"
             style={{ background: "rgba(255,255,255,0.02)" }}>
@@ -171,27 +213,28 @@ export default function InvestorsPage() {
           </div>
         )}
 
-        {/* Desktop table */}
-        <div className="hidden md:block rounded-2xl border border-white/[0.06] overflow-hidden"
-          style={{ background: "rgba(255,255,255,0.015)" }}>
-          <div className="grid grid-cols-[2fr_1.5fr_1fr_1fr_auto] gap-4 px-5 py-3 border-b border-white/[0.05]"
-            style={{ background: "rgba(255,255,255,0.02)" }}>
-            {["Investor", "Company", "Status", "Amount", ""].map((h, i) => (
-              <span key={i} className="text-[11px] text-slate-600 uppercase tracking-widest font-medium">{h}</span>
-            ))}
+        {/* No results */}
+        {filtered.length === 0 && investors.length > 0 && (
+          <div className="text-center py-12 text-slate-600 text-sm rounded-2xl border border-white/[0.05]"
+            style={{ background: "rgba(255,255,255,0.01)" }}>
+            No investors match your search.{" "}
+            <button onClick={() => { setSearch(""); setFilterStatus("all") }} className="text-sky-400 cursor-pointer bg-transparent border-0">Clear filters</button>
           </div>
-          {investors.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-16 text-center">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-slate-700 border border-white/[0.06]"
-                style={{ background: "rgba(255,255,255,0.02)" }}>
-                <RiUserLine size={22} />
-              </div>
-              <p className="text-sm text-slate-600">No investors yet.</p>
+        )}
+
+        {/* Desktop table */}
+        {filtered.length > 0 && (
+          <div className="hidden md:block rounded-2xl border border-white/[0.06] overflow-hidden"
+            style={{ background: "rgba(255,255,255,0.015)" }}>
+            <div className="grid grid-cols-[2fr_1.5fr_1fr_1fr_auto] gap-4 px-5 py-3 border-b border-white/[0.05]"
+              style={{ background: "rgba(255,255,255,0.02)" }}>
+              {["Investor", "Company", "Status", "Amount", ""].map((h, i) => (
+                <span key={i} className="text-[11px] text-slate-600 uppercase tracking-widest font-medium">{h}</span>
+              ))}
             </div>
-          ) : (
-            investors.map((inv, idx) => (
+            {filtered.map((inv, idx) => (
               <div key={inv.id}
-                className={`grid grid-cols-[2fr_1.5fr_1fr_1fr_auto] gap-4 px-5 py-4 items-center hover:bg-white/[0.02] ${idx !== investors.length - 1 ? "border-b border-white/[0.04]" : ""}`}>
+                className={`grid grid-cols-[2fr_1.5fr_1fr_1fr_auto] gap-4 px-5 py-4 items-center hover:bg-white/[0.02] ${idx !== filtered.length - 1 ? "border-b border-white/[0.04]" : ""}`}>
                 {editingId === inv.id ? (
                   <>
                     <input value={editForm.name || ""} onChange={e => setEditForm({ ...editForm, name: e.target.value })}
@@ -250,20 +293,14 @@ export default function InvestorsPage() {
                   </>
                 )}
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Mobile cards */}
-        <div className="md:hidden flex flex-col gap-3">
-          {investors.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-16 text-center rounded-2xl border border-white/[0.06]"
-              style={{ background: "rgba(255,255,255,0.015)" }}>
-              <RiUserLine size={24} className="text-slate-700" />
-              <p className="text-sm text-slate-600">No investors yet.</p>
-            </div>
-          ) : (
-            investors.map(inv => {
+        {filtered.length > 0 && (
+          <div className="md:hidden flex flex-col gap-3">
+            {filtered.map(inv => {
               const status = STATUS_STYLES[inv.status] || STATUS_STYLES.outreach
               return (
                 <div key={inv.id} className="rounded-2xl border border-white/[0.06] p-4"
@@ -296,8 +333,6 @@ export default function InvestorsPage() {
                       {inv.amount ? `$${Number(inv.amount).toLocaleString()}` : "—"}
                     </span>
                   </div>
-
-                  {/* Mobile edit form */}
                   {editingId === inv.id && (
                     <div className="mt-4 pt-4 border-t border-white/[0.06] flex flex-col gap-2.5">
                       <input value={editForm.name || ""} onChange={e => setEditForm({ ...editForm, name: e.target.value })}
@@ -330,9 +365,22 @@ export default function InvestorsPage() {
                   )}
                 </div>
               )
-            })
-          )}
-        </div>
+            })}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {investors.length === 0 && (
+          <div className="flex flex-col items-center gap-3 py-16 text-center rounded-2xl border border-white/[0.06]"
+            style={{ background: "rgba(255,255,255,0.015)" }}>
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-slate-700 border border-white/[0.06]"
+              style={{ background: "rgba(255,255,255,0.02)" }}>
+              <RiUserLine size={22} />
+            </div>
+            <p className="text-sm text-slate-600">No investors yet.</p>
+          </div>
+        )}
+
       </div>
     </div>
   )
