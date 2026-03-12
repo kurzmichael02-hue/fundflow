@@ -323,7 +323,7 @@ export default function Home() {
   { label: "Features", href: "#features" },
   { label: "Pipeline", href: "/pipeline" },
   { label: "Pricing", href: "#pricing" },
-  { label: "About", href: "#" },
+  { label: "About", href: "/about" },
 ].map(l => (
   <a key={l.label} href={l.href} className="nav-link">{l.label}</a>
 ))}
