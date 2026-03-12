@@ -319,9 +319,14 @@ export default function Home() {
         </div>
 
         <div style={{ display: "flex", gap: 36 }}>
-          {["Features", "Pipeline", "Pricing", "About"].map(l => (
-            <a key={l} href="#" className="nav-link">{l}</a>
-          ))}
+          {[
+  { label: "Features", href: "#features" },
+  { label: "Pipeline", href: "/pipeline" },
+  { label: "Pricing", href: "#pricing" },
+  { label: "About", href: "#" },
+].map(l => (
+  <a key={l.label} href={l.href} className="nav-link">{l.label}</a>
+))}
         </div>
 
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
