@@ -4,12 +4,11 @@ import { NextRequest, NextResponse } from 'next/server'
 function getClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 }
 
-// Decode JWT without verifying signature — we just need the user_id
 function getUserIdFromToken(token: string): string | null {
   try {
     const payload = token.split('.')[1]
