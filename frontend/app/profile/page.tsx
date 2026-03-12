@@ -1,7 +1,7 @@
 "use client"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
+import Navbar from "@/components/Navbar"
 import {
   RiUserLine,
   RiMailLine,
@@ -10,10 +10,6 @@ import {
   RiWallet3Line,
   RiCheckLine,
   RiEditLine,
-  RiLogoutBoxLine,
-  RiDashboardLine,
-  RiTeamLine,
-  RiFlowChart,
 } from "react-icons/ri"
 
 interface Profile {
@@ -50,12 +46,7 @@ export default function ProfilePage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setProfile(data)
-      setForm({
-        name: data.name || "",
-        company: data.company || "",
-        bio: data.bio || "",
-        wallet_address: data.wallet_address || "",
-      })
+      setForm({ name: data.name || "", company: data.company || "", bio: data.bio || "", wallet_address: data.wallet_address || "" })
     } catch {
       router.push("/login")
     } finally {
@@ -68,10 +59,7 @@ export default function ProfilePage() {
     try {
       const res = await fetch("/api/profile", {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
         body: JSON.stringify(form),
       })
       const data = await res.json()
@@ -87,11 +75,6 @@ export default function ProfilePage() {
     }
   }
 
-  function handleLogout() {
-    localStorage.removeItem("token")
-    router.push("/")
-  }
-
   if (loading) return (
     <div className="min-h-screen bg-[#04070f] flex items-center justify-center">
       <div className="flex items-center gap-3 text-slate-500 text-sm">
@@ -105,37 +88,10 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-[#04070f] text-slate-200">
-
-      {/* NAV */}
-      <nav className="border-b border-white/[0.06] px-6 md:px-12 h-[60px] flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-[26px] h-[26px] rounded-md flex items-center justify-center text-[10px] font-black text-white"
-            style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>FF</div>
-          <span className="text-[15px] font-bold text-white">FundFlow</span>
-        </div>
-        <div className="flex items-center gap-6">
-          {[
-            { label: "Dashboard", href: "/dashboard", icon: <RiDashboardLine size={13} /> },
-            { label: "Investors", href: "/investors", icon: <RiTeamLine size={13} /> },
-            { label: "Pipeline", href: "/pipeline", icon: <RiFlowChart size={13} /> },
-          ].map(l => (
-            <Link key={l.label} href={l.href}
-              className="flex items-center gap-1.5 text-[13px] text-slate-500 hover:text-slate-200 transition-colors no-underline">
-              {l.icon} {l.label}
-            </Link>
-          ))}
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 text-[12px] text-red-400 border border-red-500/20 px-3 py-1.5 rounded-lg hover:bg-red-500/10 transition-all cursor-pointer"
-            style={{ background: "rgba(239,68,68,0.06)" }}>
-            <RiLogoutBoxLine size={13} /> Logout
-          </button>
-        </div>
-      </nav>
+      <Navbar />
 
       <div className="max-w-2xl mx-auto px-6 md:px-8 py-10">
 
-        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-white tracking-tight">Profile</h1>
@@ -149,7 +105,7 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* Avatar + name */}
+        {/* Avatar */}
         <div className="flex items-center gap-5 mb-8 p-6 rounded-2xl border border-white/[0.06]"
           style={{ background: "rgba(255,255,255,0.02)" }}>
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-bold text-white shrink-0"
@@ -172,31 +128,26 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Profile form */}
+        {/* Form */}
         <div className="rounded-2xl border border-white/[0.06] overflow-hidden"
           style={{ background: "rgba(255,255,255,0.02)" }}>
-
           <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05]">
             <p className="text-sm font-semibold text-white">Account Details</p>
             {!editing ? (
-              <button
-                onClick={() => setEditing(true)}
+              <button onClick={() => setEditing(true)}
                 className="flex items-center gap-1.5 text-[12px] text-slate-400 border border-white/[0.08] px-3 py-1.5 rounded-lg hover:text-slate-200 hover:bg-white/5 transition-all cursor-pointer"
                 style={{ background: "transparent" }}>
                 <RiEditLine size={13} /> Edit
               </button>
             ) : (
               <div className="flex gap-2">
-                <button
-                  onClick={() => { setEditing(false); setForm({ name: profile?.name || "", company: profile?.company || "", bio: profile?.bio || "", wallet_address: profile?.wallet_address || "" }) }}
-                  className="text-[12px] text-slate-500 border border-white/[0.08] px-3 py-1.5 rounded-lg hover:bg-white/5 transition-all cursor-pointer"
+                <button onClick={() => { setEditing(false); setForm({ name: profile?.name || "", company: profile?.company || "", bio: profile?.bio || "", wallet_address: profile?.wallet_address || "" }) }}
+                  className="text-[12px] text-slate-500 border border-white/[0.08] px-3 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer"
                   style={{ background: "transparent" }}>
                   Cancel
                 </button>
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="flex items-center gap-1.5 text-[12px] text-white px-3 py-1.5 rounded-lg disabled:opacity-50 transition-all cursor-pointer border-0"
+                <button onClick={handleSave} disabled={saving}
+                  className="flex items-center gap-1.5 text-[12px] text-white px-3 py-1.5 rounded-lg disabled:opacity-50 cursor-pointer border-0"
                   style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
                   <RiCheckLine size={13} /> {saving ? "Saving..." : "Save"}
                 </button>
@@ -212,62 +163,48 @@ export default function ProfilePage() {
             ].map(f => (
               <div key={f.key}>
                 <label className="flex items-center gap-1.5 text-[11px] text-slate-500 uppercase tracking-widest mb-2">
-                  <span className="text-sky-500/60">{f.icon}</span>
-                  {f.label}
+                  <span className="text-sky-500/60">{f.icon}</span> {f.label}
                 </label>
                 {editing ? (
-                  <input
-                    value={(form as any)[f.key]}
-                    onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                  <input value={(form as any)[f.key]} onChange={e => setForm({ ...form, [f.key]: e.target.value })}
                     placeholder={f.placeholder}
                     className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none focus:border-sky-500/40 transition-colors"
-                    style={{ background: "rgba(255,255,255,0.04)" }}
-                  />
+                    style={{ background: "rgba(255,255,255,0.04)" }} />
                 ) : (
-                  <p className="text-sm text-slate-300 py-2.5 px-3.5 rounded-xl border border-transparent">
+                  <p className="text-sm text-slate-300 py-2.5 px-3.5">
                     {(profile as any)?.[f.key] || <span className="text-slate-600">Not set</span>}
                   </p>
                 )}
               </div>
             ))}
 
-            {/* Bio — textarea */}
             <div>
               <label className="flex items-center gap-1.5 text-[11px] text-slate-500 uppercase tracking-widest mb-2">
-                <span className="text-sky-500/60"><RiFileTextLine size={15} /></span>
-                Bio
+                <span className="text-sky-500/60"><RiFileTextLine size={15} /></span> Bio
               </label>
               {editing ? (
-                <textarea
-                  value={form.bio}
-                  onChange={e => setForm({ ...form, bio: e.target.value })}
-                  placeholder="Tell investors about yourself and your project..."
-                  rows={4}
+                <textarea value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })}
+                  placeholder="Tell investors about yourself and your project..." rows={4}
                   className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none focus:border-sky-500/40 transition-colors resize-none"
-                  style={{ background: "rgba(255,255,255,0.04)" }}
-                />
+                  style={{ background: "rgba(255,255,255,0.04)" }} />
               ) : (
-                <p className="text-sm text-slate-300 py-2.5 px-3.5 rounded-xl border border-transparent leading-relaxed">
+                <p className="text-sm text-slate-300 py-2.5 px-3.5 leading-relaxed">
                   {profile?.bio || <span className="text-slate-600">Not set</span>}
                 </p>
               )}
             </div>
 
-            {/* Email — read only */}
             <div>
               <label className="flex items-center gap-1.5 text-[11px] text-slate-500 uppercase tracking-widest mb-2">
-                <span className="text-sky-500/60"><RiMailLine size={15} /></span>
-                Email
+                <span className="text-sky-500/60"><RiMailLine size={15} /></span> Email
               </label>
               <p className="text-sm text-slate-500 py-2.5 px-3.5 rounded-xl border border-white/[0.04]"
                 style={{ background: "rgba(255,255,255,0.01)" }}>
-                {profile?.email}
-                <span className="ml-2 text-[11px] text-slate-700">(read-only)</span>
+                {profile?.email} <span className="ml-2 text-[11px] text-slate-700">(read-only)</span>
               </p>
             </div>
           </div>
         </div>
-
       </div>
     </div>
   )
