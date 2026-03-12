@@ -18,6 +18,7 @@ export default function PipelinePage() {
   const router = useRouter()
   const [investors, setInvestors] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<Status>("outreach")
 
   useEffect(() => {
     const token = localStorage.getItem("token")
@@ -47,29 +48,43 @@ export default function PipelinePage() {
   return (
     <main className="min-h-screen bg-[#04070f] text-slate-200">
       <Navbar />
-
       <div className="px-4 md:px-12 py-8">
-        <h2 className="text-2xl font-bold text-white tracking-tight mb-6">Pipeline</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight mb-6">Pipeline</h2>
 
-        {/* Desktop: 5 columns grid */}
+        {/* Desktop: 5 columns */}
         <div className="hidden md:grid md:grid-cols-5 gap-4">
           {COLUMNS.map(col => (
             <PipelineColumn key={col.key} col={col} investors={investors} moveInvestor={moveInvestor} />
           ))}
         </div>
 
-        {/* Mobile: horizontal scroll */}
-        <div className="md:hidden -mx-4 px-4">
-          <div className="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory"
-            style={{ scrollbarWidth: "none" }}>
+        {/* Mobile: tabs + single column view */}
+        <div className="md:hidden">
+          {/* Tab bar */}
+          <div className="flex gap-2 mb-4 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
             {COLUMNS.map(col => (
-              <div key={col.key} className="snap-start shrink-0 w-[80vw]">
-                <PipelineColumn col={col} investors={investors} moveInvestor={moveInvestor} />
-              </div>
+              <button
+                key={col.key}
+                onClick={() => setActiveTab(col.key)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-medium whitespace-nowrap cursor-pointer border transition-all"
+                style={{
+                  background: activeTab === col.key ? `${col.color}18` : "rgba(255,255,255,0.02)",
+                  color: activeTab === col.key ? col.color : "#64748b",
+                  border: activeTab === col.key ? `1px solid ${col.color}40` : "1px solid rgba(255,255,255,0.06)",
+                }}>
+                {col.label}
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full"
+                  style={{ background: "rgba(255,255,255,0.08)", color: "#64748b" }}>
+                  {investors.filter(i => i.status === col.key).length}
+                </span>
+              </button>
             ))}
           </div>
-          {/* Scroll hint */}
-          <p className="text-center text-[11px] text-slate-700 mt-2">← swipe to see all stages →</p>
+
+          {/* Active column */}
+          {COLUMNS.filter(col => col.key === activeTab).map(col => (
+            <PipelineColumn key={col.key} col={col} investors={investors} moveInvestor={moveInvestor} />
+          ))}
         </div>
       </div>
     </main>
@@ -84,7 +99,7 @@ function PipelineColumn({ col, investors, moveInvestor }: {
   const colInvestors = investors.filter(i => i.status === col.key)
 
   return (
-    <div className="rounded-2xl p-4 border border-white/[0.05] min-h-[200px]"
+    <div className="rounded-2xl p-4 border border-white/[0.05] min-h-[160px]"
       style={{ background: "rgba(255,255,255,0.02)", borderTop: `2px solid ${col.color}` }}>
       <div className="flex items-center justify-between mb-4">
         <span className="text-[13px] font-semibold" style={{ color: col.color }}>{col.label}</span>
@@ -93,7 +108,6 @@ function PipelineColumn({ col, investors, moveInvestor }: {
           {colInvestors.length}
         </span>
       </div>
-
       <div className="flex flex-col gap-2.5">
         {colInvestors.map(inv => (
           <div key={inv.id} className="rounded-xl p-3 border border-white/[0.06]"
@@ -108,7 +122,7 @@ function PipelineColumn({ col, investors, moveInvestor }: {
           </div>
         ))}
         {colInvestors.length === 0 && (
-          <div className="text-[11px] text-slate-800 text-center py-6">Empty</div>
+          <div className="text-[11px] text-slate-800 text-center py-8">Empty</div>
         )}
       </div>
     </div>
