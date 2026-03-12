@@ -1,502 +1,320 @@
 "use client"
 import { useEffect, useState, useRef } from "react"
 import Link from "next/link"
+import {
+  RiDashboardLine,
+  RiUserLine,
+  RiFlowChart,
+  RiShieldLine,
+  RiGlobalLine,
+  RiTeamLine,
+  RiCheckLine,
+  RiArrowRightLine,
+  RiMenuLine,
+  RiCloseLine,
+  RiPlayCircleLine,
+} from "react-icons/ri"
 
-function useTypingEffect(text: string, speed = 35) {
-  const [displayed, setDisplayed] = useState("")
-  useEffect(() => {
-    setDisplayed("")
-    let i = 0
-    const interval = setInterval(() => {
-      if (i < text.length) { setDisplayed(text.slice(0, i + 1)); i++ }
-      else clearInterval(interval)
-    }, speed)
-    return () => clearInterval(interval)
-  }, [text])
-  return displayed
-}
-
-const INVESTORS = [
-  { name: "Andreessen Horowitz", stage: "Term Sheet", amount: "$12M", color: "#0ea5e9" },
-  { name: "Paradigm", stage: "Meeting", amount: "$8M", color: "#f59e0b" },
-  { name: "Sequoia Capital", stage: "Interested", amount: "$5M", color: "#8b5cf6" },
-  { name: "Coinbase Ventures", stage: "Closed", amount: "$2.4M", color: "#10b981" },
-  { name: "Multicoin Capital", stage: "Outreach", amount: "TBD", color: "#6b7280" },
+const TYPING_PHRASES = [
+  "Investor CRM",
+  "built for Web3.",
+  "Deal Flow OS.",
+  "Fundraising Hub.",
 ]
 
+const INVESTORS = [
+  { name: "Andreessen Horowitz", company: "a16z Crypto", stage: "Term Sheet", amount: "$12M", color: "#0ea5e9" },
+  { name: "Paradigm", company: "Crypto VC", stage: "Meeting", amount: "$8M", color: "#f59e0b" },
+  { name: "Sequoia Capital", company: "Multi-stage", stage: "Interested", amount: "$5M", color: "#8b5cf6" },
+  { name: "Coinbase Ventures", company: "Strategic", stage: "Closed", amount: "$2.4M", color: "#10b981" },
+  { name: "Multicoin Capital", company: "Web3 Fund", stage: "Outreach", amount: "TBD", color: "#6b7280" },
+]
+
+const STAGE_COLORS: Record<string, string> = {
+  "Term Sheet": "#0ea5e9",
+  "Meeting": "#f59e0b",
+  "Interested": "#8b5cf6",
+  "Closed": "#10b981",
+  "Outreach": "#6b7280",
+}
+
 export default function Home() {
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
-  const [time, setTime] = useState("")
-  const [visible, setVisible] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const typed = useTypingEffect("The CRM built for founders who close.")
+  const [visible, setVisible] = useState(false)
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+
+  // Typing animation
+  const [typedText, setTypedText] = useState("")
+  const [phraseIndex, setPhraseIndex] = useState(0)
+  const [charIndex, setCharIndex] = useState(0)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const typingRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     setTimeout(() => setVisible(true), 100)
     setIsLoggedIn(!!localStorage.getItem("token"))
-    const t = setInterval(() => {
-      const now = new Date()
-      setTime(now.toLocaleTimeString("en-US", { hour12: false }))
-    }, 1000)
     const m = (e: MouseEvent) => setMousePos({ x: e.clientX, y: e.clientY })
     window.addEventListener("mousemove", m)
-    return () => { clearInterval(t); window.removeEventListener("mousemove", m) }
+    return () => window.removeEventListener("mousemove", m)
   }, [])
 
+  useEffect(() => {
+    const current = TYPING_PHRASES[phraseIndex]
+    let speed = isDeleting ? 40 : 80
+
+    if (!isDeleting && charIndex === current.length) {
+      typingRef.current = setTimeout(() => setIsDeleting(true), 2000)
+      return
+    }
+    if (isDeleting && charIndex === 0) {
+      setIsDeleting(false)
+      setPhraseIndex((i) => (i + 1) % TYPING_PHRASES.length)
+      return
+    }
+
+    typingRef.current = setTimeout(() => {
+      setTypedText(current.substring(0, isDeleting ? charIndex - 1 : charIndex + 1))
+      setCharIndex((i) => (isDeleting ? i - 1 : i + 1))
+    }, speed)
+
+    return () => { if (typingRef.current) clearTimeout(typingRef.current) }
+  }, [charIndex, isDeleting, phraseIndex])
+
+  const navLinks = [
+    { label: "Pricing", href: "#pricing" },
+    { label: "About", href: "/about" },
+  ]
+
   return (
-    <main style={{ background: "#04070f", minHeight: "100vh", overflowX: "hidden", color: "#e2e8f0" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cal+Sans&family=JetBrains+Mono:wght@400;500&display=swap');
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; }
-        ::selection { background: rgba(14,165,233,0.3); color: #fff; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: rgba(14,165,233,0.3); border-radius: 2px; }
-
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(24px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-12px); }
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.4; }
-        }
-        @keyframes blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
-        }
-        @keyframes scroll-x {
-          from { transform: translateX(0); }
-          to { transform: translateX(-50%); }
-        }
-        @keyframes gradient-shift {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-
-        .animate-fade-up { animation: fadeUp 0.7s ease forwards; }
-        .animate-fade-in { animation: fadeIn 1s ease forwards; }
-        .animate-float { animation: float 4s ease-in-out infinite; }
-
-        .cursor-blink { animation: blink 1s infinite; }
-
-        .glow-text {
-          background: linear-gradient(135deg, #ffffff 0%, #0ea5e9 50%, #38bdf8 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        .glow-border {
-          border: 1px solid rgba(14,165,233,0.2);
-          transition: all 0.25s ease;
-        }
-        .glow-border:hover {
-          border-color: rgba(14,165,233,0.5);
-          box-shadow: 0 0 20px rgba(14,165,233,0.08), inset 0 0 20px rgba(14,165,233,0.03);
-        }
-
-        .btn-primary {
-          background: linear-gradient(135deg, #0ea5e9, #0284c7);
-          color: white;
-          padding: 13px 32px;
-          border-radius: 10px;
-          font-weight: 600;
-          font-size: 14px;
-          border: none;
-          cursor: pointer;
-          transition: all 0.2s;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          text-decoration: none;
-          letter-spacing: -0.01em;
-        }
-        .btn-primary:hover {
-          background: linear-gradient(135deg, #38bdf8, #0ea5e9);
-          transform: translateY(-1px);
-          box-shadow: 0 12px 32px rgba(14,165,233,0.35);
-        }
-
-        .btn-secondary {
-          background: rgba(255,255,255,0.04);
-          color: #94a3b8;
-          padding: 13px 32px;
-          border-radius: 10px;
-          font-size: 14px;
-          border: 1px solid rgba(255,255,255,0.07);
-          cursor: pointer;
-          transition: all 0.2s;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          text-decoration: none;
-          letter-spacing: -0.01em;
-        }
-        .btn-secondary:hover {
-          background: rgba(255,255,255,0.07);
-          color: #e2e8f0;
-          border-color: rgba(255,255,255,0.12);
-        }
-
-        .card {
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(255,255,255,0.06);
-          border-radius: 16px;
-          padding: 28px;
-          transition: all 0.25s ease;
-          position: relative;
-          overflow: hidden;
-        }
-        .card::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(135deg, rgba(14,165,233,0.04), transparent 60%);
-          opacity: 0;
-          transition: opacity 0.25s;
-        }
-        .card:hover::before { opacity: 1; }
-        .card:hover {
-          border-color: rgba(14,165,233,0.2);
-          transform: translateY(-3px);
-          box-shadow: 0 16px 40px rgba(0,0,0,0.3);
-        }
-
-        .badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 5px 14px;
-          border-radius: 100px;
-          font-size: 12px;
-          font-weight: 500;
-          background: rgba(14,165,233,0.08);
-          border: 1px solid rgba(14,165,233,0.2);
-          color: #38bdf8;
-          letter-spacing: 0.01em;
-        }
-
-        .stat-num {
-          font-size: 52px;
-          font-weight: 700;
-          letter-spacing: -0.03em;
-          line-height: 1;
-          background: linear-gradient(135deg, #fff, #0ea5e9);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-
-        .nav-link {
-          color: #64748b;
-          font-size: 14px;
-          text-decoration: none;
-          transition: color 0.2s;
-          font-weight: 500;
-        }
-        .nav-link:hover { color: #e2e8f0; }
-
-        .investor-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 12px 16px;
-          border-radius: 10px;
-          background: rgba(255,255,255,0.02);
-          border: 1px solid rgba(255,255,255,0.05);
-          transition: all 0.2s;
-          margin-bottom: 8px;
-        }
-        .investor-row:hover {
-          background: rgba(14,165,233,0.05);
-          border-color: rgba(14,165,233,0.15);
-        }
-
-        .stage-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          display: inline-block;
-          margin-right: 6px;
-        }
-
-        .noise-overlay {
-          position: fixed;
-          inset: 0;
-          pointer-events: none;
-          z-index: 1;
-          opacity: 0.025;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-        }
-
-        .marquee { animation: scroll-x 25s linear infinite; display: flex; gap: 48px; white-space: nowrap; }
-
-        .feature-icon {
-          width: 42px;
-          height: 42px;
-          border-radius: 10px;
-          background: rgba(14,165,233,0.1);
-          border: 1px solid rgba(14,165,233,0.2);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 18px;
-          margin-bottom: 16px;
-        }
-
-        .pricing-card {
-          background: rgba(255,255,255,0.02);
-          border: 1px solid rgba(255,255,255,0.07);
-          border-radius: 20px;
-          padding: 36px;
-          transition: all 0.25s;
-        }
-        .pricing-card.featured {
-          background: rgba(14,165,233,0.06);
-          border-color: rgba(14,165,233,0.3);
-          box-shadow: 0 0 60px rgba(14,165,233,0.1);
-        }
-        .pricing-card:hover { transform: translateY(-4px); }
-      `}</style>
-
-      <div className="noise-overlay" />
+    <main className="bg-[#04070f] min-h-screen overflow-x-hidden text-slate-200">
+      {/* Noise overlay */}
+      <div
+        className="fixed inset-0 pointer-events-none z-0 opacity-[0.025]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`
+        }}
+      />
 
       {/* Ambient glow */}
-      <div style={{
-        position: "fixed", top: "10%", left: "30%",
-        width: 600, height: 600,
-        background: "radial-gradient(circle, rgba(14,165,233,0.07) 0%, transparent 70%)",
-        pointerEvents: "none", zIndex: 0, filter: "blur(40px)"
-      }} />
-      <div style={{
-        position: "fixed", bottom: "10%", right: "20%",
-        width: 400, height: 400,
-        background: "radial-gradient(circle, rgba(56,189,248,0.05) 0%, transparent 70%)",
-        pointerEvents: "none", zIndex: 0, filter: "blur(60px)"
-      }} />
+      <div className="fixed top-[10%] left-[30%] w-[600px] h-[600px] pointer-events-none z-0 rounded-full blur-[60px]"
+        style={{ background: "radial-gradient(circle, rgba(14,165,233,0.07) 0%, transparent 70%)" }} />
+      <div className="fixed bottom-[10%] right-[10%] w-[400px] h-[400px] pointer-events-none z-0 rounded-full blur-[60px]"
+        style={{ background: "radial-gradient(circle, rgba(56,189,248,0.05) 0%, transparent 70%)" }} />
 
-      {/* Mouse follow glow */}
-      <div style={{
-        position: "fixed",
-        width: 500, height: 500,
-        borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(14,165,233,0.04) 0%, transparent 70%)",
-        pointerEvents: "none", zIndex: 0,
-        left: mousePos.x, top: mousePos.y,
-        transform: "translate(-50%, -50%)",
-        transition: "left 0.15s ease, top 0.15s ease",
-        filter: "blur(20px)"
-      }} />
+      {/* Mouse glow desktop only */}
+      <div
+        className="fixed w-[500px] h-[500px] rounded-full pointer-events-none z-0 blur-[30px] hidden md:block"
+        style={{
+          background: "radial-gradient(circle, rgba(14,165,233,0.05) 0%, transparent 70%)",
+          left: mousePos.x,
+          top: mousePos.y,
+          transform: "translate(-50%, -50%)",
+          transition: "left 0.15s ease, top 0.15s ease",
+        }}
+      />
 
       {/* NAV */}
-      <nav style={{
-        position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-        padding: "0 64px",
-        height: 64,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        background: "rgba(4,7,15,0.8)",
-        backdropFilter: "blur(24px)",
-        borderBottom: "1px solid rgba(255,255,255,0.05)"
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{
-            width: 30, height: 30, borderRadius: 8,
-            background: "linear-gradient(135deg, #0ea5e9, #0284c7)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 11, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px"
-          }}>FF</div>
-          <span style={{ fontSize: 17, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>FundFlow</span>
-        </div>
+      <nav className="fixed top-0 left-0 right-0 z-50 h-16 flex items-center border-b border-white/5"
+        style={{ background: "rgba(4,7,15,0.85)", backdropFilter: "blur(24px)" }}>
+        <div className="w-full max-w-6xl mx-auto px-6 md:px-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5 no-underline">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-black text-white shrink-0"
+              style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>FF</div>
+            <span className="text-[17px] font-bold text-white tracking-tight">FundFlow</span>
+          </Link>
 
-        <div style={{ display: "flex", gap: 36 }}>
-          {[
-  { label: "Features", href: "#features" },
-  { label: "Pipeline", href: "/pipeline" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "About", href: "/about" },
-].map(l => (
-  <a key={l.label} href={l.href} className="nav-link">{l.label}</a>
-))}
-        </div>
+          <div className="hidden md:flex items-center gap-8">
+            {navLinks.map(l => (
+              <a key={l.label} href={l.href}
+                className="text-slate-500 text-sm font-medium hover:text-slate-200 transition-colors no-underline">
+                {l.label}
+              </a>
+            ))}
+          </div>
 
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <div style={{ fontSize: 11, color: "#334155", fontFamily: "JetBrains Mono, monospace", marginRight: 8 }}>{time}</div>
-          {isLoggedIn ? (
-  <Link href="/dashboard" className="btn-primary" style={{ padding: "8px 20px", fontSize: 13 }}>Go to Dashboard →</Link>
-) : (
-  <>
-    <Link href="/login" className="btn-secondary" style={{ padding: "8px 20px", fontSize: 13 }}>Login</Link>
-    <Link href="/register" className="btn-primary" style={{ padding: "8px 20px", fontSize: 13 }}>Get started →</Link>
-  </>
-)}
+          <div className="hidden md:flex items-center gap-2.5">
+            {isLoggedIn ? (
+              <Link href="/dashboard"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white no-underline"
+                style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+                Dashboard <RiArrowRightLine />
+              </Link>
+            ) : (
+              <>
+                <Link href="/login"
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 border border-white/[0.07] hover:text-slate-200 hover:bg-white/5 transition-all no-underline">
+                  Login
+                </Link>
+                <Link href="/register"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white no-underline transition-all hover:-translate-y-px"
+                  style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+                  Get started <RiArrowRightLine />
+                </Link>
+              </>
+            )}
+          </div>
+
+          {/* Hamburger */}
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg border border-white/[0.08] text-slate-400 hover:text-slate-200 transition-colors bg-transparent cursor-pointer"
+          >
+            {menuOpen ? <RiCloseLine size={20} /> : <RiMenuLine size={20} />}
+          </button>
         </div>
       </nav>
 
-      {/* HERO */}
-      <section style={{
-        padding: "160px 64px 100px",
-        position: "relative", zIndex: 2,
-        maxWidth: 1200, margin: "0 auto"
-      }}>
-        <div style={{ maxWidth: 760, opacity: visible ? 1 : 0, transition: "opacity 0.5s ease" }}>
-          <div className="badge" style={{ marginBottom: 28 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#0ea5e9", display: "inline-block", animation: "pulse 2s infinite" }} />
-            Now in beta — free to start
-          </div>
-
-          <h1 style={{
-            fontSize: "clamp(52px, 6vw, 80px)",
-            fontWeight: 700,
-            letterSpacing: "-0.04em",
-            lineHeight: 1.05,
-            color: "#fff",
-            marginBottom: 24,
-            animation: "fadeUp 0.8s ease forwards"
-          }}>
-            The investor CRM<br />
-            <span className="glow-text">built for Web3.</span>
-          </h1>
-
-          <p style={{
-            fontSize: 18,
-            color: "#64748b",
-            lineHeight: 1.7,
-            maxWidth: 520,
-            marginBottom: 40,
-            animation: "fadeUp 0.8s 0.1s ease both"
-          }}>
-            {typed}
-            <span className="cursor-blink" style={{ display: "inline-block", width: 2, height: "1.1em", background: "#0ea5e9", marginLeft: 2, verticalAlign: "text-bottom" }} />
-          </p>
-
-          <div style={{ display: "flex", gap: 12, marginBottom: 64, animation: "fadeUp 0.8s 0.2s ease both" }}>
-            {typeof window !== "undefined" && localStorage.getItem("token") ? (
-  <Link href="/dashboard" className="btn-primary">Go to Dashboard →</Link>
-) : (
-  <>
-    <Link href="/register" className="btn-primary">Start for free →</Link>
-    <Link href="/login" className="btn-secondary">View demo ▶</Link>
-  </>
-)}
-          </div>
-
-          {/* Social proof */}
-          <div style={{
-            display: "flex", alignItems: "center", gap: 20,
-            animation: "fadeUp 0.8s 0.3s ease both"
-          }}>
-            <div style={{ display: "flex" }}>
-              {["#0ea5e9", "#8b5cf6", "#10b981", "#f59e0b"].map((c, i) => (
-                <div key={i} style={{
-                  width: 32, height: 32, borderRadius: "50%",
-                  background: c, border: "2px solid #04070f",
-                  marginLeft: i > 0 ? -10 : 0
-                }} />
-              ))}
-            </div>
-            <div style={{ fontSize: 13, color: "#64748b" }}>
-              <span style={{ color: "#e2e8f0", fontWeight: 600 }}>2,400+ founders</span> track their pipeline on FundFlow
+      {/* Mobile menu */}
+      {menuOpen && (
+        <div className="fixed top-16 left-0 right-0 z-40 border-b border-white/[0.06] md:hidden"
+          style={{ background: "rgba(4,7,15,0.98)", backdropFilter: "blur(24px)" }}>
+          <div className="flex flex-col px-6 py-4 gap-1">
+            {navLinks.map(l => (
+              <a key={l.label} href={l.href}
+                onClick={() => setMenuOpen(false)}
+                className="text-slate-400 text-base font-medium py-3 border-b border-white/[0.04] hover:text-slate-200 transition-colors no-underline">
+                {l.label}
+              </a>
+            ))}
+            <div className="flex gap-2.5 mt-3">
+              <Link href="/login" onClick={() => setMenuOpen(false)}
+                className="flex-1 text-center py-3 rounded-lg text-sm font-medium text-slate-400 border border-white/[0.08] hover:bg-white/5 transition-all no-underline">
+                Login
+              </Link>
+              <Link href="/register" onClick={() => setMenuOpen(false)}
+                className="flex-1 text-center py-3 rounded-lg text-sm font-semibold text-white no-underline"
+                style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+                Get started
+              </Link>
             </div>
           </div>
         </div>
+      )}
 
-        {/* DASHBOARD PREVIEW */}
-        <div style={{
-          marginTop: 80,
-          background: "rgba(255,255,255,0.02)",
-          border: "1px solid rgba(255,255,255,0.07)",
-          borderRadius: 20,
-          overflow: "hidden",
-          animation: "fadeUp 0.8s 0.4s ease both",
-          boxShadow: "0 40px 100px rgba(0,0,0,0.5), 0 0 0 1px rgba(14,165,233,0.05)"
-        }}>
-          {/* Window bar */}
-          <div style={{
-            padding: "14px 20px",
-            background: "rgba(255,255,255,0.02)",
-            borderBottom: "1px solid rgba(255,255,255,0.05)",
-            display: "flex", alignItems: "center", gap: 8
-          }}>
-            {["#ff5f57", "#ffbd2e", "#28ca41"].map((c, i) => (
-              <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: c, opacity: 0.7 }} />
-            ))}
-            <div style={{
-              flex: 1, textAlign: "center",
-              fontSize: 11, color: "#334155",
-              fontFamily: "JetBrains Mono, monospace"
-            }}>app.fundflow.io/dashboard</div>
+      {/* HERO */}
+      <section className="relative z-10 max-w-6xl mx-auto px-6 md:px-16 pt-36 md:pt-40 pb-16 md:pb-24"
+        style={{ opacity: visible ? 1 : 0, transition: "opacity 0.5s ease" }}>
+        <div className="max-w-3xl">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium text-sky-400 border border-sky-500/20 mb-7"
+            style={{ background: "rgba(14,165,233,0.08)" }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+            Now in beta — free to start
           </div>
 
-          {/* Dashboard content */}
-          <div style={{ padding: 28 }}>
-            {/* Stats */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+          <h1 className="text-[clamp(40px,6vw,80px)] font-bold tracking-[-0.04em] leading-[1.05] text-white mb-6">
+            The{" "}
+            <span style={{
+              background: "linear-gradient(135deg, #ffffff 0%, #0ea5e9 50%, #38bdf8 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}>
+              {typedText}
+            </span>
+            <span className="inline-block w-0.5 h-[0.85em] bg-sky-400 ml-1 align-bottom"
+              style={{ animation: "blink 1s step-end infinite" }} />
+          </h1>
+
+          <p className="text-base md:text-lg text-slate-500 leading-relaxed max-w-lg mb-9">
+            FundFlow gives Web3 founders one place to manage every investor relationship — track conversations, move deals through your pipeline, and close your round faster.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3 mb-12">
+            <Link href="/register"
+              className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-[15px] font-semibold text-white no-underline transition-all hover:-translate-y-px hover:shadow-[0_12px_32px_rgba(14,165,233,0.35)]"
+              style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+              Start for free <RiArrowRightLine size={16} />
+            </Link>
+            <Link href="/login"
+              className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-[15px] font-medium text-slate-400 border border-white/[0.08] hover:bg-white/5 hover:text-slate-200 transition-all no-underline">
+              <RiPlayCircleLine size={16} /> View demo
+            </Link>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex">
+              {["#0ea5e9", "#8b5cf6", "#10b981", "#f59e0b"].map((c, i) => (
+                <div key={i} className="w-8 h-8 rounded-full border-2 border-[#04070f]"
+                  style={{ background: c, marginLeft: i > 0 ? -10 : 0 }} />
+              ))}
+            </div>
+            <p className="text-sm text-slate-500">
+              <span className="text-slate-200 font-semibold">2,400+ founders</span> track their pipeline on FundFlow
+            </p>
+          </div>
+        </div>
+
+        {/* Dashboard mockup */}
+        <div className="mt-16 rounded-2xl overflow-hidden border border-white/[0.07] shadow-[0_40px_100px_rgba(0,0,0,0.5)]"
+          style={{ background: "rgba(255,255,255,0.02)" }}>
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5"
+            style={{ background: "rgba(255,255,255,0.02)" }}>
+            {["#ff5f57", "#ffbd2e", "#28ca41"].map((c, i) => (
+              <div key={i} className="w-2.5 h-2.5 rounded-full opacity-70" style={{ background: c }} />
+            ))}
+            <p className="flex-1 text-center text-[11px] text-slate-600 font-mono">app.fundflow.io/dashboard</p>
+          </div>
+
+          <div className="p-4 md:p-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
               {[
-                { label: "Total Investors", val: "47", icon: "👥", delta: "+12 this week" },
-                { label: "Active Leads", val: "23", icon: "⚡", delta: "+5 today" },
-                { label: "Meetings", val: "8", icon: "📅", delta: "3 this week" },
-                { label: "Deals Closed", val: "4", icon: "✅", delta: "$22.4M raised" },
+                { label: "Total Investors", val: "47", delta: "+12 this week", icon: <RiUserLine size={13} /> },
+                { label: "Active Leads", val: "23", delta: "+5 today", icon: <RiDashboardLine size={13} /> },
+                { label: "Meetings", val: "8", delta: "3 this week", icon: <RiTeamLine size={13} /> },
+                { label: "Deals Closed", val: "4", delta: "$22.4M raised", icon: <RiCheckLine size={13} /> },
               ].map(s => (
-                <div key={s.label} style={{
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: 12, padding: "16px 20px"
-                }}>
-                  <div style={{ fontSize: 10, color: "#475569", marginBottom: 8, letterSpacing: "0.05em", textTransform: "uppercase" }}>{s.label}</div>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em", marginBottom: 4 }}>{s.val}</div>
-                  <div style={{ fontSize: 11, color: "#0ea5e9" }}>{s.delta}</div>
+                <div key={s.label} className="rounded-xl p-3.5 border border-white/[0.06]"
+                  style={{ background: "rgba(255,255,255,0.03)" }}>
+                  <div className="flex items-center gap-1.5 text-[10px] text-slate-600 uppercase tracking-widest mb-2">
+                    <span className="text-sky-500/60">{s.icon}</span>
+                    {s.label}
+                  </div>
+                  <div className="text-2xl font-bold text-white tracking-tight mb-1">{s.val}</div>
+                  <div className="text-[11px] text-sky-400">{s.delta}</div>
                 </div>
               ))}
             </div>
 
-            {/* Investor list */}
-            <div style={{ fontSize: 12, color: "#475569", marginBottom: 12, letterSpacing: "0.05em", textTransform: "uppercase" }}>Recent Investors</div>
-            {INVESTORS.map(inv => (
-              <div key={inv.name} className="investor-row">
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{
-                    width: 32, height: 32, borderRadius: 8,
-                    background: `${inv.color}20`,
-                    border: `1px solid ${inv.color}40`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 12, fontWeight: 700, color: inv.color
-                  }}>{inv.name[0]}</div>
-                  <div>
-                    <div style={{ fontSize: 13, color: "#e2e8f0", fontWeight: 500 }}>{inv.name}</div>
-                    <div style={{ fontSize: 11, color: "#475569" }}>{inv.amount}</div>
+            <p className="text-[11px] text-slate-600 uppercase tracking-widest mb-3">Recent Investors</p>
+            <div className="flex flex-col gap-2">
+              {INVESTORS.map(inv => (
+                <div key={inv.name}
+                  className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-white/5 transition-all hover:border-sky-500/15"
+                  style={{ background: "rgba(255,255,255,0.02)" }}>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
+                      style={{ background: `${inv.color}20`, border: `1px solid ${inv.color}40`, color: inv.color }}>
+                      {inv.name[0]}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[13px] text-slate-200 font-medium truncate">{inv.name}</p>
+                      <p className="text-[11px] text-slate-600">{inv.amount}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium shrink-0"
+                    style={{
+                      background: `${STAGE_COLORS[inv.stage]}15`,
+                      color: STAGE_COLORS[inv.stage],
+                      border: `1px solid ${STAGE_COLORS[inv.stage]}30`
+                    }}>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: STAGE_COLORS[inv.stage] }} />
+                    {inv.stage}
                   </div>
                 </div>
-                <div style={{
-                  fontSize: 11, padding: "3px 10px", borderRadius: 100,
-                  background: `${inv.color}15`, color: inv.color,
-                  border: `1px solid ${inv.color}30`, fontWeight: 500
-                }}>
-                  <span className="stage-dot" style={{ background: inv.color }} />
-                  {inv.stage}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* MARQUEE */}
-      <div style={{ overflow: "hidden", padding: "32px 0", borderTop: "1px solid rgba(255,255,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.04)", position: "relative", zIndex: 2 }}>
-        <div className="marquee">
+      <div className="overflow-hidden py-6 border-t border-b border-white/[0.04] relative z-10">
+        <div className="flex gap-12 whitespace-nowrap" style={{ animation: "scroll-x 25s linear infinite" }}>
           {[...Array(2)].map((_, ri) =>
             ["Investor CRM", "Pipeline Tracking", "Deal Flow Analytics", "Web3 Native", "Secure & Private", "Real-time Dashboard", "Investor Network"].map((item, i) => (
-              <span key={`${ri}-${i}`} style={{ fontSize: 13, color: "#1e293b", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 48 }}>
-                {item} <span style={{ color: "#0ea5e9", fontSize: 8 }}>●</span>
+              <span key={`${ri}-${i}`} className="text-[12px] text-slate-800 font-semibold tracking-widest uppercase flex items-center gap-12">
+                {item} <span className="text-sky-500 text-[7px]">●</span>
               </span>
             ))
           )}
@@ -504,139 +322,196 @@ export default function Home() {
       </div>
 
       {/* FEATURES */}
-      <section style={{ padding: "100px 64px", position: "relative", zIndex: 2 }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 72 }}>
-            <div className="badge" style={{ marginBottom: 20 }}>Features</div>
-            <h2 style={{ fontSize: 48, fontWeight: 700, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-              Everything you need to<br />
-              <span className="glow-text">close your round faster</span>
-            </h2>
+      <section id="features" className="relative z-10 max-w-6xl mx-auto px-6 md:px-16 py-20 md:py-24">
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium text-sky-400 border border-sky-500/20 mb-4"
+            style={{ background: "rgba(14,165,233,0.08)" }}>
+            Features
           </div>
+          <h2 className="text-[clamp(28px,4vw,44px)] font-bold text-white tracking-tight leading-tight">
+            Everything you need to{" "}
+            <span style={{
+              background: "linear-gradient(135deg, #ffffff 0%, #0ea5e9 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}>close your round faster</span>
+          </h2>
+        </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-            {[
-              { icon: "🎯", title: "Investor CRM", desc: "Track every investor, their status, email history, notes, and next steps in one clean view." },
-              { icon: "📊", title: "Kanban Pipeline", desc: "Visualize your entire deal flow. Drag investors from Outreach to Closed in seconds." },
-              { icon: "⚡", title: "Live Dashboard", desc: "Real-time metrics on your fundraise. Know exactly where your round stands at all times." },
-              { icon: "🌐", title: "Web3 Native", desc: "Built specifically for crypto and Web3 founders. We understand token rounds, SAFTs, and more." },
-              { icon: "🤝", title: "Investor Network", desc: "Discover investors actively deploying capital into Web3 projects like yours." },
-              { icon: "🔒", title: "Enterprise Security", desc: "Your deal flow is your competitive advantage. Bank-grade encryption keeps it safe." },
-            ].map(f => (
-              <div key={f.title} className="card">
-                <div className="feature-icon">{f.icon}</div>
-                <h3 style={{ fontSize: 16, fontWeight: 600, color: "#fff", marginBottom: 10, letterSpacing: "-0.01em" }}>{f.title}</h3>
-                <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.65 }}>{f.desc}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[
+            { icon: <RiUserLine size={18} />, title: "Investor CRM", desc: "Track every investor, their status, notes, and next steps in one clean view." },
+            { icon: <RiFlowChart size={18} />, title: "Kanban Pipeline", desc: "Visualize your entire deal flow. Move investors from Outreach to Closed in one click." },
+            { icon: <RiDashboardLine size={18} />, title: "Live Dashboard", desc: "Real-time metrics on your fundraise. Know exactly where your round stands." },
+            { icon: <RiGlobalLine size={18} />, title: "Web3 Native", desc: "Built for crypto founders. Token rounds, SAFTs, and wallet login — all supported." },
+            { icon: <RiTeamLine size={18} />, title: "Investor Network", desc: "Discover investors actively deploying capital into Web3 projects like yours." },
+            { icon: <RiShieldLine size={18} />, title: "Enterprise Security", desc: "Your deal flow is your moat. Bank-grade encryption keeps it locked down." },
+          ].map(f => (
+            <div key={f.title}
+              className="group rounded-2xl p-6 border border-white/[0.06] transition-all duration-300 hover:border-sky-500/20 hover:-translate-y-1 cursor-default"
+              style={{ background: "rgba(255,255,255,0.02)" }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sky-400 border border-sky-500/20 mb-4 group-hover:border-sky-500/40 transition-colors"
+                style={{ background: "rgba(14,165,233,0.08)" }}>
+                {f.icon}
               </div>
-            ))}
-          </div>
+              <h3 className="text-[15px] font-semibold text-white mb-2 tracking-tight">{f.title}</h3>
+              <p className="text-[13px] text-slate-500 leading-relaxed">{f.desc}</p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* PRICING */}
-      <section style={{ padding: "100px 64px", borderTop: "1px solid rgba(255,255,255,0.04)", position: "relative", zIndex: 2 }}>
-        <div style={{ maxWidth: 820, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 64 }}>
-            <div className="badge" style={{ marginBottom: 20 }}>Pricing</div>
-            <h2 style={{ fontSize: 48, fontWeight: 700, color: "#fff", letterSpacing: "-0.03em" }}>
-              Simple, <span className="glow-text">transparent pricing</span>
-            </h2>
-            <p style={{ color: "#475569", marginTop: 12, fontSize: 16 }}>Start free. Upgrade when you're ready to scale.</p>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-            {[
-              {
-                name: "Starter", price: "Free", period: "forever",
-                desc: "Perfect for early-stage fundraising",
-                features: ["Up to 25 investors", "Full pipeline view", "Basic analytics", "Email support"],
-                cta: "Get started free", featured: false
-              },
-              {
-                name: "Pro", price: "$99", period: "/month",
-                desc: "For founders closing serious rounds",
-                features: ["Unlimited investors", "Advanced analytics", "Investor network access", "API access", "Priority support"],
-                cta: "Start 14-day trial", featured: true
-              }
-            ].map(plan => (
-              <div key={plan.name} className={`pricing-card ${plan.featured ? "featured" : ""}`}>
-                {plan.featured && (
-                  <div style={{ fontSize: 11, color: "#0ea5e9", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12, fontWeight: 600 }}>Most Popular</div>
-                )}
-                <div style={{ fontSize: 16, fontWeight: 600, color: "#fff", marginBottom: 6 }}>{plan.name}</div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 8 }}>
-                  <span style={{ fontSize: 44, fontWeight: 700, color: "#fff", letterSpacing: "-0.03em" }}>{plan.price}</span>
-                  <span style={{ fontSize: 14, color: "#475569" }}>{plan.period}</span>
-                </div>
-                <p style={{ fontSize: 13, color: "#475569", marginBottom: 28 }}>{plan.desc}</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
-                  {plan.features.map(f => (
-                    <div key={f} style={{ display: "flex", gap: 10, fontSize: 14, color: "#94a3b8", alignItems: "center" }}>
-                      <span style={{ color: "#0ea5e9", fontSize: 16, lineHeight: 1 }}>✓</span> {f}
-                    </div>
-                  ))}
-                </div>
-                <Link href="/register" className={plan.featured ? "btn-primary" : "btn-secondary"} style={{ display: "block", textAlign: "center", padding: "13px 24px" }}>
-                  {plan.cta}
-                </Link>
+      {/* STATS BAR */}
+      <div className="border-t border-b border-white/5 relative z-10" style={{ background: "rgba(255,255,255,0.01)" }}>
+        <div className="max-w-6xl mx-auto px-6 md:px-16 py-12 grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0">
+          {[
+            { num: "2,400+", label: "Founders on platform" },
+            { num: "$840M", label: "Funding tracked" },
+            { num: "94%", label: "Faster deal flow" },
+            { num: "99.9%", label: "Uptime SLA" },
+          ].map((s, i) => (
+            <div key={i} className="text-center md:border-r border-white/5 md:last:border-r-0 px-4">
+              <div className="text-[36px] md:text-[44px] font-bold tracking-tight leading-none mb-2"
+                style={{
+                  background: "linear-gradient(135deg, #fff, #0ea5e9)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}>
+                {s.num}
               </div>
-            ))}
+              <p className="text-sm text-slate-500">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* PRICING */}
+      <section id="pricing" className="relative z-10 max-w-4xl mx-auto px-6 md:px-16 py-20 md:py-24">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium text-sky-400 border border-sky-500/20 mb-4"
+            style={{ background: "rgba(14,165,233,0.08)" }}>
+            Pricing
           </div>
+          <h2 className="text-[clamp(28px,4vw,44px)] font-bold text-white tracking-tight">
+            Simple,{" "}
+            <span style={{
+              background: "linear-gradient(135deg, #ffffff 0%, #0ea5e9 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}>transparent pricing</span>
+          </h2>
+          <p className="text-slate-500 mt-3 text-[15px]">Start free. Upgrade when you&apos;re ready to scale.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[
+            {
+              name: "Starter", price: "Free", period: "forever",
+              desc: "Perfect for early-stage fundraising",
+              features: ["Up to 25 investors", "Full pipeline view", "Basic analytics", "Email support"],
+              cta: "Get started free", featured: false
+            },
+            {
+              name: "Pro", price: "$99", period: "/month",
+              desc: "For founders closing serious rounds",
+              features: ["Unlimited investors", "Advanced analytics", "Investor network access", "API access", "Priority support"],
+              cta: "Start 14-day trial", featured: true
+            }
+          ].map(plan => (
+            <div key={plan.name}
+              className={`rounded-2xl p-8 border transition-all hover:-translate-y-1 ${plan.featured
+                ? "border-sky-500/30 shadow-[0_0_60px_rgba(14,165,233,0.1)]"
+                : "border-white/[0.07]"
+                }`}
+              style={{ background: plan.featured ? "rgba(14,165,233,0.06)" : "rgba(255,255,255,0.02)" }}>
+              {plan.featured && (
+                <p className="text-[11px] text-sky-400 font-semibold tracking-widest uppercase mb-3">Most Popular</p>
+              )}
+              <p className="text-base font-semibold text-white mb-2">{plan.name}</p>
+              <div className="flex items-baseline gap-1 mb-2">
+                <span className="text-[42px] font-bold text-white tracking-tight">{plan.price}</span>
+                <span className="text-sm text-slate-500">{plan.period}</span>
+              </div>
+              <p className="text-sm text-slate-500 mb-6">{plan.desc}</p>
+              <div className="flex flex-col gap-3 mb-7">
+                {plan.features.map(f => (
+                  <div key={f} className="flex items-center gap-2.5 text-sm text-slate-400">
+                    <RiCheckLine size={15} className="text-sky-400 shrink-0" /> {f}
+                  </div>
+                ))}
+              </div>
+              <Link href="/register"
+                className={`block text-center py-3 px-6 rounded-xl text-sm font-semibold no-underline transition-all ${plan.featured
+                  ? "text-white hover:shadow-[0_12px_32px_rgba(14,165,233,0.35)] hover:-translate-y-px"
+                  : "text-slate-400 border border-white/[0.08] hover:bg-white/5 hover:text-slate-200"
+                  }`}
+                style={plan.featured ? { background: "linear-gradient(135deg, #0ea5e9, #0284c7)" } : {}}>
+                {plan.cta}
+              </Link>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* CTA */}
-      <section style={{ padding: "100px 64px 120px", position: "relative", zIndex: 2 }}>
-        <div style={{
-          maxWidth: 800, margin: "0 auto", textAlign: "center",
-          padding: "72px 48px", borderRadius: 24,
-          background: "rgba(14,165,233,0.05)",
-          border: "1px solid rgba(14,165,233,0.15)",
-          position: "relative", overflow: "hidden"
-        }}>
-          <div style={{
-            position: "absolute", top: "50%", left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: 600, height: 300,
-            background: "radial-gradient(ellipse, rgba(14,165,233,0.1), transparent 70%)",
-            pointerEvents: "none"
-          }} />
-          <div className="badge" style={{ marginBottom: 24, position: "relative" }}>Ready to close?</div>
-          <h2 style={{ fontSize: 52, fontWeight: 700, color: "#fff", letterSpacing: "-0.03em", marginBottom: 16, position: "relative" }}>
-            Start tracking your<br />
-            <span className="glow-text">investors today.</span>
+      <section className="relative z-10 max-w-4xl mx-auto px-6 md:px-16 pb-24">
+        <div className="text-center rounded-2xl p-12 md:p-16 border border-sky-500/15 relative overflow-hidden"
+          style={{ background: "rgba(14,165,233,0.05)" }}>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[250px] pointer-events-none rounded-full blur-[60px]"
+            style={{ background: "radial-gradient(ellipse, rgba(14,165,233,0.1), transparent 70%)" }} />
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium text-sky-400 border border-sky-500/20 mb-6 relative"
+            style={{ background: "rgba(14,165,233,0.08)" }}>
+            Ready to close?
+          </div>
+          <h2 className="text-[clamp(28px,4vw,48px)] font-bold text-white tracking-tight leading-tight mb-4 relative">
+            Start tracking your{" "}
+            <span style={{
+              background: "linear-gradient(135deg, #ffffff 0%, #0ea5e9 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}>investors today.</span>
           </h2>
-          <p style={{ color: "#475569", marginBottom: 40, fontSize: 16, position: "relative" }}>
+          <p className="text-slate-500 mb-8 text-[15px] relative">
             Join 2,400+ Web3 founders who closed their round with FundFlow.
           </p>
-          <Link href="/register" className="btn-primary" style={{ fontSize: 15, padding: "16px 48px", position: "relative" }}>
-            Start for free — no credit card →
+          <Link href="/register"
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-[15px] font-semibold text-white no-underline transition-all hover:-translate-y-px hover:shadow-[0_12px_32px_rgba(14,165,233,0.35)] relative"
+            style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+            Start for free — no credit card <RiArrowRightLine size={16} />
           </Link>
         </div>
       </section>
 
       {/* FOOTER */}
-      <footer style={{
-        padding: "28px 64px",
-        borderTop: "1px solid rgba(255,255,255,0.04)",
-        display: "flex", justifyContent: "space-between", alignItems: "center",
-        position: "relative", zIndex: 2
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{
-            width: 24, height: 24, borderRadius: 6,
-            background: "linear-gradient(135deg, #0ea5e9, #0284c7)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 9, fontWeight: 800, color: "#fff"
-          }}>FF</div>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#1e293b" }}>FundFlow</span>
-        </div>
-        <span style={{ fontSize: 12, color: "#1e293b" }}>© 2026 FundFlow. Built for Web3 founders.</span>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#0ea5e9" }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#0ea5e9", display: "inline-block", animation: "pulse 2s infinite" }} />
-          All systems operational
+      <footer className="border-t border-white/[0.04] relative z-10">
+        <div className="max-w-6xl mx-auto px-6 md:px-16 py-6 flex flex-col md:flex-row items-center justify-between gap-3 text-center md:text-left">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-md flex items-center justify-center text-[9px] font-black text-white"
+              style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>FF</div>
+            <span className="text-sm font-semibold text-slate-700">FundFlow</span>
+          </div>
+          <span className="text-xs text-slate-700">© 2026 FundFlow. Built for Web3 founders.</span>
+          <div className="flex items-center gap-1.5 text-xs text-sky-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
+            All systems operational
+          </div>
         </div>
       </footer>
+
+      <style>{`
+        @keyframes scroll-x {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+      `}</style>
     </main>
   )
 }
