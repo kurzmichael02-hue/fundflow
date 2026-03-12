@@ -38,6 +38,12 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  updateInvestor: (id: string, data: object) =>
+    apiRequest(`/investors?id=${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
   deleteInvestor: (id: string) =>
     apiRequest(`/investors?id=${id}`, { method: 'DELETE' }),
 }
