@@ -32,10 +32,6 @@ function SkeletonCard() {
         <div className="w-28 h-5 rounded animate-pulse" style={{ background: "rgba(255,255,255,0.05)" }} />
         <div className="w-full h-3 rounded animate-pulse" style={{ background: "rgba(255,255,255,0.04)" }} />
         <div className="w-3/4 h-3 rounded animate-pulse" style={{ background: "rgba(255,255,255,0.04)" }} />
-        <div className="flex gap-2 mt-1">
-          <div className="w-12 h-5 rounded-full animate-pulse" style={{ background: "rgba(255,255,255,0.04)" }} />
-          <div className="w-16 h-5 rounded-full animate-pulse" style={{ background: "rgba(255,255,255,0.04)" }} />
-        </div>
         <div className="w-full h-1.5 rounded-full animate-pulse mt-2" style={{ background: "rgba(255,255,255,0.05)" }} />
         <div className="w-full h-9 rounded-xl animate-pulse mt-1" style={{ background: "rgba(255,255,255,0.04)" }} />
       </div>
@@ -50,11 +46,21 @@ export default function InvestorDiscoverPage() {
   const [activeStage, setActiveStage] = useState("all")
   const [search, setSearch] = useState("")
   const [expressed, setExpressed] = useState<Set<string>>(new Set())
+  const [submitting, setSubmitting] = useState<string | null>(null)
   const { toasts, addToast, removeToast } = useToast()
+
+  // Try to get investor info from token
+  const [investorEmail, setInvestorEmail] = useState("")
+  const [investorName, setInvestorName] = useState("")
 
   useEffect(() => {
     const token = localStorage.getItem("token")
     if (!token) { router.push("/investor"); return }
+    // Decode token to get email
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      setInvestorEmail(payload.email || "")
+    } catch {}
     fetchProjects()
   }, [])
 
@@ -70,6 +76,29 @@ export default function InvestorDiscoverPage() {
     }
   }
 
+  async function handleExpressInterest(project: any) {
+    if (expressed.has(project.id) || submitting) return
+    setSubmitting(project.id)
+    try {
+      const res = await fetch("/api/interests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_id: project.id,
+          investor_email: investorEmail || "anonymous",
+          investor_name: investorName || investorEmail || "Investor",
+        }),
+      })
+      if (!res.ok) throw new Error("Failed")
+      setExpressed(prev => new Set([...prev, project.id]))
+      addToast(`Interest expressed in ${project.name}! The founder will be notified.`)
+    } catch {
+      addToast("Something went wrong. Try again.", "error")
+    } finally {
+      setSubmitting(null)
+    }
+  }
+
   const filtered = useMemo(() => {
     return projects.filter(p => {
       const matchStage = activeStage === "all" || p.stage === activeStage
@@ -80,12 +109,6 @@ export default function InvestorDiscoverPage() {
       return matchStage && matchSearch
     })
   }, [projects, activeStage, search])
-
-  function handleExpressInterest(project: any) {
-    if (expressed.has(project.id)) return
-    setExpressed(prev => new Set([...prev, project.id]))
-    addToast(`Interest expressed in ${project.name}!`)
-  }
 
   return (
     <div className="min-h-screen bg-[#04070f] text-slate-200">
@@ -144,6 +167,7 @@ export default function InvestorDiscoverPage() {
               const pct = project.goal ? Math.min(100, Math.round((project.raised / project.goal) * 100)) : 0
               const stageColor = STAGE_COLORS[project.stage] || "#94a3b8"
               const isExpressed = expressed.has(project.id)
+              const isSubmitting = submitting === project.id
               const founderName = project.profiles?.name || project.profiles?.company || "Founder"
 
               return (
@@ -209,15 +233,17 @@ export default function InvestorDiscoverPage() {
                       </div>
                     )}
 
-                    <button onClick={() => handleExpressInterest(project)} disabled={isExpressed}
+                    <button onClick={() => handleExpressInterest(project)}
+                      disabled={isExpressed || !!isSubmitting}
                       className="w-full py-2.5 rounded-xl text-[12px] font-semibold border transition-all"
                       style={{
                         background: isExpressed ? "rgba(16,185,129,0.08)" : `${stageColor}14`,
                         color: isExpressed ? "#10b981" : stageColor,
                         borderColor: isExpressed ? "rgba(16,185,129,0.2)" : `${stageColor}30`,
-                        cursor: isExpressed ? "default" : "pointer",
+                        cursor: isExpressed || isSubmitting ? "default" : "pointer",
+                        opacity: isSubmitting ? 0.6 : 1,
                       }}>
-                      {isExpressed ? "✓ Interest Expressed" : "Express Interest →"}
+                      {isSubmitting ? "Sending..." : isExpressed ? "✓ Interest Expressed" : "Express Interest →"}
                     </button>
                   </div>
                 </div>
