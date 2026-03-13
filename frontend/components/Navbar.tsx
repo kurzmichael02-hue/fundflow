@@ -33,7 +33,7 @@ export default function Navbar() {
       <div className="px-4 md:px-12 mx-auto max-w-6xl flex items-center justify-between h-14">
 
         {/* Logo */}
-        <button onClick={() => router.push("/dashboard")}
+        <button onClick={() => router.push("/")}
           className="flex items-center gap-2.5 cursor-pointer bg-transparent border-0">
           <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white"
             style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>FF</div>
@@ -44,7 +44,7 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-1">
 
           {/* Dashboard */}
-          <button onClick={() => router.push("/dashboard")}
+          <button onClick={() => router.push("/")}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium cursor-pointer border-0 transition-all"
             style={{ background: pathname === "/dashboard" ? "rgba(14,165,233,0.1)" : "transparent", color: pathname === "/dashboard" ? "#38bdf8" : "#64748b" }}>
             <RiDashboardLine size={15} /> Dashboard
