@@ -3,6 +3,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { api } from "@/lib/api"
 import Navbar from "@/components/Navbar"
+import { ToastContainer, useToast } from "@/components/Toast"
 
 type Status = "outreach" | "interested" | "meeting" | "term_sheet" | "closed"
 
@@ -19,6 +20,7 @@ export default function PipelinePage() {
   const [investors, setInvestors] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<Status>("outreach")
+  const { toasts, addToast, removeToast } = useToast()
 
   useEffect(() => {
     const token = localStorage.getItem("token")
@@ -30,6 +32,7 @@ export default function PipelinePage() {
     setInvestors(prev => prev.map(i => i.id === id ? { ...i, status: newStatus } : i))
     try {
       await api.updateInvestor(id, { status: newStatus })
+      addToast(`Moved to ${COLUMNS.find(c => c.key === newStatus)?.label}`)
     } catch (err: any) {
       alert(err.message)
       api.getInvestors().then(data => setInvestors(data))
@@ -47,6 +50,7 @@ export default function PipelinePage() {
 
   return (
     <main className="min-h-screen bg-[#04070f] text-slate-200">
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
       <Navbar />
       <div className="px-4 md:px-12 py-8">
         <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight mb-6">Pipeline</h2>
@@ -60,7 +64,6 @@ export default function PipelinePage() {
 
         {/* Mobile: tabs + single column view */}
         <div className="md:hidden">
-          {/* Tab bar */}
           <div className="flex gap-2 mb-4 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
             {COLUMNS.map(col => (
               <button
@@ -81,7 +84,6 @@ export default function PipelinePage() {
             ))}
           </div>
 
-          {/* Active column */}
           {COLUMNS.filter(col => col.key === activeTab).map(col => (
             <PipelineColumn key={col.key} col={col} investors={investors} moveInvestor={moveInvestor} />
           ))}

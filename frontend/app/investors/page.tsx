@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { api } from "@/lib/api"
 import Navbar from "@/components/Navbar"
+import { ToastContainer, useToast } from "@/components/Toast"
 import {
   RiAddLine,
   RiEditLine,
@@ -40,12 +41,9 @@ const EMPTY_FORM = { name: "", email: "", company: "", status: "outreach", amoun
 function exportToCSV(investors: Investor[]) {
   const headers = ["Name", "Email", "Company", "Status", "Amount", "Notes"]
   const rows = investors.map(inv => [
-    inv.name || "",
-    inv.email || "",
-    inv.company || "",
+    inv.name || "", inv.email || "", inv.company || "",
     STATUS_STYLES[inv.status]?.label || inv.status,
-    inv.amount ? String(inv.amount) : "",
-    inv.notes || "",
+    inv.amount ? String(inv.amount) : "", inv.notes || "",
   ])
   const csv = [headers, ...rows].map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(",")).join("\n")
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
@@ -66,6 +64,7 @@ export default function InvestorsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<Partial<Investor>>({})
   const [saving, setSaving] = useState(false)
+  const { toasts, addToast, removeToast } = useToast()
   const [search, setSearch] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
 
@@ -93,9 +92,10 @@ export default function InvestorsPage() {
       await api.addInvestor({ ...form, amount: Number(form.amount) })
       setForm(EMPTY_FORM)
       setShowForm(false)
+      addToast("Investor added!")
       fetchInvestors()
     } catch (err: any) {
-      alert(err.message)
+      addToast(err.message, "error")
     } finally {
       setSaving(false)
     }
@@ -105,9 +105,10 @@ export default function InvestorsPage() {
     if (!confirm("Delete this investor?")) return
     try {
       await api.deleteInvestor(id)
+      addToast("Investor deleted", "info")
       fetchInvestors()
     } catch (err: any) {
-      alert(err.message)
+      addToast(err.message, "error")
     }
   }
 
@@ -121,9 +122,10 @@ export default function InvestorsPage() {
     try {
       await api.updateInvestor(id, { ...editForm, amount: Number(editForm.amount) })
       setEditingId(null)
+      addToast("Investor updated!")
       fetchInvestors()
     } catch (err: any) {
-      alert(err.message)
+      addToast(err.message, "error")
     } finally {
       setSaving(false)
     }
@@ -151,10 +153,10 @@ export default function InvestorsPage() {
 
   return (
     <div className="min-h-screen bg-[#04070f] text-slate-200">
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
       <Navbar />
       <div className="px-4 md:px-12 py-8 max-w-5xl mx-auto">
 
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">Investors</h1>
@@ -162,15 +164,13 @@ export default function InvestorsPage() {
           </div>
           <div className="flex items-center gap-2">
             {investors.length > 0 && (
-              <button
-                onClick={() => exportToCSV(filtered.length > 0 ? filtered : investors)}
+              <button onClick={() => exportToCSV(filtered.length > 0 ? filtered : investors)}
                 className="flex items-center gap-1.5 px-3 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-medium text-slate-400 border border-white/[0.08] cursor-pointer transition-all hover:text-slate-200"
                 style={{ background: "rgba(255,255,255,0.03)" }}>
                 <RiDownloadLine size={14} /> Export
               </button>
             )}
-            <button
-              onClick={() => { setShowForm(!showForm); setEditingId(null) }}
+            <button onClick={() => { setShowForm(!showForm); setEditingId(null) }}
               className="flex items-center gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold text-white cursor-pointer border-0"
               style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
               <RiAddLine size={15} /> Add Investor
@@ -178,23 +178,17 @@ export default function InvestorsPage() {
           </div>
         </div>
 
-        {/* Search + Filter */}
         <div className="flex flex-col sm:flex-row gap-2.5 mb-5">
           <div className="relative flex-1">
             <RiSearchLine size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600" />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
+            <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Search by name, company or email..."
               className="w-full rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-300 border border-white/[0.07] outline-none"
-              style={{ background: "rgba(255,255,255,0.03)" }}
-            />
+              style={{ background: "rgba(255,255,255,0.03)" }} />
           </div>
           <div className="relative">
             <RiFilterLine size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600" />
-            <select
-              value={filterStatus}
-              onChange={e => setFilterStatus(e.target.value)}
+            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
               className="rounded-xl pl-9 pr-4 py-2.5 text-sm border border-white/[0.07] outline-none cursor-pointer"
               style={{ background: "rgba(255,255,255,0.03)", color: filterStatus === "all" ? "#64748b" : STATUS_STYLES[filterStatus]?.color }}>
               <option value="all">All statuses</option>
@@ -203,7 +197,6 @@ export default function InvestorsPage() {
           </div>
         </div>
 
-        {/* Add form */}
         {showForm && (
           <div className="rounded-2xl border border-white/[0.08] p-4 md:p-6 mb-5"
             style={{ background: "rgba(255,255,255,0.02)" }}>
@@ -244,7 +237,6 @@ export default function InvestorsPage() {
           </div>
         )}
 
-        {/* No results */}
         {filtered.length === 0 && investors.length > 0 && (
           <div className="text-center py-12 text-slate-600 text-sm rounded-2xl border border-white/[0.05]"
             style={{ background: "rgba(255,255,255,0.01)" }}>
@@ -400,7 +392,6 @@ export default function InvestorsPage() {
           </div>
         )}
 
-        {/* Empty state */}
         {investors.length === 0 && (
           <div className="flex flex-col items-center gap-3 py-16 text-center rounded-2xl border border-white/[0.06]"
             style={{ background: "rgba(255,255,255,0.015)" }}>
@@ -411,7 +402,6 @@ export default function InvestorsPage() {
             <p className="text-sm text-slate-600">No investors yet.</p>
           </div>
         )}
-
       </div>
     </div>
   )
