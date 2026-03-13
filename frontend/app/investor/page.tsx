@@ -188,7 +188,7 @@ export default function InvestorLoginPage() {
             Not an investor?{" "}
             <Link href="/login" className="text-slate-400 hover:text-white transition-colors">Founder login</Link>
             {" · "}
-            <Link href="/register" className="text-slate-400 hover:text-white transition-colors">Create account</Link>
+            <Link href="/investor/register" className="text-slate-400 hover:text-white transition-colors">Create account</Link>
           </p>
         </div>
       </div>
