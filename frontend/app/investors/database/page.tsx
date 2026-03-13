@@ -3,7 +3,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/Navbar"
 import { ToastContainer, useToast } from "@/components/Toast"
-import { RiSearchLine, RiAddLine, RiExternalLinkLine, RiCheckLine, RiGlobalLine } from "react-icons/ri"
+import { RiSearchLine, RiAddLine, RiExternalLinkLine, RiCheckLine, RiGlobalLine, RiFlashlightLine } from "react-icons/ri"
 
 const STAGE_FILTERS = ["All", "pre-seed", "seed", "series-a", "series-b"]
 const SECTOR_FILTERS = ["All", "DeFi", "Web3", "Infrastructure", "SaaS", "AI", "NFT", "Gaming", "Protocol", "B2B"]
@@ -143,7 +143,7 @@ export default function InvestorDatabasePage() {
                 borderColor: web3Only ? "rgba(251,191,36,0.3)" : "rgba(255,255,255,0.07)",
                 color: web3Only ? "#fbbf24" : "#64748b",
               }}>
-              ⚡ Web3 Only
+              <RiFlashlightLine size={12} /> Web3 Only
             </button>
           </div>
           <p className="text-[11px] text-slate-600">{filtered.length} investors found</p>
@@ -202,7 +202,7 @@ export default function InvestorDatabasePage() {
                   {inv.web3_focus && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full ml-auto"
                       style={{ background: "rgba(251,191,36,0.08)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.15)" }}>
-                      ⚡ Web3
+                      <RiFlashlightLine size={10} /> Web3
                     </span>
                   )}
                 </div>
