@@ -16,7 +16,7 @@ declare global {
   interface Window { ethereum?: any }
 }
 
-const WC_PROJECT_ID = "2f3b7a8c9d1e4f5a6b7c8d9e0f1a2b3c" // placeholder — replace with real one from cloud.reown.com
+const WC_PROJECT_ID = "1a895e994a423c409a9ce755f220cb71"
 
 export default function ProfilePage() {
   const router = useRouter()
