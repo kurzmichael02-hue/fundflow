@@ -1,15 +1,8 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { api } from "@/lib/api"
 import Navbar from "@/components/Navbar"
-import {
-  RiUserLine,
-  RiDashboardLine,
-  RiTeamLine,
-  RiCheckLine,
-} from "react-icons/ri"
+import { RiUserLine, RiFireLine, RiGroupLine, RiCheckboxCircleLine, RiBellLine } from "react-icons/ri"
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; border: string; label: string }> = {
   outreach:   { bg: "rgba(107,114,128,0.12)", color: "#9ca3af", border: "rgba(107,114,128,0.25)", label: "Outreach" },
@@ -19,25 +12,43 @@ const STATUS_STYLES: Record<string, { bg: string; color: string; border: string;
   closed:     { bg: "rgba(16,185,129,0.12)",  color: "#34d399", border: "rgba(16,185,129,0.25)", label: "Closed" },
 }
 
-const AVATAR_COLORS = ["#0ea5e9", "#f59e0b", "#8b5cf6", "#10b981", "#ef4444", "#ec4899", "#14b8a6"]
-
 export default function DashboardPage() {
   const router = useRouter()
   const [investors, setInvestors] = useState<any[]>([])
+  const [interests, setInterests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const token = localStorage.getItem("token")
     if (!token) { router.push("/login"); return }
-    api.getInvestors().then(data => { setInvestors(data); setLoading(false) }).catch(() => { setLoading(false) })
+    fetchAll(token)
   }, [])
+
+  async function fetchAll(token: string) {
+    try {
+      const [invRes, intRes] = await Promise.all([
+        fetch("/api/investors", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/interests", { headers: { Authorization: `Bearer ${token}` } }),
+      ])
+      const invData = await invRes.json()
+      const intData = await intRes.json()
+      setInvestors(Array.isArray(invData) ? invData : [])
+      setInterests(Array.isArray(intData) ? intData : [])
+    } catch {
+      router.push("/login")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const stats = {
     total: investors.length,
     active: investors.filter(i => ["interested", "meeting", "term_sheet"].includes(i.status)).length,
+    meetings: investors.filter(i => i.status === "meeting").length,
     closed: investors.filter(i => i.status === "closed").length,
-    outreach: investors.filter(i => i.status === "outreach").length,
   }
+
+  const recent = investors.slice(0, 5)
 
   if (loading) return (
     <div className="min-h-screen bg-[#04070f] flex items-center justify-center">
@@ -51,75 +62,126 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#04070f] text-slate-200">
       <Navbar />
+      <div className="px-4 md:px-12 py-8 max-w-5xl mx-auto">
 
-      <div className="max-w-5xl mx-auto px-6 md:px-12 py-10">
-        <h1 className="text-2xl font-bold text-white tracking-tight mb-8">Dashboard</h1>
+        <div className="mb-7">
+          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">Dashboard</h1>
+          <p className="text-xs text-slate-500 mt-0.5">Your fundraising overview</p>
+        </div>
 
-        {/* STATS */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           {[
-            { label: "Total Investors", val: stats.total, sub: `${stats.total} total`, icon: <RiUserLine size={13} />, color: "#0ea5e9" },
-            { label: "Active Leads", val: stats.active, sub: `${stats.active} active`, icon: <RiTeamLine size={13} />, color: "#f59e0b" },
-            { label: "Meetings", val: investors.filter(i => i.status === "meeting").length, sub: "scheduled", icon: <RiDashboardLine size={13} />, color: "#8b5cf6" },
-            { label: "Deals Closed", val: stats.closed, sub: `${stats.closed} closed`, icon: <RiCheckLine size={13} />, color: "#10b981" },
+            { label: "Total Investors", value: stats.total, sub: "in pipeline", icon: <RiUserLine size={16} />, color: "#38bdf8" },
+            { label: "Active Leads", value: stats.active, sub: "interested+", icon: <RiFireLine size={16} />, color: "#a78bfa" },
+            { label: "Meetings", value: stats.meetings, sub: "scheduled", icon: <RiHandshakeLine size={16} />, color: "#fbbf24" },
+            { label: "Deals Closed", value: stats.closed, sub: "this round", icon: <RiCheckboxCircleLine size={16} />, color: "#34d399" },
           ].map(s => (
-            <div key={s.label} className="rounded-2xl p-5 border border-white/[0.06]"
-              style={{ background: "rgba(255,255,255,0.03)" }}>
-              <div className="flex items-center gap-1.5 text-[11px] text-slate-600 uppercase tracking-widest mb-3">
-                <span style={{ color: `${s.color}80` }}>{s.icon}</span>
-                {s.label}
+            <div key={s.label} className="rounded-2xl border border-white/[0.06] p-4"
+              style={{ background: "rgba(255,255,255,0.02)" }}>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[11px] text-slate-600 uppercase tracking-wider font-medium">{s.label}</span>
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+                  style={{ background: `${s.color}15`, color: s.color }}>
+                  {s.icon}
+                </div>
               </div>
-              <div className="text-[36px] font-bold tracking-tight text-white mb-1">{s.val}</div>
-              <div className="text-[11px]" style={{ color: s.color }}>{s.sub}</div>
+              <div className="text-2xl font-bold text-white" style={{ letterSpacing: "-0.02em" }}>{s.value}</div>
+              <div className="text-[11px] text-slate-600 mt-0.5">{s.sub}</div>
             </div>
           ))}
         </div>
 
-        {/* RECENT INVESTORS */}
-        <div className="rounded-2xl border border-white/[0.06] overflow-hidden"
-          style={{ background: "rgba(255,255,255,0.02)" }}>
-          <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05]">
-            <h2 className="text-[13px] font-semibold text-slate-500 uppercase tracking-widest">Recent Investors</h2>
-            <Link href="/investors" className="text-[12px] text-sky-400 no-underline hover:text-sky-300 transition-colors">
-              View all →
-            </Link>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-          {investors.length === 0 ? (
-            <div className="text-center py-16 text-slate-600 text-sm">
-              No investors yet.{" "}
-              <Link href="/investors" className="text-sky-400 no-underline">Add your first one →</Link>
+          {/* Recent Investors */}
+          <div className="rounded-2xl border border-white/[0.06] overflow-hidden" style={{ background: "rgba(255,255,255,0.02)" }}>
+            <div className="px-5 py-4 border-b border-white/[0.05] flex items-center justify-between"
+              style={{ background: "rgba(255,255,255,0.02)" }}>
+              <h2 className="text-[13px] font-semibold text-white">Recent Investors</h2>
+              <button onClick={() => router.push("/investors")}
+                className="text-[11px] text-sky-400 hover:text-sky-300 cursor-pointer bg-transparent border-0">
+                View all →
+              </button>
             </div>
-          ) : (
-            <div className="flex flex-col">
-              {investors.slice(0, 8).map((inv, idx) => {
-                const avatarColor = AVATAR_COLORS[idx % AVATAR_COLORS.length]
-                const initials = inv.name ? inv.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2) : "?"
-                const status = STATUS_STYLES[inv.status] || STATUS_STYLES.outreach
-
+            <div className="divide-y divide-white/[0.04]">
+              {recent.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 py-10">
+                  <RiUserLine size={20} className="text-slate-700" />
+                  <p className="text-xs text-slate-700">No investors yet</p>
+                </div>
+              ) : recent.map(inv => {
+                const s = STATUS_STYLES[inv.status] || STATUS_STYLES.outreach
                 return (
-                  <div key={inv.id}
-                    className={`flex items-center justify-between px-5 py-4 transition-all hover:bg-white/[0.02] ${idx !== Math.min(investors.length, 8) - 1 ? "border-b border-white/[0.04]" : ""}`}>
+                  <div key={inv.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-white/[0.02]">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center text-[12px] font-bold text-white shrink-0"
-                        style={{ background: avatarColor }}>
-                        {initials}
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                        style={{ background: `${s.color}20`, color: s.color }}>
+                        {inv.name?.[0]?.toUpperCase()}
                       </div>
                       <div className="min-w-0">
                         <p className="text-[13px] text-slate-200 font-medium truncate">{inv.name}</p>
-                        <p className="text-[11px] text-slate-600 truncate">{inv.amount ? `$${Number(inv.amount).toLocaleString()}` : "TBD"}</p>
+                        <p className="text-[11px] text-slate-600 truncate">{inv.company || inv.email || "—"}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium shrink-0"
-                      style={{ background: status.bg, color: status.color, border: `1px solid ${status.border}` }}>
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: status.color }} />
-                      {status.label}
-                    </div>
+                    <span className="text-[11px] px-2.5 py-1 rounded-full font-medium flex-shrink-0 ml-3"
+                      style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
+                      {s.label}
+                    </span>
                   </div>
                 )
               })}
             </div>
-          )}
+          </div>
+
+          {/* Investor Interests from Deal Flow */}
+          <div className="rounded-2xl border border-white/[0.06] overflow-hidden" style={{ background: "rgba(255,255,255,0.02)" }}>
+            <div className="px-5 py-4 border-b border-white/[0.05] flex items-center justify-between"
+              style={{ background: "rgba(255,255,255,0.02)" }}>
+              <div className="flex items-center gap-2">
+                <h2 className="text-[13px] font-semibold text-white">Deal Flow Interests</h2>
+                {interests.length > 0 && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                    style={{ background: "rgba(16,185,129,0.1)", color: "#34d399", border: "1px solid rgba(16,185,129,0.2)" }}>
+                    {interests.length} new
+                  </span>
+                )}
+              </div>
+              <RiBellLine size={14} className="text-slate-600" />
+            </div>
+            <div className="divide-y divide-white/[0.04]">
+              {interests.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 py-10">
+                  <RiBellLine size={20} className="text-slate-700" />
+                  <p className="text-xs text-slate-700">No interests yet</p>
+                  <p className="text-[11px] text-slate-800 text-center px-6">
+                    Publish your project on /profile to start receiving interest from investors
+                  </p>
+                </div>
+              ) : interests.map(int => (
+                <div key={int.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-white/[0.02]">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                      style={{ background: "rgba(16,185,129,0.15)", color: "#34d399" }}>
+                      {(int.investor_name || int.investor_email || "?")[0]?.toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[13px] text-slate-200 font-medium truncate">
+                        {int.investor_name !== "Investor" ? int.investor_name : int.investor_email}
+                      </p>
+                      <p className="text-[11px] text-slate-600 truncate">
+                        Interested in {int.projects?.name || "your project"}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-slate-600 flex-shrink-0 ml-3">
+                    {new Date(int.created_at).toLocaleDateString("en", { month: "short", day: "numeric" })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
