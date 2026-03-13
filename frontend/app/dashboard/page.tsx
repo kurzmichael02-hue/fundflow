@@ -74,7 +74,7 @@ export default function DashboardPage() {
           {[
             { label: "Total Investors", value: stats.total, sub: "in pipeline", icon: <RiUserLine size={16} />, color: "#38bdf8" },
             { label: "Active Leads", value: stats.active, sub: "interested+", icon: <RiFireLine size={16} />, color: "#a78bfa" },
-            { label: "Meetings", value: stats.meetings, sub: "scheduled", icon: <RiHandshakeLine size={16} />, color: "#fbbf24" },
+            { label: "Meetings", value: stats.meetings, sub: "scheduled", icon: <RiGroupLine size={16} />, color: "#fbbf24" },
             { label: "Deals Closed", value: stats.closed, sub: "this round", icon: <RiCheckboxCircleLine size={16} />, color: "#34d399" },
           ].map(s => (
             <div key={s.label} className="rounded-2xl border border-white/[0.06] p-4"
