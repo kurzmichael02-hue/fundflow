@@ -3,7 +3,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/Navbar"
 import { ToastContainer, useToast } from "@/components/Toast"
-import { RiCheckLine, RiEditLine, RiCloseLine, RiRocketLine, RiEyeLine, RiEyeOffLine } from "react-icons/ri"
+import { RiCheckLine, RiEditLine, RiCloseLine, RiRocketLine, RiEyeLine, RiEyeOffLine, RiWallet3Line, RiExternalLinkLine } from "react-icons/ri"
 
 const STAGE_OPTIONS = ["pre-seed", "seed", "series-a", "series-b", "web3"]
 const STAGE_LABELS: Record<string, string> = {
@@ -11,6 +11,12 @@ const STAGE_LABELS: Record<string, string> = {
   "series-b": "Series B", "web3": "Web3 / Token"
 }
 const CHAIN_OPTIONS = ["ETH", "SOL", "ARB", "BASE", "BNB", "MATIC", "Other"]
+
+declare global {
+  interface Window {
+    ethereum?: any
+  }
+}
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -20,6 +26,7 @@ export default function ProfilePage() {
   const [editProfile, setEditProfile] = useState(false)
   const [profileForm, setProfileForm] = useState(profile)
   const [savingProfile, setSavingProfile] = useState(false)
+  const [connectingWallet, setConnectingWallet] = useState(false)
 
   const [project, setProject] = useState<any>(null)
   const [editProject, setEditProject] = useState(false)
@@ -64,6 +71,41 @@ export default function ProfilePage() {
       router.push("/login")
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleConnectWallet() {
+    if (!window.ethereum) {
+      addToast("MetaMask not found. Please install it first.", "error")
+      window.open("https://metamask.io/download/", "_blank")
+      return
+    }
+    setConnectingWallet(true)
+    try {
+      const accounts: string[] = await window.ethereum.request({ method: "eth_requestAccounts" })
+      if (!accounts.length) throw new Error("No accounts found")
+      const address = accounts[0]
+
+      // Save to profile
+      const token = localStorage.getItem("token")!
+      const res = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ...profileForm, wallet_address: address }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setProfile(data)
+      setProfileForm(data)
+      addToast("Wallet connected!")
+    } catch (err: any) {
+      if (err.code === 4001) {
+        addToast("Connection rejected.", "error")
+      } else {
+        addToast(err.message || "Failed to connect wallet", "error")
+      }
+    } finally {
+      setConnectingWallet(false)
     }
   }
 
@@ -113,6 +155,12 @@ export default function ProfilePage() {
     } finally {
       setSavingProject(false)
     }
+  }
+
+  // Truncate wallet address for display
+  function truncateAddress(addr: string) {
+    if (!addr) return ""
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`
   }
 
   if (loading) return (
@@ -177,7 +225,6 @@ export default function ProfilePage() {
               { label: "Full Name", key: "name", placeholder: "Your name" },
               { label: "Company", key: "company", placeholder: "Your company or project" },
               { label: "Bio", key: "bio", placeholder: "Short bio..." },
-              { label: "Wallet Address", key: "wallet_address", placeholder: "0x..." },
             ].map(f => (
               <div key={f.key}>
                 <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">{f.label}</label>
@@ -191,6 +238,40 @@ export default function ProfilePage() {
                 )}
               </div>
             ))}
+
+            {/* Wallet Address */}
+            <div>
+              <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Wallet Address</label>
+              {profile.wallet_address ? (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-white/[0.08] flex-1"
+                    style={{ background: "rgba(255,255,255,0.02)" }}>
+                    <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
+                    <span className="text-sm text-slate-300 font-mono">{truncateAddress(profile.wallet_address)}</span>
+                    <span className="text-[11px] text-slate-600 ml-1 hidden sm:block">{profile.wallet_address}</span>
+                  </div>
+                  <button onClick={handleConnectWallet} disabled={connectingWallet}
+                    className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs text-slate-400 border border-white/[0.08] cursor-pointer whitespace-nowrap disabled:opacity-50"
+                    style={{ background: "transparent" }}>
+                    <RiWallet3Line size={13} /> Change
+                  </button>
+                </div>
+              ) : editProfile ? (
+                <div className="flex gap-2">
+                  <input value={profileForm.wallet_address || ""} onChange={e => setProfileForm({ ...profileForm, wallet_address: e.target.value })}
+                    placeholder="0x... or paste manually"
+                    className="flex-1 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none font-mono"
+                    style={{ background: "rgba(255,255,255,0.04)" }} />
+                </div>
+              ) : (
+                <button onClick={handleConnectWallet} disabled={connectingWallet}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border cursor-pointer transition-all disabled:opacity-50 w-full justify-center"
+                  style={{ background: "rgba(251,191,36,0.06)", borderColor: "rgba(251,191,36,0.2)", color: "#fbbf24" }}>
+                  <RiWallet3Line size={15} />
+                  {connectingWallet ? "Connecting..." : "Connect MetaMask"}
+                </button>
+              )}
+            </div>
 
             <div>
               <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Email</label>
@@ -316,7 +397,6 @@ export default function ProfilePage() {
                     style={{ background: "rgba(255,255,255,0.04)" }} />
                 </div>
 
-                {/* Publish toggle */}
                 <div className="flex items-center justify-between rounded-xl px-4 py-3 border border-white/[0.08]"
                   style={{ background: "rgba(255,255,255,0.02)" }}>
                   <div className="flex items-center gap-2.5">
@@ -335,7 +415,6 @@ export default function ProfilePage() {
                 </div>
               </div>
             ) : (
-              // View mode
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold text-white"
