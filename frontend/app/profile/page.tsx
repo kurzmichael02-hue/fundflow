@@ -1,52 +1,65 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/Navbar"
-import {
-  RiUserLine,
-  RiMailLine,
-  RiBuildingLine,
-  RiFileTextLine,
-  RiWallet3Line,
-  RiCheckLine,
-  RiEditLine,
-} from "react-icons/ri"
+import { ToastContainer, useToast } from "@/components/Toast"
+import { RiCheckLine, RiEditLine, RiCloseLine, RiRocketLine, RiEyeLine, RiEyeOffLine } from "react-icons/ri"
 
-interface Profile {
-  id: string
-  name: string
-  email: string
-  company: string
-  bio: string
-  wallet_address: string
-  user_type: string
-  subscription_status: string
+const STAGE_OPTIONS = ["pre-seed", "seed", "series-a", "series-b", "web3"]
+const STAGE_LABELS: Record<string, string> = {
+  "pre-seed": "Pre-Seed", "seed": "Seed", "series-a": "Series A",
+  "series-b": "Series B", "web3": "Web3 / Token"
 }
+const CHAIN_OPTIONS = ["ETH", "SOL", "ARB", "BASE", "BNB", "MATIC", "Other"]
 
 export default function ProfilePage() {
   const router = useRouter()
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const { toasts, addToast, removeToast } = useToast()
+
+  const [profile, setProfile] = useState({ name: "", email: "", company: "", bio: "", wallet_address: "" })
+  const [editProfile, setEditProfile] = useState(false)
+  const [profileForm, setProfileForm] = useState(profile)
+  const [savingProfile, setSavingProfile] = useState(false)
+
+  const [project, setProject] = useState<any>(null)
+  const [editProject, setEditProject] = useState(false)
+  const [projectForm, setProjectForm] = useState({
+    name: "", description: "", stage: "pre-seed", goal: "",
+    raised: "", chain: "ETH", tags: "", published: false
+  })
+  const [savingProject, setSavingProject] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [editing, setEditing] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [form, setForm] = useState({ name: "", company: "", bio: "", wallet_address: "" })
 
   useEffect(() => {
     const token = localStorage.getItem("token")
     if (!token) { router.push("/login"); return }
-    fetchProfile()
+    fetchAll(token)
   }, [])
 
-  async function fetchProfile() {
+  async function fetchAll(token: string) {
     try {
-      const res = await fetch("/api/profile", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
-      setProfile(data)
-      setForm({ name: data.name || "", company: data.company || "", bio: data.bio || "", wallet_address: data.wallet_address || "" })
+      const [pRes, projRes] = await Promise.all([
+        fetch("/api/profile", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/projects", { method: "PATCH", headers: { Authorization: `Bearer ${token}` } })
+      ])
+      const pData = await pRes.json()
+      setProfile(pData)
+      setProfileForm(pData)
+
+      const projData = await projRes.json()
+      if (projData) {
+        setProject(projData)
+        setProjectForm({
+          name: projData.name || "",
+          description: projData.description || "",
+          stage: projData.stage || "pre-seed",
+          goal: projData.goal || "",
+          raised: projData.raised || "",
+          chain: projData.chain || "ETH",
+          tags: Array.isArray(projData.tags) ? projData.tags.join(", ") : "",
+          published: projData.published || false,
+        })
+      }
     } catch {
       router.push("/login")
     } finally {
@@ -54,24 +67,51 @@ export default function ProfilePage() {
     }
   }
 
-  async function handleSave() {
-    setSaving(true)
+  async function handleSaveProfile() {
+    setSavingProfile(true)
+    const token = localStorage.getItem("token")!
     try {
       const res = await fetch("/api/profile", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
-        body: JSON.stringify(form),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(profileForm),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setProfile(data)
-      setEditing(false)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
+      setEditProfile(false)
+      addToast("Profile updated!")
     } catch (err: any) {
-      alert(err.message)
+      addToast(err.message, "error")
     } finally {
-      setSaving(false)
+      setSavingProfile(false)
+    }
+  }
+
+  async function handleSaveProject() {
+    setSavingProject(true)
+    const token = localStorage.getItem("token")!
+    try {
+      const tagsArray = projectForm.tags.split(",").map(t => t.trim()).filter(Boolean)
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          ...projectForm,
+          goal: Number(projectForm.goal),
+          raised: Number(projectForm.raised),
+          tags: tagsArray,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setProject(data)
+      setEditProject(false)
+      addToast(data.published ? "Project published! Investors can now see it." : "Project saved as draft.")
+    } catch (err: any) {
+      addToast(err.message, "error")
+    } finally {
+      setSavingProject(false)
     }
   }
 
@@ -79,132 +119,254 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-[#04070f] flex items-center justify-center">
       <div className="flex items-center gap-3 text-slate-500 text-sm">
         <div className="w-4 h-4 rounded-full border-2 border-sky-500 border-t-transparent animate-spin" />
-        Loading profile...
+        Loading...
       </div>
     </div>
   )
 
-  const initials = profile?.name ? profile.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "?"
-
   return (
     <div className="min-h-screen bg-[#04070f] text-slate-200">
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
       <Navbar />
+      <div className="px-4 md:px-12 py-8 max-w-2xl mx-auto flex flex-col gap-6">
 
-      <div className="max-w-2xl mx-auto px-6 md:px-8 py-10">
-
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Profile</h1>
-            <p className="text-sm text-slate-500 mt-0.5">Manage your account details</p>
-          </div>
-          {saved && (
-            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm text-emerald-400 border border-emerald-500/20"
-              style={{ background: "rgba(16,185,129,0.08)" }}>
-              <RiCheckLine size={15} /> Saved successfully
+        {/* Profile Card */}
+        <div className="rounded-2xl border border-white/[0.06] overflow-hidden" style={{ background: "rgba(255,255,255,0.02)" }}>
+          <div className="px-6 py-5 border-b border-white/[0.05] flex items-center justify-between"
+            style={{ background: "rgba(255,255,255,0.02)" }}>
+            <div>
+              <h2 className="text-[15px] font-semibold text-white tracking-tight">Profile</h2>
+              <p className="text-xs text-slate-600 mt-0.5">Your founder information</p>
             </div>
-          )}
-        </div>
-
-        {/* Avatar */}
-        <div className="flex items-center gap-5 mb-8 p-6 rounded-2xl border border-white/[0.06]"
-          style={{ background: "rgba(255,255,255,0.02)" }}>
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-bold text-white shrink-0"
-            style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
-            {initials}
-          </div>
-          <div>
-            <p className="text-lg font-semibold text-white">{profile?.name || "—"}</p>
-            <p className="text-sm text-slate-500">{profile?.email}</p>
-            <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-[11px] px-2 py-0.5 rounded-full text-sky-400 border border-sky-500/20"
-                style={{ background: "rgba(14,165,233,0.08)" }}>
-                {profile?.user_type || "founder"}
-              </span>
-              <span className="text-[11px] px-2 py-0.5 rounded-full text-emerald-400 border border-emerald-500/20"
-                style={{ background: "rgba(16,185,129,0.08)" }}>
-                {profile?.subscription_status || "free"}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Form */}
-        <div className="rounded-2xl border border-white/[0.06] overflow-hidden"
-          style={{ background: "rgba(255,255,255,0.02)" }}>
-          <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05]">
-            <p className="text-sm font-semibold text-white">Account Details</p>
-            {!editing ? (
-              <button onClick={() => setEditing(true)}
-                className="flex items-center gap-1.5 text-[12px] text-slate-400 border border-white/[0.08] px-3 py-1.5 rounded-lg hover:text-slate-200 hover:bg-white/5 transition-all cursor-pointer"
+            {!editProfile ? (
+              <button onClick={() => setEditProfile(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-slate-400 border border-white/[0.08] cursor-pointer"
                 style={{ background: "transparent" }}>
                 <RiEditLine size={13} /> Edit
               </button>
             ) : (
               <div className="flex gap-2">
-                <button onClick={() => { setEditing(false); setForm({ name: profile?.name || "", company: profile?.company || "", bio: profile?.bio || "", wallet_address: profile?.wallet_address || "" }) }}
-                  className="text-[12px] text-slate-500 border border-white/[0.08] px-3 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer"
-                  style={{ background: "transparent" }}>
-                  Cancel
-                </button>
-                <button onClick={handleSave} disabled={saving}
-                  className="flex items-center gap-1.5 text-[12px] text-white px-3 py-1.5 rounded-lg disabled:opacity-50 cursor-pointer border-0"
+                <button onClick={handleSaveProfile} disabled={savingProfile}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white border-0 cursor-pointer disabled:opacity-50"
                   style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
-                  <RiCheckLine size={13} /> {saving ? "Saving..." : "Save"}
+                  <RiCheckLine size={13} /> {savingProfile ? "Saving..." : "Save"}
+                </button>
+                <button onClick={() => { setEditProfile(false); setProfileForm(profile) }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-slate-400 border border-white/[0.08] cursor-pointer"
+                  style={{ background: "transparent" }}>
+                  <RiCloseLine size={13} /> Cancel
                 </button>
               </div>
             )}
           </div>
 
-          <div className="p-6 flex flex-col gap-5">
+          <div className="p-6 flex flex-col gap-4">
+            {/* Avatar */}
+            <div className="flex items-center gap-4 mb-2">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold text-white flex-shrink-0"
+                style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+                {profile.name?.[0]?.toUpperCase() || "?"}
+              </div>
+              <div>
+                <p className="text-white font-semibold">{profile.name || "—"}</p>
+                <p className="text-slate-600 text-xs mt-0.5">{profile.email}</p>
+              </div>
+            </div>
+
             {[
-              { key: "name", label: "Full Name", icon: <RiUserLine size={15} />, placeholder: "Your full name" },
-              { key: "company", label: "Company / Fund", icon: <RiBuildingLine size={15} />, placeholder: "Your company or fund name" },
-              { key: "wallet_address", label: "Wallet Address", icon: <RiWallet3Line size={15} />, placeholder: "0x..." },
+              { label: "Full Name", key: "name", placeholder: "Your name" },
+              { label: "Company", key: "company", placeholder: "Your company or project" },
+              { label: "Bio", key: "bio", placeholder: "Short bio..." },
+              { label: "Wallet Address", key: "wallet_address", placeholder: "0x..." },
             ].map(f => (
               <div key={f.key}>
-                <label className="flex items-center gap-1.5 text-[11px] text-slate-500 uppercase tracking-widest mb-2">
-                  <span className="text-sky-500/60">{f.icon}</span> {f.label}
-                </label>
-                {editing ? (
-                  <input value={(form as any)[f.key]} onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">{f.label}</label>
+                {editProfile ? (
+                  <input value={(profileForm as any)[f.key] || ""} onChange={e => setProfileForm({ ...profileForm, [f.key]: e.target.value })}
                     placeholder={f.placeholder}
-                    className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none focus:border-sky-500/40 transition-colors"
+                    className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
                     style={{ background: "rgba(255,255,255,0.04)" }} />
                 ) : (
-                  <p className="text-sm text-slate-300 py-2.5 px-3.5">
-                    {(profile as any)?.[f.key] || <span className="text-slate-600">Not set</span>}
-                  </p>
+                  <p className="text-sm text-slate-300">{(profile as any)[f.key] || <span className="text-slate-700">Not set</span>}</p>
                 )}
               </div>
             ))}
 
             <div>
-              <label className="flex items-center gap-1.5 text-[11px] text-slate-500 uppercase tracking-widest mb-2">
-                <span className="text-sky-500/60"><RiFileTextLine size={15} /></span> Bio
-              </label>
-              {editing ? (
-                <textarea value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })}
-                  placeholder="Tell investors about yourself and your project..." rows={4}
-                  className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none focus:border-sky-500/40 transition-colors resize-none"
-                  style={{ background: "rgba(255,255,255,0.04)" }} />
-              ) : (
-                <p className="text-sm text-slate-300 py-2.5 px-3.5 leading-relaxed">
-                  {profile?.bio || <span className="text-slate-600">Not set</span>}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="flex items-center gap-1.5 text-[11px] text-slate-500 uppercase tracking-widest mb-2">
-                <span className="text-sky-500/60"><RiMailLine size={15} /></span> Email
-              </label>
-              <p className="text-sm text-slate-500 py-2.5 px-3.5 rounded-xl border border-white/[0.04]"
-                style={{ background: "rgba(255,255,255,0.01)" }}>
-                {profile?.email} <span className="ml-2 text-[11px] text-slate-700">(read-only)</span>
-              </p>
+              <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Email</label>
+              <p className="text-sm text-slate-500">{profile.email}</p>
             </div>
           </div>
         </div>
+
+        {/* Project Card */}
+        <div className="rounded-2xl border border-white/[0.06] overflow-hidden" style={{ background: "rgba(255,255,255,0.02)" }}>
+          <div className="px-6 py-5 border-b border-white/[0.05] flex items-center justify-between"
+            style={{ background: "rgba(255,255,255,0.02)" }}>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-[15px] font-semibold text-white tracking-tight">Your Project</h2>
+                {project?.published && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                    style={{ background: "rgba(16,185,129,0.1)", color: "#34d399", border: "1px solid rgba(16,185,129,0.2)" }}>
+                    Live
+                  </span>
+                )}
+                {project && !project.published && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                    style={{ background: "rgba(255,255,255,0.04)", color: "#64748b", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    Draft
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-600 mt-0.5">Visible to investors on Deal Flow</p>
+            </div>
+            {!editProject ? (
+              <button onClick={() => setEditProject(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-slate-400 border border-white/[0.08] cursor-pointer"
+                style={{ background: "transparent" }}>
+                {project ? <><RiEditLine size={13} /> Edit</> : <><RiRocketLine size={13} /> Create</>}
+              </button>
+            ) : (
+              <div className="flex gap-2">
+                <button onClick={handleSaveProject} disabled={savingProject}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white border-0 cursor-pointer disabled:opacity-50"
+                  style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+                  <RiCheckLine size={13} /> {savingProject ? "Saving..." : "Save"}
+                </button>
+                <button onClick={() => setEditProject(false)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-slate-400 border border-white/[0.08] cursor-pointer"
+                  style={{ background: "transparent" }}>
+                  <RiCloseLine size={13} /> Cancel
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="p-6">
+            {!project && !editProject ? (
+              <div className="text-center py-8">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-slate-700 border border-white/[0.06] mx-auto mb-3"
+                  style={{ background: "rgba(255,255,255,0.02)" }}>
+                  <RiRocketLine size={22} />
+                </div>
+                <p className="text-sm text-slate-600 mb-4">No project yet. Create one to appear on the investor Deal Flow.</p>
+                <button onClick={() => setEditProject(true)}
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white border-0 cursor-pointer"
+                  style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+                  Create Project
+                </button>
+              </div>
+            ) : editProject ? (
+              <div className="flex flex-col gap-3.5">
+                {[
+                  { key: "name", label: "Project Name", placeholder: "e.g. NovaPay" },
+                  { key: "description", label: "Description", placeholder: "What does your project do?" },
+                ].map(f => (
+                  <div key={f.key}>
+                    <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">{f.label}</label>
+                    <input value={(projectForm as any)[f.key]} onChange={e => setProjectForm({ ...projectForm, [f.key]: e.target.value })}
+                      placeholder={f.placeholder}
+                      className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
+                      style={{ background: "rgba(255,255,255,0.04)" }} />
+                  </div>
+                ))}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Stage</label>
+                    <select value={projectForm.stage} onChange={e => setProjectForm({ ...projectForm, stage: e.target.value })}
+                      className="w-full rounded-xl px-3.5 py-2.5 text-sm border border-white/[0.08] outline-none"
+                      style={{ background: "rgba(14,7,15,0.9)", color: "#e2e8f0" }}>
+                      {STAGE_OPTIONS.map(s => <option key={s} value={s}>{STAGE_LABELS[s]}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Chain</label>
+                    <select value={projectForm.chain} onChange={e => setProjectForm({ ...projectForm, chain: e.target.value })}
+                      className="w-full rounded-xl px-3.5 py-2.5 text-sm border border-white/[0.08] outline-none"
+                      style={{ background: "rgba(14,7,15,0.9)", color: "#e2e8f0" }}>
+                      {CHAIN_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Funding Goal ($)</label>
+                    <input type="number" value={projectForm.goal} onChange={e => setProjectForm({ ...projectForm, goal: e.target.value })}
+                      placeholder="2500000"
+                      className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
+                      style={{ background: "rgba(255,255,255,0.04)" }} />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Raised So Far ($)</label>
+                    <input type="number" value={projectForm.raised} onChange={e => setProjectForm({ ...projectForm, raised: e.target.value })}
+                      placeholder="0"
+                      className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
+                      style={{ background: "rgba(255,255,255,0.04)" }} />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Tags (comma separated)</label>
+                  <input value={projectForm.tags} onChange={e => setProjectForm({ ...projectForm, tags: e.target.value })}
+                    placeholder="DeFi, AI, B2B"
+                    className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
+                    style={{ background: "rgba(255,255,255,0.04)" }} />
+                </div>
+
+                {/* Publish toggle */}
+                <div className="flex items-center justify-between rounded-xl px-4 py-3 border border-white/[0.08]"
+                  style={{ background: "rgba(255,255,255,0.02)" }}>
+                  <div className="flex items-center gap-2.5">
+                    {projectForm.published ? <RiEyeLine size={15} className="text-emerald-400" /> : <RiEyeOffLine size={15} className="text-slate-600" />}
+                    <div>
+                      <p className="text-sm text-slate-300 font-medium">{projectForm.published ? "Published" : "Draft"}</p>
+                      <p className="text-[11px] text-slate-600">{projectForm.published ? "Visible to investors" : "Only you can see this"}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setProjectForm({ ...projectForm, published: !projectForm.published })}
+                    className="relative w-10 h-5 rounded-full transition-all cursor-pointer border-0 flex-shrink-0"
+                    style={{ background: projectForm.published ? "#0ea5e9" : "rgba(255,255,255,0.1)" }}>
+                    <span className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all"
+                      style={{ left: projectForm.published ? "22px" : "2px" }} />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              // View mode
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold text-white"
+                    style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+                    {project.name?.[0]}
+                  </div>
+                  <div>
+                    <p className="text-white font-semibold">{project.name}</p>
+                    <p className="text-xs text-slate-600">{STAGE_LABELS[project.stage]} · {project.chain}</p>
+                  </div>
+                </div>
+                <p className="text-sm text-slate-500">{project.description}</p>
+                <div className="flex gap-4 text-xs">
+                  <div><span className="text-slate-600">Goal: </span><span className="text-white">${Number(project.goal).toLocaleString()}</span></div>
+                  <div><span className="text-slate-600">Raised: </span><span className="text-white">${Number(project.raised).toLocaleString()}</span></div>
+                </div>
+                {project.tags?.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {project.tags.map((t: string) => (
+                      <span key={t} className="text-[10px] px-2 py-0.5 rounded-full"
+                        style={{ background: "rgba(255,255,255,0.04)", color: "#64748b", border: "1px solid rgba(255,255,255,0.07)" }}>
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
     </div>
   )
