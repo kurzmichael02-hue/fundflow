@@ -1,8 +1,9 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/Navbar"
-import { RiUserLine, RiFireLine, RiGroupLine, RiCheckboxCircleLine, RiBellLine } from "react-icons/ri"
+import { createClient } from "@supabase/supabase-js"
+import { RiUserLine, RiFireLine, RiGroupLine, RiCheckboxCircleLine, RiBellLine, RiRadioButtonLine } from "react-icons/ri"
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; border: string; label: string }> = {
   outreach:   { bg: "rgba(107,114,128,0.12)", color: "#9ca3af", border: "rgba(107,114,128,0.25)", label: "Outreach" },
@@ -17,11 +18,17 @@ export default function DashboardPage() {
   const [investors, setInvestors] = useState<any[]>([])
   const [interests, setInterests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [live, setLive] = useState(false)
+  const channelsRef = useRef<any[]>([])
 
   useEffect(() => {
     const token = localStorage.getItem("token")
     if (!token) { router.push("/login"); return }
     fetchAll(token)
+    setupRealtime(token)
+    return () => {
+      channelsRef.current.forEach(c => c.unsubscribe())
+    }
   }, [])
 
   async function fetchAll(token: string) {
@@ -39,6 +46,61 @@ export default function DashboardPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  function setupRealtime(token: string) {
+    // Decode user_id from JWT
+    let userId: string | null = null
+    try {
+      const payload = token.split(".")[1]
+      const decoded = JSON.parse(Buffer.from(payload, "base64").toString("utf8"))
+      userId = decoded.sub
+    } catch { return }
+    if (!userId) return
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+
+    // Listen for investor changes (INSERT, UPDATE, DELETE)
+    const invChannel = supabase
+      .channel("investors-realtime")
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "investors",
+        filter: `user_id=eq.${userId}`,
+      }, (payload) => {
+        if (payload.eventType === "INSERT") {
+          setInvestors(prev => [payload.new as any, ...prev])
+        } else if (payload.eventType === "UPDATE") {
+          setInvestors(prev => prev.map(i => i.id === (payload.new as any).id ? payload.new as any : i))
+        } else if (payload.eventType === "DELETE") {
+          setInvestors(prev => prev.filter(i => i.id !== (payload.old as any).id))
+        }
+      })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") setLive(true)
+      })
+
+    // Listen for new interests on founder's projects
+    const intChannel = supabase
+      .channel("interests-realtime")
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "interests",
+      }, async () => {
+        // Refetch interests when new one comes in (need project join)
+        const token = localStorage.getItem("token")!
+        const res = await fetch("/api/interests", { headers: { Authorization: `Bearer ${token}` } })
+        const data = await res.json()
+        if (Array.isArray(data)) setInterests(data)
+      })
+      .subscribe()
+
+    channelsRef.current = [invChannel, intChannel]
   }
 
   const stats = {
@@ -64,9 +126,18 @@ export default function DashboardPage() {
       <Navbar />
       <div className="px-4 md:px-12 py-8 max-w-5xl mx-auto">
 
-        <div className="mb-7">
-          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">Dashboard</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Your fundraising overview</p>
+        <div className="mb-7 flex items-start justify-between">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">Dashboard</h1>
+            <p className="text-xs text-slate-500 mt-0.5">Your fundraising overview</p>
+          </div>
+          {live && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+              style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.15)" }}>
+              <RiRadioButtonLine size={11} className="text-emerald-400 animate-pulse" />
+              <span className="text-[11px] text-emerald-500 font-medium">Live</span>
+            </div>
+          )}
         </div>
 
         {/* Stats */}
