@@ -11,6 +11,8 @@
   "dependencies": {
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.99.0",
+    "@walletconnect/ethereum-provider": "^2.23.8",
+    "@walletconnect/modal": "^2.7.0",
     "axios": "^1.13.6",
     "next": "16.1.6",
     "react": "19.2.3",

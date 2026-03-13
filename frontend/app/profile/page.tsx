@@ -3,7 +3,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/Navbar"
 import { ToastContainer, useToast } from "@/components/Toast"
-import { RiCheckLine, RiEditLine, RiCloseLine, RiRocketLine, RiEyeLine, RiEyeOffLine, RiWallet3Line, RiExternalLinkLine } from "react-icons/ri"
+import { RiCheckLine, RiEditLine, RiCloseLine, RiRocketLine, RiEyeLine, RiEyeOffLine, RiWallet3Line, RiQrCodeLine, RiPencilLine } from "react-icons/ri"
 
 const STAGE_OPTIONS = ["pre-seed", "seed", "series-a", "series-b", "web3"]
 const STAGE_LABELS: Record<string, string> = {
@@ -13,10 +13,10 @@ const STAGE_LABELS: Record<string, string> = {
 const CHAIN_OPTIONS = ["ETH", "SOL", "ARB", "BASE", "BNB", "MATIC", "Other"]
 
 declare global {
-  interface Window {
-    ethereum?: any
-  }
+  interface Window { ethereum?: any }
 }
+
+const WC_PROJECT_ID = "2f3b7a8c9d1e4f5a6b7c8d9e0f1a2b3c" // placeholder — replace with real one from cloud.reown.com
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -26,6 +26,9 @@ export default function ProfilePage() {
   const [editProfile, setEditProfile] = useState(false)
   const [profileForm, setProfileForm] = useState(profile)
   const [savingProfile, setSavingProfile] = useState(false)
+
+  const [walletMode, setWalletMode] = useState<"idle" | "manual" | "connecting">("idle")
+  const [manualAddress, setManualAddress] = useState("")
   const [connectingWallet, setConnectingWallet] = useState(false)
 
   const [project, setProject] = useState<any>(null)
@@ -52,61 +55,90 @@ export default function ProfilePage() {
       const pData = await pRes.json()
       setProfile(pData)
       setProfileForm(pData)
-
       const projData = await projRes.json()
       if (projData) {
         setProject(projData)
         setProjectForm({
-          name: projData.name || "",
-          description: projData.description || "",
-          stage: projData.stage || "pre-seed",
-          goal: projData.goal || "",
-          raised: projData.raised || "",
-          chain: projData.chain || "ETH",
+          name: projData.name || "", description: projData.description || "",
+          stage: projData.stage || "pre-seed", goal: projData.goal || "",
+          raised: projData.raised || "", chain: projData.chain || "ETH",
           tags: Array.isArray(projData.tags) ? projData.tags.join(", ") : "",
           published: projData.published || false,
         })
       }
-    } catch {
-      router.push("/login")
-    } finally {
-      setLoading(false)
-    }
+    } catch { router.push("/login") }
+    finally { setLoading(false) }
   }
 
-  async function handleConnectWallet() {
+  async function saveWalletAddress(address: string) {
+    const token = localStorage.getItem("token")!
+    const res = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ ...profileForm, wallet_address: address }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error)
+    setProfile(data)
+    setProfileForm(data)
+  }
+
+  async function handleConnectMetaMask() {
     if (!window.ethereum) {
-      addToast("MetaMask not found. Please install it first.", "error")
-      window.open("https://metamask.io/download/", "_blank")
+      addToast("MetaMask not installed. Use WalletConnect or paste manually.", "info")
       return
     }
     setConnectingWallet(true)
     try {
       const accounts: string[] = await window.ethereum.request({ method: "eth_requestAccounts" })
       if (!accounts.length) throw new Error("No accounts found")
-      const address = accounts[0]
-
-      // Save to profile
-      const token = localStorage.getItem("token")!
-      const res = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ...profileForm, wallet_address: address }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
-      setProfile(data)
-      setProfileForm(data)
-      addToast("Wallet connected!")
+      await saveWalletAddress(accounts[0])
+      addToast("MetaMask connected!")
+      setWalletMode("idle")
     } catch (err: any) {
-      if (err.code === 4001) {
-        addToast("Connection rejected.", "error")
-      } else {
-        addToast(err.message || "Failed to connect wallet", "error")
-      }
-    } finally {
-      setConnectingWallet(false)
-    }
+      if (err.code === 4001) addToast("Connection rejected.", "error")
+      else addToast(err.message || "Failed to connect", "error")
+    } finally { setConnectingWallet(false) }
+  }
+
+  async function handleConnectWalletConnect() {
+    setConnectingWallet(true)
+    try {
+      const { EthereumProvider } = await import("@walletconnect/ethereum-provider")
+      const provider = await EthereumProvider.init({
+        projectId: WC_PROJECT_ID,
+        chains: [1],
+        showQrModal: true,
+        metadata: {
+          name: "FundFlow",
+          description: "Web3 Investor CRM",
+          url: "https://fundflow-omega.vercel.app",
+          icons: ["https://fundflow-omega.vercel.app/favicon.ico"],
+        },
+      })
+      await provider.connect()
+      const accounts = provider.accounts
+      if (!accounts.length) throw new Error("No accounts")
+      await saveWalletAddress(accounts[0])
+      addToast("Wallet connected via WalletConnect!")
+      setWalletMode("idle")
+    } catch (err: any) {
+      if (err.message?.includes("User rejected")) addToast("Connection rejected.", "error")
+      else addToast(err.message || "WalletConnect failed", "error")
+    } finally { setConnectingWallet(false) }
+  }
+
+  async function handleSaveManual() {
+    if (!manualAddress.trim()) return
+    setConnectingWallet(true)
+    try {
+      await saveWalletAddress(manualAddress.trim())
+      addToast("Wallet address saved!")
+      setWalletMode("idle")
+      setManualAddress("")
+    } catch (err: any) {
+      addToast(err.message, "error")
+    } finally { setConnectingWallet(false) }
   }
 
   async function handleSaveProfile() {
@@ -123,11 +155,8 @@ export default function ProfilePage() {
       setProfile(data)
       setEditProfile(false)
       addToast("Profile updated!")
-    } catch (err: any) {
-      addToast(err.message, "error")
-    } finally {
-      setSavingProfile(false)
-    }
+    } catch (err: any) { addToast(err.message, "error") }
+    finally { setSavingProfile(false) }
   }
 
   async function handleSaveProject() {
@@ -138,26 +167,17 @@ export default function ProfilePage() {
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          ...projectForm,
-          goal: Number(projectForm.goal),
-          raised: Number(projectForm.raised),
-          tags: tagsArray,
-        }),
+        body: JSON.stringify({ ...projectForm, goal: Number(projectForm.goal), raised: Number(projectForm.raised), tags: tagsArray }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setProject(data)
       setEditProject(false)
-      addToast(data.published ? "Project published! Investors can now see it." : "Project saved as draft.")
-    } catch (err: any) {
-      addToast(err.message, "error")
-    } finally {
-      setSavingProject(false)
-    }
+      addToast(data.published ? "Project published!" : "Project saved as draft.")
+    } catch (err: any) { addToast(err.message, "error") }
+    finally { setSavingProject(false) }
   }
 
-  // Truncate wallet address for display
   function truncateAddress(addr: string) {
     if (!addr) return ""
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`
@@ -209,7 +229,6 @@ export default function ProfilePage() {
           </div>
 
           <div className="p-6 flex flex-col gap-4">
-            {/* Avatar */}
             <div className="flex items-center gap-4 mb-2">
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold text-white flex-shrink-0"
                 style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
@@ -239,37 +258,74 @@ export default function ProfilePage() {
               </div>
             ))}
 
-            {/* Wallet Address */}
+            {/* Wallet Section */}
             <div>
               <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Wallet Address</label>
-              {profile.wallet_address ? (
+
+              {profile.wallet_address && walletMode === "idle" ? (
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-white/[0.08] flex-1"
+                  <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-white/[0.08] flex-1 min-w-0"
                     style={{ background: "rgba(255,255,255,0.02)" }}>
                     <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
-                    <span className="text-sm text-slate-300 font-mono">{truncateAddress(profile.wallet_address)}</span>
-                    <span className="text-[11px] text-slate-600 ml-1 hidden sm:block">{profile.wallet_address}</span>
+                    <span className="text-sm text-slate-300 font-mono truncate">{truncateAddress(profile.wallet_address)}</span>
+                    <span className="text-[11px] text-slate-600 truncate hidden sm:block">{profile.wallet_address}</span>
                   </div>
-                  <button onClick={handleConnectWallet} disabled={connectingWallet}
-                    className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs text-slate-400 border border-white/[0.08] cursor-pointer whitespace-nowrap disabled:opacity-50"
+                  <button onClick={() => setWalletMode("connecting")}
+                    className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs text-slate-400 border border-white/[0.08] cursor-pointer whitespace-nowrap flex-shrink-0"
                     style={{ background: "transparent" }}>
                     <RiWallet3Line size={13} /> Change
                   </button>
                 </div>
-              ) : editProfile ? (
-                <div className="flex gap-2">
-                  <input value={profileForm.wallet_address || ""} onChange={e => setProfileForm({ ...profileForm, wallet_address: e.target.value })}
-                    placeholder="0x... or paste manually"
-                    className="flex-1 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none font-mono"
+              ) : walletMode === "manual" ? (
+                <div className="flex flex-col gap-2">
+                  <input value={manualAddress} onChange={e => setManualAddress(e.target.value)}
+                    placeholder="Paste your wallet address (0x...)"
+                    className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none font-mono"
                     style={{ background: "rgba(255,255,255,0.04)" }} />
+                  <div className="flex gap-2">
+                    <button onClick={handleSaveManual} disabled={connectingWallet || !manualAddress.trim()}
+                      className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white border-0 cursor-pointer disabled:opacity-50"
+                      style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+                      {connectingWallet ? "Saving..." : "Save Address"}
+                    </button>
+                    <button onClick={() => { setWalletMode("idle"); setManualAddress("") }}
+                      className="px-4 py-2.5 rounded-xl text-xs text-slate-400 border border-white/[0.08] cursor-pointer"
+                      style={{ background: "transparent" }}>
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               ) : (
-                <button onClick={handleConnectWallet} disabled={connectingWallet}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border cursor-pointer transition-all disabled:opacity-50 w-full justify-center"
-                  style={{ background: "rgba(251,191,36,0.06)", borderColor: "rgba(251,191,36,0.2)", color: "#fbbf24" }}>
-                  <RiWallet3Line size={15} />
-                  {connectingWallet ? "Connecting..." : "Connect MetaMask"}
-                </button>
+                // Connect options
+                <div className="flex flex-col gap-2">
+                  <button onClick={handleConnectMetaMask} disabled={connectingWallet}
+                    className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium border cursor-pointer transition-all disabled:opacity-50"
+                    style={{ background: "rgba(251,191,36,0.06)", borderColor: "rgba(251,191,36,0.2)", color: "#fbbf24" }}>
+                    <span className="text-lg">🦊</span>
+                    {connectingWallet ? "Connecting..." : "Connect MetaMask"}
+                    <span className="ml-auto text-[11px] text-slate-600">Browser extension</span>
+                  </button>
+                  <button onClick={handleConnectWalletConnect} disabled={connectingWallet}
+                    className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium border cursor-pointer transition-all disabled:opacity-50"
+                    style={{ background: "rgba(14,165,233,0.06)", borderColor: "rgba(14,165,233,0.2)", color: "#38bdf8" }}>
+                    <RiQrCodeLine size={18} />
+                    {connectingWallet ? "Connecting..." : "WalletConnect"}
+                    <span className="ml-auto text-[11px] text-slate-600">QR code · any wallet</span>
+                  </button>
+                  <button onClick={() => setWalletMode("manual")}
+                    className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium border cursor-pointer transition-all"
+                    style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.08)", color: "#94a3b8" }}>
+                    <RiPencilLine size={18} />
+                    Paste address manually
+                    <span className="ml-auto text-[11px] text-slate-600">Any wallet</span>
+                  </button>
+                  {profile.wallet_address && (
+                    <button onClick={() => setWalletMode("idle")}
+                      className="text-xs text-slate-600 cursor-pointer bg-transparent border-0 text-center">
+                      Cancel
+                    </button>
+                  )}
+                </div>
               )}
             </div>
 
@@ -352,7 +408,6 @@ export default function ProfilePage() {
                       style={{ background: "rgba(255,255,255,0.04)" }} />
                   </div>
                 ))}
-
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Stage</label>
@@ -371,7 +426,6 @@ export default function ProfilePage() {
                     </select>
                   </div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Funding Goal ($)</label>
@@ -388,7 +442,6 @@ export default function ProfilePage() {
                       style={{ background: "rgba(255,255,255,0.04)" }} />
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Tags (comma separated)</label>
                   <input value={projectForm.tags} onChange={e => setProjectForm({ ...projectForm, tags: e.target.value })}
@@ -396,7 +449,6 @@ export default function ProfilePage() {
                     className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
                     style={{ background: "rgba(255,255,255,0.04)" }} />
                 </div>
-
                 <div className="flex items-center justify-between rounded-xl px-4 py-3 border border-white/[0.08]"
                   style={{ background: "rgba(255,255,255,0.02)" }}>
                   <div className="flex items-center gap-2.5">
