@@ -19,6 +19,9 @@ export default function DashboardPage() {
   const [interests, setInterests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [live, setLive] = useState(false)
+  const [plan, setPlan] = useState("free")
+  const [upgrading, setUpgrading] = useState(false)
+  const [userEmail, setUserEmail] = useState("")
   const channelsRef = useRef<any[]>([])
 
   useEffect(() => {
@@ -33,14 +36,18 @@ export default function DashboardPage() {
 
   async function fetchAll(token: string) {
     try {
-      const [invRes, intRes] = await Promise.all([
+      const [invRes, intRes, profileRes] = await Promise.all([
         fetch("/api/investors", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/interests", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/profile", { headers: { Authorization: `Bearer ${token}` } }),
       ])
       const invData = await invRes.json()
       const intData = await intRes.json()
+      const profileData = await profileRes.json()
       setInvestors(Array.isArray(invData) ? invData : [])
       setInterests(Array.isArray(intData) ? intData : [])
+      setPlan(profileData.plan || profileData.subscription_status || "free")
+      setUserEmail(profileData.email || "")
     } catch {
       router.push("/login")
     } finally {
@@ -48,8 +55,23 @@ export default function DashboardPage() {
     }
   }
 
+  async function handleUpgrade() {
+    setUpgrading(true)
+    const token = localStorage.getItem("token")!
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ email: userEmail }),
+      })
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+    } catch {
+      setUpgrading(false)
+    }
+  }
+
   function setupRealtime(token: string) {
-    // Decode user_id from JWT
     let userId: string | null = null
     try {
       const payload = token.split(".")[1]
@@ -63,7 +85,6 @@ export default function DashboardPage() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
 
-    // Listen for investor changes (INSERT, UPDATE, DELETE)
     const invChannel = supabase
       .channel("investors-realtime")
       .on("postgres_changes", {
@@ -84,7 +105,6 @@ export default function DashboardPage() {
         if (status === "SUBSCRIBED") setLive(true)
       })
 
-    // Listen for new interests on founder's projects
     const intChannel = supabase
       .channel("interests-realtime")
       .on("postgres_changes", {
@@ -92,7 +112,6 @@ export default function DashboardPage() {
         schema: "public",
         table: "interests",
       }, async () => {
-        // Refetch interests when new one comes in (need project join)
         const token = localStorage.getItem("token")!
         const res = await fetch("/api/interests", { headers: { Authorization: `Bearer ${token}` } })
         const data = await res.json()
@@ -162,6 +181,28 @@ export default function DashboardPage() {
             </div>
           ))}
         </div>
+
+        {/* Upgrade Banner */}
+        {plan === "free" && (
+          <div className="rounded-2xl border p-4 mb-4 flex items-center justify-between gap-4 flex-wrap"
+            style={{ background: "rgba(14,165,233,0.05)", borderColor: "rgba(14,165,233,0.15)" }}>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "rgba(14,165,233,0.12)" }}>
+                <RiFireLine size={16} className="text-sky-400" />
+              </div>
+              <div>
+                <p className="text-[13px] font-semibold text-white">You&apos;re on the Free plan</p>
+                <p className="text-[11px] text-slate-500">Limited to 25 investors. Upgrade to Pro for unlimited access.</p>
+              </div>
+            </div>
+            <button onClick={handleUpgrade} disabled={upgrading}
+              className="px-4 py-2 rounded-xl text-sm font-semibold text-white cursor-pointer border-0 flex-shrink-0 disabled:opacity-60"
+              style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+              {upgrading ? "Redirecting..." : "Upgrade to Pro — $99/mo"}
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
