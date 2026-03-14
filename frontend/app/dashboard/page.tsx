@@ -71,6 +71,22 @@ export default function DashboardPage() {
     }
   }
 
+
+  async function handleManageBilling() {
+  setUpgrading(true)
+  const token = localStorage.getItem("token")!
+  try {
+    const res = await fetch("/api/stripe/portal", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    const data = await res.json()
+    if (data.url) window.location.href = data.url
+  } catch {
+    setUpgrading(false)
+  }
+}
+
   function setupRealtime(token: string) {
     let userId: string | null = null
     try {
@@ -182,27 +198,46 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Upgrade Banner */}
-        {plan === "free" && (
-          <div className="rounded-2xl border p-4 mb-4 flex items-center justify-between gap-4 flex-wrap"
-            style={{ background: "rgba(14,165,233,0.05)", borderColor: "rgba(14,165,233,0.15)" }}>
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: "rgba(14,165,233,0.12)" }}>
-                <RiFireLine size={16} className="text-sky-400" />
-              </div>
-              <div>
-                <p className="text-[13px] font-semibold text-white">You&apos;re on the Free plan</p>
-                <p className="text-[11px] text-slate-500">Limited to 25 investors. Upgrade to Pro for unlimited access.</p>
-              </div>
-            </div>
-            <button onClick={handleUpgrade} disabled={upgrading}
-              className="px-4 py-2 rounded-xl text-sm font-semibold text-white cursor-pointer border-0 flex-shrink-0 disabled:opacity-60"
-              style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
-              {upgrading ? "Redirecting..." : "Upgrade to Pro — $99/mo"}
-            </button>
-          </div>
-        )}
+{/* Plan Banner */}
+{plan === "free" ? (
+  <div className="rounded-2xl border p-4 mb-4 flex items-center justify-between gap-4 flex-wrap"
+    style={{ background: "rgba(14,165,233,0.05)", borderColor: "rgba(14,165,233,0.15)" }}>
+    <div className="flex items-center gap-3">
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+        style={{ background: "rgba(14,165,233,0.12)" }}>
+        <RiFireLine size={16} className="text-sky-400" />
+      </div>
+      <div>
+        <p className="text-[13px] font-semibold text-white">You&apos;re on the Free plan</p>
+        <p className="text-[11px] text-slate-500">Limited to 25 investors. Upgrade to Pro for unlimited access.</p>
+      </div>
+    </div>
+    <button onClick={handleUpgrade} disabled={upgrading}
+      className="px-4 py-2 rounded-xl text-sm font-semibold text-white cursor-pointer border-0 flex-shrink-0 disabled:opacity-60"
+      style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+      {upgrading ? "Redirecting..." : "Upgrade to Pro — $99/mo"}
+    </button>
+  </div>
+) : (
+  <div className="rounded-2xl border p-4 mb-4 flex items-center justify-between gap-4 flex-wrap"
+    style={{ background: "rgba(16,185,129,0.05)", borderColor: "rgba(16,185,129,0.15)" }}>
+    <div className="flex items-center gap-3">
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+        style={{ background: "rgba(16,185,129,0.12)" }}>
+        <RiCheckboxCircleLine size={16} className="text-emerald-400" />
+      </div>
+      <div>
+        <p className="text-[13px] font-semibold text-white">You&apos;re on Pro <span className="text-emerald-400">✓</span></p>
+        <p className="text-[11px] text-slate-500">Unlimited investors, full analytics, priority support.</p>
+      </div>
+    </div>
+    <button onClick={handleManageBilling} disabled={upgrading}
+      className="px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer border-0 flex-shrink-0 disabled:opacity-60"
+      style={{ background: "rgba(255,255,255,0.06)", color: "#94a3b8", border: "1px solid rgba(255,255,255,0.08)" }}>
+      {upgrading ? "Redirecting..." : "Manage Billing"}
+    </button>
+  </div>
+)}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
