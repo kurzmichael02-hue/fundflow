@@ -45,6 +45,30 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const supabase = getClient()
+
+  // Feature gating — check plan and investor count
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('plan, subscription_status')
+    .eq('id', userId)
+    .single()
+
+  const isPro = profile?.plan === 'pro'
+
+  if (!isPro) {
+    const { count } = await supabase
+      .from('investors')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+
+    if ((count ?? 0) >= 25) {
+      return NextResponse.json(
+        { error: 'Free plan limit reached. Upgrade to Pro for unlimited investors.', limit: true },
+        { status: 403 }
+      )
+    }
+  }
+
   const body = await req.json()
 
   const { data, error } = await supabase

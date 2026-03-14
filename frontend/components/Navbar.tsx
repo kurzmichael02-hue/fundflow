@@ -8,6 +8,7 @@ export default function Navbar() {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const [investorsOpen, setInvestorsOpen] = useState(false)
+  const [plan, setPlan] = useState<string | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -18,6 +19,15 @@ export default function Navbar() {
     }
     document.addEventListener("mousedown", handleClick)
     return () => document.removeEventListener("mousedown", handleClick)
+  }, [])
+
+  useEffect(() => {
+    const token = localStorage.getItem("token")
+    if (!token) return
+    fetch("/api/profile", { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setPlan(d.plan || d.subscription_status || "free"))
+      .catch(() => {})
   }, [])
 
   function handleLogout() {
@@ -38,13 +48,18 @@ export default function Navbar() {
           <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white"
             style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>FF</div>
           <span className="text-white font-semibold text-sm tracking-tight">FundFlow</span>
+          {plan === "pro" && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md"
+              style={{ background: "rgba(16,185,129,0.12)", color: "#34d399", border: "1px solid rgba(16,185,129,0.2)" }}>
+              PRO
+            </span>
+          )}
         </button>
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-1">
 
-          {/* Dashboard */}
-          <button onClick={() => router.push("/")}
+          <button onClick={() => router.push("/dashboard")}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium cursor-pointer border-0 transition-all"
             style={{ background: pathname === "/dashboard" ? "rgba(14,165,233,0.1)" : "transparent", color: pathname === "/dashboard" ? "#38bdf8" : "#64748b" }}>
             <RiDashboardLine size={15} /> Dashboard
@@ -86,21 +101,18 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Pipeline */}
           <button onClick={() => router.push("/pipeline")}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium cursor-pointer border-0 transition-all"
             style={{ background: pathname === "/pipeline" ? "rgba(14,165,233,0.1)" : "transparent", color: pathname === "/pipeline" ? "#38bdf8" : "#64748b" }}>
             <RiKanbanView size={15} /> Pipeline
           </button>
 
-          {/* Analytics */}
           <button onClick={() => router.push("/analytics")}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium cursor-pointer border-0 transition-all"
             style={{ background: pathname === "/analytics" ? "rgba(14,165,233,0.1)" : "transparent", color: pathname === "/analytics" ? "#38bdf8" : "#64748b" }}>
             <RiBarChartLine size={15} /> Analytics
           </button>
 
-          {/* Profile */}
           <button onClick={() => router.push("/profile")}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium cursor-pointer border-0 transition-all"
             style={{ background: pathname === "/profile" ? "rgba(14,165,233,0.1)" : "transparent", color: pathname === "/profile" ? "#38bdf8" : "#64748b" }}>
