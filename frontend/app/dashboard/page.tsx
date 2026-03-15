@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/Navbar"
 import { createClient } from "@supabase/supabase-js"
-import { RiUserLine, RiFireLine, RiGroupLine, RiCheckboxCircleLine, RiBellLine, RiRadioButtonLine } from "react-icons/ri"
+import { RiUserLine, RiFireLine, RiGroupLine, RiCheckboxCircleLine, RiBellLine, RiRadioButtonLine, RiArrowRightLine, RiAccountCircleLine, RiRocketLine } from "react-icons/ri"
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; border: string; label: string }> = {
   outreach:   { bg: "rgba(107,114,128,0.12)", color: "#9ca3af", border: "rgba(107,114,128,0.25)", label: "Outreach" },
@@ -174,6 +174,35 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+
+        {/* Getting Started */}
+{investors.length === 0 && (
+  <div className="rounded-2xl border border-white/[0.06] p-5 mb-6"
+    style={{ background: "rgba(255,255,255,0.02)" }}>
+    <p className="text-[13px] font-semibold text-white mb-4">Get started with FundFlow</p>
+    <div className="flex flex-col gap-2.5">
+      {[
+        { step: "1", label: "Add your first investor", sub: "Start building your pipeline", path: "/investors", icon: <RiUserLine size={14} />, done: false },
+        { step: "2", label: "Set up your profile", sub: "Add your company info and connect your wallet", path: "/profile", icon: <RiAccountCircleLine size={14} />, done: false },
+        { step: "3", label: "Publish a project", sub: "Let investors find you on the deal flow", path: "/profile", icon: <RiRocketLine size={14} />, done: false },
+      ].map(item => (
+        <button key={item.step} onClick={() => router.push(item.path)}
+          className="flex items-center gap-3.5 px-4 py-3 rounded-xl border border-white/[0.05] hover:border-sky-500/20 transition-all cursor-pointer bg-transparent text-left w-full"
+          style={{ background: "rgba(255,255,255,0.02)" }}>
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-sky-400"
+            style={{ background: "rgba(14,165,233,0.1)" }}>
+            {item.icon}
+          </div>
+          <div className="min-w-0">
+            <p className="text-[13px] font-medium text-white">{item.label}</p>
+            <p className="text-[11px] text-slate-600">{item.sub}</p>
+          </div>
+          <RiArrowRightLine size={14} className="text-slate-700 ml-auto flex-shrink-0" />
+        </button>
+      ))}
+    </div>
+  </div>
+)}
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
