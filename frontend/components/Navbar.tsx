@@ -60,10 +60,10 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-1">
 
           <button onClick={() => router.push("/dashboard")}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium cursor-pointer border-0 transition-all"
-            style={{ background: pathname === "/dashboard" ? "rgba(14,165,233,0.1)" : "transparent", color: pathname === "/dashboard" ? "#38bdf8" : "#64748b" }}>
-            <RiDashboardLine size={15} /> Dashboard
-          </button>
+  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium cursor-pointer border-0 transition-all"
+  style={{ background: pathname === "/dashboard" ? "rgba(14,165,233,0.1)" : "transparent", color: pathname === "/dashboard" ? "#38bdf8" : "#64748b" }}>
+  <RiDashboardLine size={15} /> Dashboard
+</button>
 
           {/* Investors dropdown */}
           <div className="relative" ref={dropdownRef}>
