@@ -63,7 +63,17 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {error && <div style={{ fontSize: 13, color: "#f87171", marginBottom: 16, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 8, padding: "10px 14px" }}>{error}</div>}
+          {error && (
+  <div style={{ fontSize: 13, color: "#f87171", marginBottom: 16, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 8, padding: "10px 14px" }}>
+    {error}
+    {(error.toLowerCase().includes("invalid") || error.toLowerCase().includes("credentials") || error.toLowerCase().includes("not found")) && (
+      <span style={{ display: "block", marginTop: 6, color: "#94a3b8" }}>
+        No account found?{" "}
+        <Link href="/register" style={{ color: "#0ea5e9", textDecoration: "none" }}>Create one here</Link>
+      </span>
+    )}
+  </div>
+)}
 
           <button onClick={handleLogin} disabled={loading}
             style={{ width: "100%", background: "linear-gradient(135deg, #0ea5e9, #0284c7)", color: "#fff", border: "none", borderRadius: 8, padding: "12px", fontWeight: 600, fontSize: 14, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
