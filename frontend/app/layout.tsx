@@ -19,9 +19,32 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "FundFlow",
-  description: "Web3 Investor CRM for Founders",
-};
+  title: "FundFlow — Investor CRM for Web3 Founders",
+  description: "FundFlow helps Web3 startup founders manage their entire fundraising process — track investor relationships, manage deal pipelines, and close your round faster.",
+  keywords: ["investor CRM", "Web3 fundraising", "startup investors", "deal flow", "crypto founders", "fundraising pipeline"],
+  authors: [{ name: "FundFlow" }],
+  creator: "FundFlow",
+  metadataBase: new URL("https://fundflow.io"),
+  openGraph: {
+    title: "FundFlow — Investor CRM for Web3 Founders",
+    description: "Track investors, manage your pipeline, and close your round faster. Built for Web3 founders.",
+    url: "https://fundflow.io",
+    siteName: "FundFlow",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "FundFlow — Investor CRM for Web3 Founders",
+    description: "Track investors, manage your pipeline, and close your round faster.",
+    creator: "@fundflow",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
+
 
 export default function RootLayout({
   children,
