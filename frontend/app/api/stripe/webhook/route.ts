@@ -28,27 +28,73 @@ export async function POST(req: NextRequest) {
 
   const supabase = getClient()
 
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session
-    const userId = session.metadata?.userId
-    if (userId) {
+  switch (event.type) {
+
+    case "checkout.session.completed": {
+      const session = event.data.object as Stripe.Checkout.Session
+      const userId = session.metadata?.userId
+      if (userId) {
+        await supabase
+          .from("profiles")
+          .update({
+            plan: "pro",
+            stripe_customer_id: session.customer as string,
+            stripe_subscription_id: session.subscription as string,
+          })
+          .eq("id", userId)
+      }
+      break
+    }
+
+    case "invoice.paid": {
+      // Monthly renewal — keep plan active
+      const invoice = event.data.object as Stripe.Invoice
+      const subId = (invoice as any).subscription as string
+      if (subId) {
+        await supabase
+          .from("profiles")
+          .update({ plan: "pro" })
+          .eq("stripe_subscription_id", subId)
+      }
+      break
+    }
+
+    case "invoice.payment_failed": {
+      // Payment failed — optionally notify, but don't downgrade yet
+      // Stripe will retry automatically
+      console.log("Payment failed for invoice:", (event.data.object as Stripe.Invoice).id)
+      break
+    }
+
+    case "customer.subscription.updated": {
+      const subscription = event.data.object as Stripe.Subscription
+      const status = subscription.status
+      // If subscription is past_due or unpaid, downgrade to free
+      if (status === "past_due" || status === "unpaid" || status === "canceled") {
+        await supabase
+          .from("profiles")
+          .update({ plan: "free" })
+          .eq("stripe_subscription_id", subscription.id)
+      } else if (status === "active") {
+        await supabase
+          .from("profiles")
+          .update({ plan: "pro" })
+          .eq("stripe_subscription_id", subscription.id)
+      }
+      break
+    }
+
+    case "customer.subscription.deleted": {
+      const subscription = event.data.object as Stripe.Subscription
       await supabase
         .from("profiles")
-        .update({
-          plan: "pro",
-          stripe_customer_id: session.customer as string,
-          stripe_subscription_id: session.subscription as string,
+        .update({ 
+          plan: "free",
+          stripe_subscription_id: null,
         })
-        .eq("id", userId)
+        .eq("stripe_subscription_id", subscription.id)
+      break
     }
-  }
-
-  if (event.type === "customer.subscription.deleted") {
-    const subscription = event.data.object as Stripe.Subscription
-    await supabase
-      .from("profiles")
-      .update({ plan: "free" })
-      .eq("stripe_subscription_id", subscription.id)
   }
 
   return NextResponse.json({ received: true })
