@@ -32,6 +32,7 @@ export default function InvestorsPage() {
   const [saving, setSaving] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [editData, setEditData] = useState<any>({})
+  const [plan, setPlan] = useState("free")
 
   useEffect(() => {
     const token = localStorage.getItem("token")
@@ -44,6 +45,10 @@ export default function InvestorsPage() {
       const res = await fetch("/api/investors", { headers: { Authorization: `Bearer ${token}` } })
       const data = await res.json()
       setInvestors(Array.isArray(data) ? data : [])
+      const token2 = localStorage.getItem("token")!
+const profileRes = await fetch("/api/profile", { headers: { Authorization: `Bearer ${token2}` } })
+const profileData = await profileRes.json()
+setPlan(profileData.plan || profileData.subscription_status || "free")
     } catch {
       addToast("Failed to load investors", "error")
     } finally {
@@ -177,6 +182,30 @@ export default function InvestorsPage() {
             </button>
           </div>
         </div>
+
+        {plan === "free" && (
+  <div className="rounded-2xl border p-3 mb-5 flex items-center justify-between gap-3"
+    style={{ background: "rgba(255,255,255,0.02)", borderColor: investors.length >= 20 ? "rgba(239,68,68,0.2)" : "rgba(255,255,255,0.06)" }}>
+    <div className="flex items-center gap-3">
+      <div className="flex-1 h-1.5 rounded-full w-32 overflow-hidden"
+        style={{ background: "rgba(255,255,255,0.06)" }}>
+        <div className="h-full rounded-full transition-all"
+          style={{
+            width: `${Math.min((investors.length / 25) * 100, 100)}%`,
+            background: investors.length >= 20 ? "rgba(239,68,68,0.7)" : "linear-gradient(90deg, #0ea5e9, #38bdf8)"
+          }} />
+      </div>
+      <span className="text-[11px] font-medium"
+        style={{ color: investors.length >= 20 ? "#f87171" : "#64748b" }}>
+        {investors.length} / 25 investors used
+      </span>
+    </div>
+    <button onClick={() => router.push("/dashboard")}
+      className="text-[11px] text-sky-400 hover:text-sky-300 cursor-pointer border-0 bg-transparent flex-shrink-0">
+      Upgrade to Pro →
+    </button>
+  </div>
+)}
 
         {/* Search + Filter */}
         <div className="flex flex-col sm:flex-row gap-3 mb-5">
