@@ -226,10 +226,7 @@ export default function Home() {
               style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
               Start for free <RiArrowRightLine size={16} />
             </Link>
-            <Link href="/login"
-              className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-[15px] font-medium text-slate-400 border border-white/[0.08] hover:bg-white/5 hover:text-slate-200 transition-all no-underline">
-              <RiPlayCircleLine size={16} /> View demo
-            </Link>
+            
           </div>
 
           <div className="flex flex-wrap items-center gap-4">
