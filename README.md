@@ -80,6 +80,7 @@ erDiagram
         text plan
         text stripe_customer_id
         text stripe_subscription_id
+        text wallet_address
     }
 
     investors {
@@ -87,6 +88,7 @@ erDiagram
         uuid user_id FK
         text name
         text company
+        text email
         text status
         text deal_size
         text notes
@@ -96,8 +98,12 @@ erDiagram
         uuid id PK
         uuid user_id FK
         text name
+        text description
         text stage
-        text raise_amount
+        text chain
+        numeric goal
+        numeric raised
+        text[] tags
         boolean published
     }
 
@@ -106,7 +112,7 @@ erDiagram
         uuid project_id FK
         text investor_email
         text investor_name
-        text message
+        timestamptz created_at
     }
 
     investor_directory {
@@ -115,7 +121,21 @@ erDiagram
         text firm
         text[] sector
         text[] stage
+        numeric check_size_min
+        numeric check_size_max
         boolean web3_focus
+        text location
+        text website
+    }
+
+    contacts {
+        uuid id PK
+        text first_name
+        text last_name
+        text email
+        text category
+        text message
+        timestamptz created_at
     }
 
     profiles ||--o{ investors : "owns"
@@ -169,14 +189,16 @@ sequenceDiagram
 | DELETE | `/api/investors?id=` | ✓ | Delete investor |
 | GET | `/api/profile` | ✓ | Get profile |
 | PATCH | `/api/profile` | ✓ | Update profile |
-| GET | `/api/projects` | ✓ | Get projects |
-| POST | `/api/projects` | ✓ | Create project |
+| GET | `/api/projects` | — | Get published projects |
+| POST | `/api/projects` | ✓ | Create / update project |
+| PATCH | `/api/projects` | ✓ | Get own project |
 | GET | `/api/interests` | ✓ | Get deal flow interests |
 | POST | `/api/interests` | — | Express interest (investor) |
 | GET | `/api/investor-directory` | — | Curated investor list |
 | POST | `/api/stripe/checkout` | ✓ | Create checkout session |
 | POST | `/api/stripe/portal` | ✓ | Create billing portal session |
 | POST | `/api/stripe/webhook` | — | Handle Stripe events |
+| POST | `/api/contact` | — | Submit contact form |
 
 ---
 
@@ -200,6 +222,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 STRIPE_WEBHOOK_SECRET=
 NEXT_PUBLIC_POSTHOG_KEY=
 NEXT_PUBLIC_POSTHOG_HOST=
+RESEND_API_KEY=
 ```
 
 ---
@@ -210,17 +233,37 @@ NEXT_PUBLIC_POSTHOG_HOST=
 fundflow/
 └── frontend/
     ├── app/
-    │   ├── page.tsx              # Landing page
-    │   ├── dashboard/            # Dashboard + Realtime
-    │   ├── investors/            # CRM + Database
-    │   ├── pipeline/             # Kanban
-    │   ├── analytics/            # Analytics
-    │   ├── profile/              # Profile + Wallet
-    │   ├── investor/             # Investor portal
-    │   └── api/                  # All API routes
+    │   ├── page.tsx                  # Landing page
+    │   ├── about/                    # About page
+    │   ├── contact/                  # Contact form
+    │   ├── privacy/                  # Privacy policy
+    │   ├── terms/                    # Terms of service
+    │   ├── login/                    # Founder login
+    │   ├── register/                 # Founder register
+    │   ├── dashboard/                # Dashboard + Realtime
+    │   ├── investors/
+    │   │   ├── page.tsx              # CRM table
+    │   │   └── database/             # Curated investor database
+    │   ├── pipeline/                 # Kanban pipeline
+    │   ├── analytics/                # Analytics + charts
+    │   ├── profile/                  # Profile + wallet + project
+    │   ├── investor/
+    │   │   ├── page.tsx              # Investor login
+    │   │   ├── register/             # Investor register
+    │   │   └── discover/             # Deal flow
+    │   └── api/
+    │       ├── auth/
+    │       ├── investors/
+    │       ├── projects/
+    │       ├── interests/
+    │       ├── profile/
+    │       ├── investor-directory/
+    │       ├── contact/
+    │       └── stripe/
     ├── components/
     │   ├── Navbar.tsx
-    │   └── Toast.tsx
+    │   ├── Toast.tsx
+    │   └── CookieBanner.tsx
     └── lib/
         ├── supabase.ts
         └── api.ts
@@ -232,7 +275,7 @@ fundflow/
 
 | Name | Role |
 |---|---|
-| Taiwo "Crypton Jay" | Founder |
+| Taiwo "Crypton Jay" | Founder & CEO |
 | Joshua Oyerinde | CTO |
 | Michael Kurz | Technical Manager |
 
