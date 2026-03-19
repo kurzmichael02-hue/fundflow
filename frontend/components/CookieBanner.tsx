@@ -30,7 +30,7 @@ export default function CookieBanner() {
         <div className="flex-1 min-w-0">
           <p className="text-[13px] text-slate-300 leading-relaxed">
             We use cookies to improve your experience and analyze usage.{" "}
-            <Link href="/privacy" className="text-sky-400 hover:text-sky-300 transition-colors underline-offset-2 underline">
+            <Link href="/privacy" className="text-emerald-400 hover:text-emerald-300 transition-colors underline-offset-2 underline">
               Privacy Policy
             </Link>
           </p>
@@ -42,7 +42,7 @@ export default function CookieBanner() {
           </button>
           <button onClick={accept}
             className="px-4 py-2 rounded-xl text-xs font-semibold text-white cursor-pointer border-0 transition-all"
-            style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+            style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
             Accept
           </button>
           <button onClick={decline}
