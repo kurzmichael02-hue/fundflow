@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { api } from "@/lib/api"
 import Navbar from "@/components/Navbar"
 import { ToastContainer, useToast } from "@/components/Toast"
+import { RiUserLine, RiFireLine, RiCheckboxCircleLine } from "react-icons/ri"
 
 type Status = "outreach" | "interested" | "meeting" | "term_sheet" | "closed"
 
@@ -39,21 +40,45 @@ export default function PipelinePage() {
     }
   }
 
+  const stats = [
+    { label: "Total Investors", value: investors.length, icon: <RiUserLine size={15} />, color: "#10b981" },
+    { label: "Active Leads", value: investors.filter(i => ["interested", "meeting", "term_sheet"].includes(i.status)).length, icon: <RiFireLine size={15} />, color: "#a78bfa" },
+    { label: "Deals Closed", value: investors.filter(i => i.status === "closed").length, icon: <RiCheckboxCircleLine size={15} />, color: "#34d399" },
+  ]
+
   if (loading) return (
-    <div className="min-h-screen bg-[#04070f] flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "#050508" }}>
       <div className="flex items-center gap-3 text-slate-500 text-sm">
-        <div className="w-4 h-4 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+        <div className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "#10b981", borderTopColor: "transparent" }} />
         Loading...
       </div>
     </div>
   )
 
   return (
-    <main className="min-h-screen bg-[#04070f] text-slate-200">
+    <main className="min-h-screen text-slate-200" style={{ background: "#050508" }}>
       <ToastContainer toasts={toasts} removeToast={removeToast} />
       <Navbar />
       <div className="px-4 md:px-12 py-8">
-        <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight mb-6">Pipeline</h2>
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>Pipeline</h2>
+          {/* Stats */}
+          <div className="flex items-center gap-3">
+            {stats.map(s => (
+              <div key={s.label} className="flex items-center gap-2 px-3 py-2 rounded-xl border"
+                style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center"
+                  style={{ background: `${s.color}15`, color: s.color }}>
+                  {s.icon}
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-white leading-none">{s.value}</div>
+                  <div className="text-[10px] text-slate-600 mt-0.5">{s.label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Desktop: 5 columns */}
         <div className="hidden md:grid md:grid-cols-5 gap-4">
@@ -66,9 +91,7 @@ export default function PipelinePage() {
         <div className="md:hidden">
           <div className="flex gap-2 mb-4 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
             {COLUMNS.map(col => (
-              <button
-                key={col.key}
-                onClick={() => setActiveTab(col.key)}
+              <button key={col.key} onClick={() => setActiveTab(col.key)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-medium whitespace-nowrap cursor-pointer border transition-all"
                 style={{
                   background: activeTab === col.key ? `${col.color}18` : "rgba(255,255,255,0.02)",
@@ -83,7 +106,6 @@ export default function PipelinePage() {
               </button>
             ))}
           </div>
-
           {COLUMNS.filter(col => col.key === activeTab).map(col => (
             <PipelineColumn key={col.key} col={col} investors={investors} moveInvestor={moveInvestor} />
           ))}
@@ -104,7 +126,7 @@ function PipelineColumn({ col, investors, moveInvestor }: {
     <div className="rounded-2xl p-4 border border-white/[0.05] min-h-[160px]"
       style={{ background: "rgba(255,255,255,0.02)", borderTop: `2px solid ${col.color}` }}>
       <div className="flex items-center justify-between mb-4">
-        <span className="text-[13px] font-semibold" style={{ color: col.color }}>{col.label}</span>
+        <span className="text-[13px] font-semibold" style={{ color: col.color, fontFamily: "'Syne', sans-serif" }}>{col.label}</span>
         <span className="text-[11px] px-2 py-0.5 rounded-full text-slate-500 border border-white/[0.06]"
           style={{ background: "rgba(255,255,255,0.04)" }}>
           {colInvestors.length}
@@ -118,7 +140,7 @@ function PipelineColumn({ col, investors, moveInvestor }: {
             <div className="text-[11px] text-slate-600 mb-3">{inv.company || "—"}</div>
             <select value={inv.status} onChange={e => moveInvestor(inv.id, e.target.value as Status)}
               className="w-full rounded-lg text-[11px] px-2 py-1.5 border border-white/[0.08] outline-none cursor-pointer"
-              style={{ background: "#0a0d14", color: "#94a3b8" }}>
+              style={{ background: "#050508", color: "#94a3b8" }}>
               {COLUMNS.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
             </select>
           </div>
