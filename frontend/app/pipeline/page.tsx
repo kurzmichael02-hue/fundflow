@@ -60,25 +60,12 @@ export default function PipelinePage() {
       <ToastContainer toasts={toasts} removeToast={removeToast} />
       <Navbar />
       <div className="px-4 md:px-12 py-8">
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        
+
+      <div className="mb-6">
           <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>Pipeline</h2>
-          {/* Stats */}
-          <div className="flex items-center gap-3">
-            {stats.map(s => (
-              <div key={s.label} className="flex items-center gap-2 px-3 py-2 rounded-xl border"
-                style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
-                <div className="w-6 h-6 rounded-lg flex items-center justify-center"
-                  style={{ background: `${s.color}15`, color: s.color }}>
-                  {s.icon}
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-white leading-none">{s.value}</div>
-                  <div className="text-[10px] text-slate-600 mt-0.5">{s.label}</div>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
+
 
         {/* Desktop: 5 columns */}
         <div className="hidden md:grid md:grid-cols-5 gap-4">
@@ -86,6 +73,7 @@ export default function PipelinePage() {
             <PipelineColumn key={col.key} col={col} investors={investors} moveInvestor={moveInvestor} />
           ))}
         </div>
+
 
         {/* Mobile: tabs + single column view */}
         <div className="md:hidden">
@@ -108,6 +96,17 @@ export default function PipelinePage() {
           </div>
           {COLUMNS.filter(col => col.key === activeTab).map(col => (
             <PipelineColumn key={col.key} col={col} investors={investors} moveInvestor={moveInvestor} />
+          ))}
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3 mt-5">
+          {stats.map(s => (
+            <div key={s.label} className="rounded-2xl p-4 border text-center"
+              style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
+              <div className="text-2xl font-bold mb-1" style={{ color: s.color, fontFamily: "'Syne', sans-serif" }}>{s.value}</div>
+              <div className="text-[11px] text-slate-600">{s.label}</div>
+            </div>
           ))}
         </div>
       </div>
