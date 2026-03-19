@@ -142,7 +142,7 @@ export default function Home() {
 
           <h1 className="syne font-black text-white mb-6 leading-[1.0]"
             style={{ fontSize: "clamp(44px,7vw,88px)", letterSpacing: "-0.04em" }}>
-            Stop losing deals to
+            Stop losing deals to{" "}
             <span style={{ display: "block", background: "linear-gradient(135deg, #10b981 0%, #34d399 50%, #6ee7b7 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
               bad tracking.
             </span>
@@ -435,7 +435,7 @@ export default function Home() {
             <div>
               <p className="font-semibold uppercase tracking-widest mb-4" style={{ fontSize: "11px", color: "#334155" }}>Company</p>
               <div className="flex flex-col gap-2.5 mb-6">
-                {[{ label: "Privacy Policy", href: "/privacy" }, { label: "Terms of Service", href: "/terms" }, { label: "Contact", href: "mailto:hello@fundflow.io" }].map(l => (
+                {[{ label: "Privacy Policy", href: "/privacy" }, { label: "Terms of Service", href: "/terms" }, { label: "Contact", href: "/contact" }].map(l => (
                   <a key={l.label} href={l.href} className="no-underline transition-colors" style={{ fontSize: "14px", color: "#475569" }}
                     onMouseEnter={e => (e.target as HTMLElement).style.color = "#e2e8f0"}
                     onMouseLeave={e => (e.target as HTMLElement).style.color = "#475569"}>
