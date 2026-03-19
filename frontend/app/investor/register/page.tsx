@@ -32,29 +32,24 @@ export default function InvestorRegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#04070f] flex overflow-hidden">
+    <div className="min-h-screen flex overflow-hidden" style={{ background: "#050508" }}>
 
-      {/* Ambient background */}
+      {/* Ambient */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-[-120px] left-[-80px] w-[500px] h-[500px] rounded-full"
           style={{ background: "radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%)", filter: "blur(60px)" }} />
         <div className="absolute bottom-[-80px] right-[-60px] w-[400px] h-[400px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(14,165,233,0.05) 0%, transparent 70%)", filter: "blur(60px)" }} />
-        <div className="absolute inset-0 opacity-[0.025]"
+          style={{ background: "radial-gradient(circle, rgba(16,185,129,0.04) 0%, transparent 70%)", filter: "blur(60px)" }} />
+        <div className="absolute inset-0 opacity-[0.02]"
           style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
       </div>
 
       {/* Left panel */}
       <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between p-14">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)", boxShadow: "0 0 20px rgba(14,165,233,0.2)" }}>
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M9 2L15.5 6V12L9 16L2.5 12V6L9 2Z" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
-              <path d="M9 6L12 8V12L9 14L6 12V8L9 6Z" fill="white" fillOpacity="0.6"/>
-            </svg>
-          </div>
-          <span className="text-white font-semibold text-lg tracking-tight">FundFlow</span>
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black text-white"
+            style={{ background: "linear-gradient(135deg, #10b981, #059669)", boxShadow: "0 0 20px rgba(16,185,129,0.2)" }}>FF</div>
+          <span className="text-white font-semibold text-lg tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>FundFlow</span>
         </Link>
 
         <div>
@@ -63,28 +58,15 @@ export default function InvestorRegisterPage() {
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-emerald-400 text-xs font-medium tracking-wide">Investor Portal</span>
           </div>
-          <h1 className="text-5xl font-bold text-white mb-5 leading-[1.1]" style={{ letterSpacing: "-0.03em" }}>
+          <h1 className="text-5xl font-bold text-white mb-5 leading-[1.1]" style={{ letterSpacing: "-0.03em", fontFamily: "'Syne', sans-serif" }}>
             Join the network.<br />
-            <span style={{ background: "linear-gradient(90deg, #0ea5e9, #38bdf8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            <span style={{ background: "linear-gradient(90deg, #10b981, #34d399)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               Find your next deal.
             </span>
           </h1>
           <p className="text-slate-500 text-[15px] leading-relaxed max-w-sm">
             Get access to curated Web3 founders actively raising, filter by stage and sector, and express interest directly.
           </p>
-
-          <div className="flex gap-8 mt-10">
-            {[
-              { value: "240+", label: "Founders" },
-              { value: "$18M", label: "Tracked Raise" },
-              { value: "94%", label: "Response Rate" },
-            ].map(s => (
-              <div key={s.label}>
-                <div className="text-2xl font-bold text-white" style={{ letterSpacing: "-0.02em" }}>{s.value}</div>
-                <div className="text-xs text-slate-600 mt-0.5">{s.label}</div>
-              </div>
-            ))}
-          </div>
         </div>
 
         <div className="rounded-2xl border p-5"
@@ -94,7 +76,7 @@ export default function InvestorRegisterPage() {
           </p>
           <div className="flex items-center gap-3 mt-4">
             <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
-              style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>A</div>
+              style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>A</div>
             <div>
               <p className="text-white text-xs font-medium">Alex Chen</p>
               <p className="text-slate-600 text-[11px]">Partner, Meridian Ventures</p>
@@ -109,14 +91,9 @@ export default function InvestorRegisterPage() {
 
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-2.5 mb-10">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M9 2L15.5 6V12L9 16L2.5 12V6L9 2Z" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
-                <path d="M9 6L12 8V12L9 14L6 12V8L9 6Z" fill="white" fillOpacity="0.6"/>
-              </svg>
-            </div>
-            <span className="text-white font-semibold text-lg">FundFlow</span>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black text-white"
+              style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>FF</div>
+            <span className="text-white font-semibold text-lg" style={{ fontFamily: "'Syne', sans-serif" }}>FundFlow</span>
           </div>
 
           {success ? (
@@ -127,10 +104,9 @@ export default function InvestorRegisterPage() {
                   <path d="M20 6L9 17l-5-5"/>
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2" style={{ letterSpacing: "-0.02em" }}>Check your email</h2>
+              <h2 className="text-2xl font-bold text-white mb-2" style={{ letterSpacing: "-0.02em", fontFamily: "'Syne', sans-serif" }}>Check your email</h2>
               <p className="text-slate-500 text-sm mb-6">We sent a confirmation link to <span className="text-white">{form.email}</span>. Click it to activate your account.</p>
-              <Link href="/investor"
-                className="text-sky-400 hover:text-sky-300 text-sm transition-colors">
+              <Link href="/investor" className="text-sm transition-colors" style={{ color: "#10b981" }}>
                 Back to login →
               </Link>
             </div>
@@ -142,7 +118,7 @@ export default function InvestorRegisterPage() {
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                   <span className="text-emerald-400 text-xs font-medium">Investor Access</span>
                 </div>
-                <h2 className="text-2xl font-bold text-white" style={{ letterSpacing: "-0.02em" }}>Create your account</h2>
+                <h2 className="text-2xl font-bold text-white" style={{ letterSpacing: "-0.02em", fontFamily: "'Syne', sans-serif" }}>Create your account</h2>
                 <p className="text-slate-500 text-sm mt-1">Join FundFlow as an investor</p>
               </div>
 
@@ -153,7 +129,7 @@ export default function InvestorRegisterPage() {
                     placeholder="Your name" required
                     className="w-full rounded-xl px-4 py-3 text-sm text-slate-200 border outline-none transition-all"
                     style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.08)" }}
-                    onFocus={e => e.target.style.borderColor = "rgba(14,165,233,0.4)"}
+                    onFocus={e => e.target.style.borderColor = "rgba(16,185,129,0.4)"}
                     onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.08)"} />
                 </div>
                 <div>
@@ -162,7 +138,7 @@ export default function InvestorRegisterPage() {
                     placeholder="you@fund.com" required
                     className="w-full rounded-xl px-4 py-3 text-sm text-slate-200 border outline-none transition-all"
                     style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.08)" }}
-                    onFocus={e => e.target.style.borderColor = "rgba(14,165,233,0.4)"}
+                    onFocus={e => e.target.style.borderColor = "rgba(16,185,129,0.4)"}
                     onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.08)"} />
                 </div>
                 <div>
@@ -173,7 +149,7 @@ export default function InvestorRegisterPage() {
                       placeholder="••••••••" required minLength={6}
                       className="w-full rounded-xl px-4 py-3 pr-11 text-sm text-slate-200 border outline-none transition-all"
                       style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.08)" }}
-                      onFocus={e => e.target.style.borderColor = "rgba(14,165,233,0.4)"}
+                      onFocus={e => e.target.style.borderColor = "rgba(16,185,129,0.4)"}
                       onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.08)"} />
                     <button type="button" onClick={() => setShowPass(!showPass)}
                       className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400 cursor-pointer bg-transparent border-0">
@@ -195,7 +171,7 @@ export default function InvestorRegisterPage() {
 
                 <button type="submit" disabled={loading}
                   className="w-full py-3 rounded-xl text-sm font-semibold text-white mt-1 cursor-pointer border-0 disabled:opacity-60"
-                  style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)", boxShadow: "0 0 20px rgba(14,165,233,0.15)" }}>
+                  style={{ background: "linear-gradient(135deg, #10b981, #059669)", boxShadow: "0 0 20px rgba(16,185,129,0.15)" }}>
                   {loading ? "Creating account..." : "Create account →"}
                 </button>
               </form>

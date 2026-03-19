@@ -49,14 +49,12 @@ export default function InvestorDiscoverPage() {
   const [submitting, setSubmitting] = useState<string | null>(null)
   const { toasts, addToast, removeToast } = useToast()
 
-  // Try to get investor info from token
   const [investorEmail, setInvestorEmail] = useState("")
   const [investorName, setInvestorName] = useState("")
 
   useEffect(() => {
     const token = localStorage.getItem("token")
     if (!token) { router.push("/investor"); return }
-    // Decode token to get email
     try {
       const payload = JSON.parse(atob(token.split('.')[1]))
       setInvestorEmail(payload.email || "")
@@ -111,7 +109,7 @@ export default function InvestorDiscoverPage() {
   }, [projects, activeStage, search])
 
   return (
-    <div className="min-h-screen bg-[#04070f] text-slate-200">
+    <div className="min-h-screen text-slate-200" style={{ background: "#050508" }}>
       <ToastContainer toasts={toasts} removeToast={removeToast} />
       <Navbar />
 
@@ -122,7 +120,7 @@ export default function InvestorDiscoverPage() {
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-emerald-400 text-xs font-medium">{projects.length} active founder{projects.length !== 1 ? "s" : ""}</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight mb-1">Deal Flow</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight mb-1" style={{ fontFamily: "'Syne', sans-serif" }}>Deal Flow</h1>
           <p className="text-slate-500 text-sm">Curated Web3 founders actively raising. Express interest to connect directly.</p>
         </div>
 
@@ -141,9 +139,9 @@ export default function InvestorDiscoverPage() {
             <button key={s} onClick={() => setActiveStage(s)}
               className="px-4 py-1.5 rounded-full text-[12px] font-medium whitespace-nowrap cursor-pointer border transition-all"
               style={{
-                background: activeStage === s ? `${STAGE_COLORS[s] || "rgba(255,255,255,0.1)"}18` : "rgba(255,255,255,0.02)",
-                color: activeStage === s ? (STAGE_COLORS[s] || "#e2e8f0") : "#475569",
-                borderColor: activeStage === s ? `${STAGE_COLORS[s] || "rgba(255,255,255,0.2)"}35` : "rgba(255,255,255,0.06)",
+                background: activeStage === s ? `${STAGE_COLORS[s] || "rgba(16,185,129,0.1)"}18` : "rgba(255,255,255,0.02)",
+                color: activeStage === s ? (STAGE_COLORS[s] || "#10b981") : "#475569",
+                borderColor: activeStage === s ? `${STAGE_COLORS[s] || "rgba(16,185,129,0.2)"}35` : "rgba(255,255,255,0.06)",
               }}>
               {STAGE_LABELS[s]}
             </button>
@@ -159,7 +157,10 @@ export default function InvestorDiscoverPage() {
               {projects.length === 0 ? "No projects published yet. Check back soon." : "No projects match your filters."}
               {projects.length > 0 && (
                 <button onClick={() => { setSearch(""); setActiveStage("all") }}
-                  className="ml-2 text-sky-400 cursor-pointer bg-transparent border-0">Clear</button>
+                  className="ml-2 cursor-pointer bg-transparent border-0"
+                  style={{ color: "#10b981" }}>
+                  Clear
+                </button>
               )}
             </div>
           ) : (
@@ -196,7 +197,7 @@ export default function InvestorDiscoverPage() {
                     </div>
 
                     <div>
-                      <h3 className="text-[15px] font-bold text-white tracking-tight">{project.name}</h3>
+                      <h3 className="text-[15px] font-bold text-white tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>{project.name}</h3>
                       <p className="text-[12px] text-slate-600 mt-0.5">by {founderName}</p>
                     </div>
 

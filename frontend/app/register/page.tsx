@@ -28,10 +28,10 @@ export default function RegisterPage() {
   }
 
   return (
-    <main style={{ minHeight: "100vh", background: "#04070f", display: "flex", alignItems: "center", justifyContent: "center", color: "#e2e8f0" }}>
+    <main style={{ minHeight: "100vh", background: "#050508", display: "flex", alignItems: "center", justifyContent: "center", color: "#e2e8f0" }}>
       <div style={{ width: "100%", maxWidth: 400, padding: "0 24px" }}>
         <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #0ea5e9, #0284c7)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff", margin: "0 auto 16px" }}>FF</div>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #10b981, #059669)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff", margin: "0 auto 16px" }}>FF</div>
           <h1 style={{ fontSize: 24, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em", marginBottom: 8 }}>Create your account</h1>
           <p style={{ fontSize: 14, color: "#475569" }}>Start managing your investor pipeline</p>
         </div>
@@ -73,14 +73,14 @@ export default function RegisterPage() {
           {error && <div style={{ fontSize: 13, color: "#f87171", marginBottom: 16, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 8, padding: "10px 14px" }}>{error}</div>}
 
           <button onClick={handleRegister} disabled={loading}
-            style={{ width: "100%", background: "linear-gradient(135deg, #0ea5e9, #0284c7)", color: "#fff", border: "none", borderRadius: 8, padding: "12px", fontWeight: 600, fontSize: 14, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
+            style={{ width: "100%", background: "linear-gradient(135deg, #10b981, #059669)", color: "#fff", border: "none", borderRadius: 8, padding: "12px", fontWeight: 600, fontSize: 14, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
             {loading ? "Creating account..." : "Create account →"}
           </button>
         </div>
 
         <p style={{ textAlign: "center", fontSize: 13, color: "#475569", marginTop: 20 }}>
           Already have an account?{" "}
-          <Link href="/login" style={{ color: "#0ea5e9", textDecoration: "none" }}>Sign in</Link>
+          <Link href="/login" style={{ color: "#10b981", textDecoration: "none" }}>Sign in</Link>
         </p>
       </div>
     </main>
