@@ -301,7 +301,7 @@ export default function ProfilePage() {
                   <button onClick={handleConnectMetaMask} disabled={connectingWallet}
                     className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium border cursor-pointer transition-all disabled:opacity-50"
                     style={{ background: "rgba(251,191,36,0.06)", borderColor: "rgba(251,191,36,0.2)", color: "#fbbf24" }}>
-                    <span className="text-lg">🦊</span>
+                    <RiWallet3Line size={18} />
                     {connectingWallet ? "Connecting..." : "Connect MetaMask"}
                     <span className="ml-auto text-[11px] text-slate-600">Browser extension</span>
                   </button>
