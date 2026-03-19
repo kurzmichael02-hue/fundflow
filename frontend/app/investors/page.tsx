@@ -146,7 +146,7 @@ export default function InvestorsPage() {
   if (loading) return (
     <div className="min-h-screen bg-[#04070f] flex items-center justify-center">
       <div className="flex items-center gap-3 text-slate-500 text-sm">
-        <div className="w-4 h-4 rounded-full border-2 border-sky-500 border-t-transparent animate-spin" />
+        <div className="w-4 h-4 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
         Loading...
       </div>
     </div>
@@ -172,7 +172,7 @@ export default function InvestorsPage() {
             </button>
             <button onClick={() => setShowAdd(true)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white cursor-pointer border-0"
-              style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+              style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
               <RiAddLine size={15} /> Add Investor
             </button>
           </div>
@@ -207,8 +207,8 @@ export default function InvestorsPage() {
 
         {/* Add Form */}
         {showAdd && (
-          <div className="rounded-2xl border border-sky-500/20 p-5 mb-5"
-            style={{ background: "rgba(14,165,233,0.04)" }}>
+          <div className="rounded-2xl border border-emerald-500/20 p-5 mb-5"
+            style={{ background: "rgba(16,185,129,0.04)" }}>
             <h3 className="text-sm font-semibold text-white mb-4">Add New Investor</h3>
             <form onSubmit={handleAdd} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
@@ -238,7 +238,7 @@ export default function InvestorsPage() {
                 </button>
                 <button type="submit" disabled={saving}
                   className="px-4 py-2 rounded-xl text-sm font-semibold text-white cursor-pointer border-0 disabled:opacity-60"
-                  style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+                  style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
                   {saving ? "Adding..." : "Add Investor"}
                 </button>
               </div>
@@ -279,8 +279,8 @@ export default function InvestorsPage() {
                         <div>
                           {isEditing ? (
                             <input value={editData.name} onChange={e => setEditData({ ...editData, name: e.target.value })}
-                              className="rounded-lg px-2 py-1 text-sm text-white border border-sky-500/30 outline-none w-32"
-                              style={{ background: "rgba(14,165,233,0.08)" }} />
+                              className="rounded-lg px-2 py-1 text-sm text-white border border-emerald-500/30 outline-none w-32"
+              style={{ background: "rgba(16,185,129,0.08)" }} />
                           ) : (
                             <p className="text-[13px] text-slate-200 font-medium">{inv.name}</p>
                           )}

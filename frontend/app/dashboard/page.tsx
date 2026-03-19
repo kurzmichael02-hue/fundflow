@@ -29,9 +29,7 @@ export default function DashboardPage() {
     if (!token) { router.push("/login"); return }
     fetchAll(token)
     setupRealtime(token)
-    return () => {
-      channelsRef.current.forEach(c => c.unsubscribe())
-    }
+    return () => { channelsRef.current.forEach(c => c.unsubscribe()) }
   }, [])
 
   async function fetchAll(token: string) {
@@ -66,26 +64,21 @@ export default function DashboardPage() {
       })
       const data = await res.json()
       if (data.url) window.location.href = data.url
-    } catch {
-      setUpgrading(false)
-    }
+    } catch { setUpgrading(false) }
   }
-
 
   async function handleManageBilling() {
-  setUpgrading(true)
-  const token = localStorage.getItem("token")!
-  try {
-    const res = await fetch("/api/stripe/portal", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    const data = await res.json()
-    if (data.url) window.location.href = data.url
-  } catch {
-    setUpgrading(false)
+    setUpgrading(true)
+    const token = localStorage.getItem("token")!
+    try {
+      const res = await fetch("/api/stripe/portal", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+    } catch { setUpgrading(false) }
   }
-}
 
   function setupRealtime(token: string) {
     let userId: string | null = null
@@ -103,31 +96,16 @@ export default function DashboardPage() {
 
     const invChannel = supabase
       .channel("investors-realtime")
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "investors",
-        filter: `user_id=eq.${userId}`,
-      }, (payload) => {
-        if (payload.eventType === "INSERT") {
-          setInvestors(prev => [payload.new as any, ...prev])
-        } else if (payload.eventType === "UPDATE") {
-          setInvestors(prev => prev.map(i => i.id === (payload.new as any).id ? payload.new as any : i))
-        } else if (payload.eventType === "DELETE") {
-          setInvestors(prev => prev.filter(i => i.id !== (payload.old as any).id))
-        }
+      .on("postgres_changes", { event: "*", schema: "public", table: "investors", filter: `user_id=eq.${userId}` }, (payload) => {
+        if (payload.eventType === "INSERT") setInvestors(prev => [payload.new as any, ...prev])
+        else if (payload.eventType === "UPDATE") setInvestors(prev => prev.map(i => i.id === (payload.new as any).id ? payload.new as any : i))
+        else if (payload.eventType === "DELETE") setInvestors(prev => prev.filter(i => i.id !== (payload.old as any).id))
       })
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") setLive(true)
-      })
+      .subscribe((status) => { if (status === "SUBSCRIBED") setLive(true) })
 
     const intChannel = supabase
       .channel("interests-realtime")
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "interests",
-      }, async () => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "interests" }, async () => {
         const token = localStorage.getItem("token")!
         const res = await fetch("/api/interests", { headers: { Authorization: `Bearer ${token}` } })
         const data = await res.json()
@@ -148,72 +126,70 @@ export default function DashboardPage() {
   const recent = investors.slice(0, 5)
 
   if (loading) return (
-    <div className="min-h-screen bg-[#04070f] flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "#050508" }}>
       <div className="flex items-center gap-3 text-slate-500 text-sm">
-        <div className="w-4 h-4 rounded-full border-2 border-sky-500 border-t-transparent animate-spin" />
+        <div className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "#10b981", borderTopColor: "transparent" }} />
         Loading...
       </div>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-[#04070f] text-slate-200">
+    <div className="min-h-screen text-slate-200" style={{ background: "#050508" }}>
       <Navbar />
       <div className="px-4 md:px-12 py-8 max-w-5xl mx-auto">
 
         <div className="mb-7 flex items-start justify-between">
           <div>
-            <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">Dashboard</h1>
+            <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>Dashboard</h1>
             <p className="text-xs text-slate-500 mt-0.5">Your fundraising overview</p>
           </div>
           {live && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
               style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.15)" }}>
               <RiRadioButtonLine size={11} className="text-emerald-400 animate-pulse" />
-              <span className="text-[11px] text-emerald-500 font-medium">Live</span>
+              <span className="text-[11px] font-medium" style={{ color: "#10b981" }}>Live</span>
             </div>
           )}
         </div>
 
-        {/* Getting Started */}
-{investors.length === 0 && (
-  <div className="rounded-2xl border border-white/[0.06] p-5 mb-6"
-    style={{ background: "rgba(255,255,255,0.02)" }}>
-    <p className="text-[13px] font-semibold text-white mb-4">Get started with FundFlow</p>
-    <div className="flex flex-col gap-2.5">
-      {[
-        { step: "1", label: "Add your first investor", sub: "Start building your pipeline", path: "/investors", icon: <RiUserLine size={14} />, done: false },
-        { step: "2", label: "Set up your profile", sub: "Add your company info and connect your wallet", path: "/profile", icon: <RiAccountCircleLine size={14} />, done: false },
-        { step: "3", label: "Publish a project", sub: "Let investors find you on the deal flow", path: "/profile", icon: <RiRocketLine size={14} />, done: false },
-      ].map(item => (
-        <button key={item.step} onClick={() => router.push(item.path)}
-          className="flex items-center gap-3.5 px-4 py-3 rounded-xl border border-white/[0.05] hover:border-sky-500/20 transition-all cursor-pointer bg-transparent text-left w-full"
-          style={{ background: "rgba(255,255,255,0.02)" }}>
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-sky-400"
-            style={{ background: "rgba(14,165,233,0.1)" }}>
-            {item.icon}
+        {/* Onboarding */}
+        {investors.length === 0 && (
+          <div className="rounded-2xl border p-5 mb-6" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
+            <p className="text-[13px] font-semibold text-white mb-4" style={{ fontFamily: "'Syne', sans-serif" }}>Get started with FundFlow</p>
+            <div className="flex flex-col gap-2.5">
+              {[
+                { label: "Add your first investor", sub: "Start building your pipeline", path: "/investors", icon: <RiUserLine size={14} /> },
+                { label: "Set up your profile", sub: "Add your company info and connect your wallet", path: "/profile", icon: <RiAccountCircleLine size={14} /> },
+                { label: "Publish a project", sub: "Let investors find you on the deal flow", path: "/profile", icon: <RiRocketLine size={14} /> },
+              ].map(item => (
+                <button key={item.label} onClick={() => router.push(item.path)}
+                  className="flex items-center gap-3.5 px-4 py-3 rounded-xl border cursor-pointer bg-transparent text-left w-full transition-all"
+                  style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ background: "rgba(16,185,129,0.1)", color: "#10b981" }}>
+                    {item.icon}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-medium text-white">{item.label}</p>
+                    <p className="text-[11px] text-slate-600">{item.sub}</p>
+                  </div>
+                  <RiArrowRightLine size={14} className="text-slate-700 ml-auto flex-shrink-0" />
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="text-[13px] font-medium text-white">{item.label}</p>
-            <p className="text-[11px] text-slate-600">{item.sub}</p>
-          </div>
-          <RiArrowRightLine size={14} className="text-slate-700 ml-auto flex-shrink-0" />
-        </button>
-      ))}
-    </div>
-  </div>
-)}
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           {[
-            { label: "Total Investors", value: stats.total, sub: "in pipeline", icon: <RiUserLine size={16} />, color: "#38bdf8" },
+            { label: "Total Investors", value: stats.total, sub: "in pipeline", icon: <RiUserLine size={16} />, color: "#10b981" },
             { label: "Active Leads", value: stats.active, sub: "interested+", icon: <RiFireLine size={16} />, color: "#a78bfa" },
             { label: "Meetings", value: stats.meetings, sub: "scheduled", icon: <RiGroupLine size={16} />, color: "#fbbf24" },
             { label: "Deals Closed", value: stats.closed, sub: "this round", icon: <RiCheckboxCircleLine size={16} />, color: "#34d399" },
           ].map(s => (
-            <div key={s.label} className="rounded-2xl border border-white/[0.06] p-4"
-              style={{ background: "rgba(255,255,255,0.02)" }}>
+            <div key={s.label} className="rounded-2xl border p-4" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[11px] text-slate-600 uppercase tracking-wider font-medium">{s.label}</span>
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center"
@@ -227,56 +203,55 @@ export default function DashboardPage() {
           ))}
         </div>
 
-{/* Plan Banner */}
-{plan === "free" ? (
-  <div className="rounded-2xl border p-4 mb-4 flex items-center justify-between gap-4 flex-wrap"
-    style={{ background: "rgba(14,165,233,0.05)", borderColor: "rgba(14,165,233,0.15)" }}>
-    <div className="flex items-center gap-3">
-      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ background: "rgba(14,165,233,0.12)" }}>
-        <RiFireLine size={16} className="text-sky-400" />
-      </div>
-      <div>
-        <p className="text-[13px] font-semibold text-white">You&apos;re on the Free plan</p>
-        <p className="text-[11px] text-slate-500">Limited to 25 investors. Upgrade to Pro for unlimited access.</p>
-      </div>
-    </div>
-    <button onClick={handleUpgrade} disabled={upgrading}
-      className="px-4 py-2 rounded-xl text-sm font-semibold text-white cursor-pointer border-0 flex-shrink-0 disabled:opacity-60"
-      style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
-      {upgrading ? "Redirecting..." : "Upgrade to Pro — $99/mo"}
-    </button>
-  </div>
-) : (
-  <div className="rounded-2xl border p-4 mb-4 flex items-center justify-between gap-4 flex-wrap"
-    style={{ background: "rgba(16,185,129,0.05)", borderColor: "rgba(16,185,129,0.15)" }}>
-    <div className="flex items-center gap-3">
-      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ background: "rgba(16,185,129,0.12)" }}>
-        <RiCheckboxCircleLine size={16} className="text-emerald-400" />
-      </div>
-      <div>
-        <p className="text-[13px] font-semibold text-white">You&apos;re on Pro <span className="text-emerald-400">✓</span></p>
-        <p className="text-[11px] text-slate-500">Unlimited investors, full analytics, priority support.</p>
-      </div>
-    </div>
-    <button onClick={handleManageBilling} disabled={upgrading}
-      className="px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer border-0 flex-shrink-0 disabled:opacity-60"
-      style={{ background: "rgba(255,255,255,0.06)", color: "#94a3b8", border: "1px solid rgba(255,255,255,0.08)" }}>
-      {upgrading ? "Redirecting..." : "Manage Billing"}
-    </button>
-  </div>
-)}
+        {/* Plan Banner */}
+        {plan === "free" ? (
+          <div className="rounded-2xl border p-4 mb-4 flex items-center justify-between gap-4 flex-wrap"
+            style={{ background: "rgba(16,185,129,0.04)", borderColor: "rgba(16,185,129,0.15)" }}>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "rgba(16,185,129,0.1)" }}>
+                <RiFireLine size={16} style={{ color: "#10b981" }} />
+              </div>
+              <div>
+                <p className="text-[13px] font-semibold text-white">You&apos;re on the Free plan</p>
+                <p className="text-[11px] text-slate-500">Limited to 25 investors. Upgrade to Pro for unlimited access.</p>
+              </div>
+            </div>
+            <button onClick={handleUpgrade} disabled={upgrading}
+              className="px-4 py-2 rounded-xl text-sm font-semibold text-white cursor-pointer border-0 flex-shrink-0 disabled:opacity-60"
+              style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
+              {upgrading ? "Redirecting..." : "Upgrade to Pro — $99/mo"}
+            </button>
+          </div>
+        ) : (
+          <div className="rounded-2xl border p-4 mb-4 flex items-center justify-between gap-4 flex-wrap"
+            style={{ background: "rgba(16,185,129,0.05)", borderColor: "rgba(16,185,129,0.15)" }}>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "rgba(16,185,129,0.12)" }}>
+                <RiCheckboxCircleLine size={16} style={{ color: "#34d399" }} />
+              </div>
+              <div>
+                <p className="text-[13px] font-semibold text-white">You&apos;re on Pro ✓</p>
+                <p className="text-[11px] text-slate-500">Unlimited investors, full analytics, priority support.</p>
+              </div>
+            </div>
+            <button onClick={handleManageBilling} disabled={upgrading}
+              className="px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer border-0 flex-shrink-0 disabled:opacity-60"
+              style={{ background: "rgba(255,255,255,0.06)", color: "#94a3b8", border: "1px solid rgba(255,255,255,0.08)" }}>
+              {upgrading ? "Redirecting..." : "Manage Billing"}
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
           {/* Recent Investors */}
-          <div className="rounded-2xl border border-white/[0.06] overflow-hidden" style={{ background: "rgba(255,255,255,0.02)" }}>
-            <div className="px-5 py-4 border-b border-white/[0.05] flex items-center justify-between"
-              style={{ background: "rgba(255,255,255,0.02)" }}>
-              <h2 className="text-[13px] font-semibold text-white">Recent Investors</h2>
+          <div className="rounded-2xl border overflow-hidden" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
+            <div className="px-5 py-4 border-b flex items-center justify-between" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
+              <h2 className="text-[13px] font-semibold text-white" style={{ fontFamily: "'Syne', sans-serif" }}>Recent Investors</h2>
               <button onClick={() => router.push("/investors")}
-                className="text-[11px] text-sky-400 hover:text-sky-300 cursor-pointer bg-transparent border-0">
+                className="text-[11px] cursor-pointer bg-transparent border-0 transition-colors" style={{ color: "#10b981" }}>
                 View all →
               </button>
             </div>
@@ -291,7 +266,7 @@ export default function DashboardPage() {
                 return (
                   <div key={inv.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-white/[0.02]">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold flex-shrink-0"
                         style={{ background: `${s.color}20`, color: s.color }}>
                         {inv.name?.[0]?.toUpperCase()}
                       </div>
@@ -310,12 +285,11 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Investor Interests from Deal Flow */}
-          <div className="rounded-2xl border border-white/[0.06] overflow-hidden" style={{ background: "rgba(255,255,255,0.02)" }}>
-            <div className="px-5 py-4 border-b border-white/[0.05] flex items-center justify-between"
-              style={{ background: "rgba(255,255,255,0.02)" }}>
+          {/* Deal Flow Interests */}
+          <div className="rounded-2xl border overflow-hidden" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
+            <div className="px-5 py-4 border-b flex items-center justify-between" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
               <div className="flex items-center gap-2">
-                <h2 className="text-[13px] font-semibold text-white">Deal Flow Interests</h2>
+                <h2 className="text-[13px] font-semibold text-white" style={{ fontFamily: "'Syne', sans-serif" }}>Deal Flow Interests</h2>
                 {interests.length > 0 && (
                   <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
                     style={{ background: "rgba(16,185,129,0.1)", color: "#34d399", border: "1px solid rgba(16,185,129,0.2)" }}>
@@ -330,14 +304,12 @@ export default function DashboardPage() {
                 <div className="flex flex-col items-center gap-2 py-10">
                   <RiBellLine size={20} className="text-slate-700" />
                   <p className="text-xs text-slate-700">No interests yet</p>
-                  <p className="text-[11px] text-slate-800 text-center px-6">
-                    Publish your project on /profile to start receiving interest from investors
-                  </p>
+                  <p className="text-[11px] text-slate-800 text-center px-6">Publish your project on /profile to start receiving interest</p>
                 </div>
               ) : interests.map(int => (
                 <div key={int.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-white/[0.02]">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold flex-shrink-0"
                       style={{ background: "rgba(16,185,129,0.15)", color: "#34d399" }}>
                       {(int.investor_name || int.investor_email || "?")[0]?.toUpperCase()}
                     </div>
@@ -345,9 +317,7 @@ export default function DashboardPage() {
                       <p className="text-[13px] text-slate-200 font-medium truncate">
                         {int.investor_name !== "Investor" ? int.investor_name : int.investor_email}
                       </p>
-                      <p className="text-[11px] text-slate-600 truncate">
-                        Interested in {int.projects?.name || "your project"}
-                      </p>
+                      <p className="text-[11px] text-slate-600 truncate">Interested in {int.projects?.name || "your project"}</p>
                     </div>
                   </div>
                   <span className="text-[10px] text-slate-600 flex-shrink-0 ml-3">

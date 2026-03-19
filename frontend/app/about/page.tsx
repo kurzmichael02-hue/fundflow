@@ -1,11 +1,7 @@
 "use client"
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import {
-  RiMenuLine,
-  RiCloseLine,
-  RiArrowRightLine,
-} from "react-icons/ri"
+import { RiMenuLine, RiCloseLine, RiArrowRightLine, RiFlashlightLine, RiShieldLine, RiGlobalLine, RiTeamLine } from "react-icons/ri"
 
 export default function About() {
   const [visible, setVisible] = useState(false)
@@ -43,11 +39,11 @@ export default function About() {
   ]
 
   const values = [
-    { icon: "⚡", title: "Speed over perfection", desc: "We ship fast, iterate faster. Web3 moves at the speed of blocks — so do we." },
-    { icon: "🔒", title: "Security first", desc: "Your deal flow is your most valuable asset. We treat it that way." },
-    { icon: "🌐", title: "Built for Web3", desc: "Not a CRM with a crypto skin. Purpose-built for token rounds, SAFTs, and on-chain fundraising." },
-    { icon: "🤝", title: "Founder-obsessed", desc: "Every feature starts with one question: does this help founders close faster?" },
-  ]
+  { icon: <RiFlashlightLine size={18} />, title: "Speed over perfection", desc: "We ship fast, iterate faster. Web3 moves at the speed of blocks — so do we." },
+  { icon: <RiShieldLine size={18} />, title: "Security first", desc: "Your deal flow is your most valuable asset. We treat it that way." },
+  { icon: <RiGlobalLine size={18} />, title: "Built for Web3", desc: "Not a CRM with a crypto skin. Purpose-built for token rounds, SAFTs, and on-chain fundraising." },
+  { icon: <RiTeamLine size={18} />, title: "Founder-obsessed", desc: "Every feature starts with one question: does this help founders close faster?" },
+]
 
   return (
     <main className="bg-[#04070f] min-h-screen text-slate-200 overflow-x-hidden">
@@ -138,25 +134,7 @@ export default function About() {
         </div>
       </section>
 
-      {/* STATS */}
-      <div className="border-t border-b border-white/[0.05] relative z-10" style={{ background: "rgba(255,255,255,0.01)" }}>
-        <div className="max-w-5xl mx-auto px-5 md:px-16 py-10 grid grid-cols-2 md:grid-cols-4 gap-6">
-          {[
-            { num: "2,400+", label: "Founders onboarded" },
-            { num: "$840M", label: "Funding tracked" },
-            { num: "94%", label: "Faster deal flow" },
-            { num: "99.9%", label: "Uptime guaranteed" },
-          ].map((s, i) => (
-            <div key={i} className="text-center">
-              <div className="text-[32px] md:text-[44px] font-bold tracking-tight leading-none mb-2"
-                style={{ background: "linear-gradient(135deg,#fff,#0ea5e9)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                {s.num}
-              </div>
-              <p className="text-sm text-slate-500">{s.label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+     
 
       {/* MISSION */}
       <section className="relative z-10 max-w-5xl mx-auto px-5 md:px-16 py-16 md:py-24">
@@ -211,8 +189,8 @@ export default function About() {
             {values.map((v, i) => (
               <div key={i} className="rounded-2xl p-6 border border-white/[0.06] hover:border-sky-500/20 transition-all"
                 style={{ background: "rgba(255,255,255,0.02)" }}>
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl border border-sky-500/15 mb-4"
-                  style={{ background: "rgba(14,165,233,0.08)" }}>{v.icon}</div>
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center border border-sky-500/15 mb-4 text-sky-400"
+  style={{ background: "rgba(14,165,233,0.08)" }}>{v.icon}</div>
                 <h3 className="text-[15px] font-semibold text-white mb-2">{v.title}</h3>
                 <p className="text-[13px] text-slate-500 leading-relaxed">{v.desc}</p>
               </div>

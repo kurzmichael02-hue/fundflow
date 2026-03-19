@@ -59,14 +59,21 @@ export default function AnalyticsPage() {
 
   // Total raised from closed deals
   const totalRaised = investors
-    .filter(i => i.status === "closed" && i.amount)
-    .reduce((sum, i) => sum + Number(i.amount), 0)
+  .filter(i => i.status === "closed" && i.deal_size)
+  .reduce((sum, i) => {
+    const num = parseFloat(i.deal_size?.replace(/[^0-9.]/g, "") || "0")
+    return sum + (isNaN(num) ? 0 : num)
+  }, 0)
 
   // Top investors by amount
   const topInvestors = [...investors]
-    .filter(i => i.amount)
-    .sort((a, b) => Number(b.amount) - Number(a.amount))
-    .slice(0, 5)
+  .filter(i => i.deal_size)
+  .sort((a, b) => {
+    const aNum = parseFloat(a.deal_size?.replace(/[^0-9.]/g, "") || "0")
+    const bNum = parseFloat(b.deal_size?.replace(/[^0-9.]/g, "") || "0")
+    return bNum - aNum
+  })
+  .slice(0, 5)
 
   // Interests over last 7 days
   const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -230,7 +237,7 @@ const statusColor = statusColors[inv.status] || "#9ca3af"
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0 ml-3">
-                    <p className="text-[13px] font-bold text-white">${Number(inv.amount).toLocaleString()}</p>
+                    <p className="text-[13px] font-bold text-white">{inv.deal_size}</p>
                     <p className="text-[10px]" style={{ color: statusColor }}>{inv.status?.replace("_", " ")}</p>
                   </div>
                 </div>
