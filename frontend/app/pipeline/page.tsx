@@ -42,7 +42,7 @@ export default function PipelinePage() {
   if (loading) return (
     <div className="min-h-screen bg-[#04070f] flex items-center justify-center">
       <div className="flex items-center gap-3 text-slate-500 text-sm">
-        <div className="w-4 h-4 rounded-full border-2 border-sky-500 border-t-transparent animate-spin" />
+        <div className="w-4 h-4 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
         Loading...
       </div>
     </div>

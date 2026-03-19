@@ -216,7 +216,7 @@ export default function ProfilePage() {
               <div className="flex gap-2">
                 <button onClick={handleSaveProfile} disabled={savingProfile}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white border-0 cursor-pointer disabled:opacity-50"
-                  style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+                  style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
                   <RiCheckLine size={13} /> {savingProfile ? "Saving..." : "Save"}
                 </button>
                 <button onClick={() => { setEditProfile(false); setProfileForm(profile) }}
@@ -231,7 +231,7 @@ export default function ProfilePage() {
           <div className="p-6 flex flex-col gap-4">
             <div className="flex items-center gap-4 mb-2">
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold text-white flex-shrink-0"
-                style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+                style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
                 {profile.name?.[0]?.toUpperCase() || "?"}
               </div>
               <div>
@@ -285,7 +285,7 @@ export default function ProfilePage() {
                   <div className="flex gap-2">
                     <button onClick={handleSaveManual} disabled={connectingWallet || !manualAddress.trim()}
                       className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white border-0 cursor-pointer disabled:opacity-50"
-                      style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+                      style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
                       {connectingWallet ? "Saving..." : "Save Address"}
                     </button>
                     <button onClick={() => { setWalletMode("idle"); setManualAddress("") }}
@@ -368,7 +368,7 @@ export default function ProfilePage() {
               <div className="flex gap-2">
                 <button onClick={handleSaveProject} disabled={savingProject}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white border-0 cursor-pointer disabled:opacity-50"
-                  style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+                  style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
                   <RiCheckLine size={13} /> {savingProject ? "Saving..." : "Save"}
                 </button>
                 <button onClick={() => setEditProject(false)}
@@ -390,7 +390,7 @@ export default function ProfilePage() {
                 <p className="text-sm text-slate-600 mb-4">No project yet. Create one to appear on the investor Deal Flow.</p>
                 <button onClick={() => setEditProject(true)}
                   className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white border-0 cursor-pointer"
-                  style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+                  style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
                   Create Project
                 </button>
               </div>
@@ -460,7 +460,7 @@ export default function ProfilePage() {
                   </div>
                   <button onClick={() => setProjectForm({ ...projectForm, published: !projectForm.published })}
                     className="relative w-10 h-5 rounded-full transition-all cursor-pointer border-0 flex-shrink-0"
-                    style={{ background: projectForm.published ? "#0ea5e9" : "rgba(255,255,255,0.1)" }}>
+                    style={{ background: projectForm.published ? "#10b981" : "rgba(255,255,255,0.1)" }}>
                     <span className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all"
                       style={{ left: projectForm.published ? "22px" : "2px" }} />
                   </button>
@@ -470,7 +470,7 @@ export default function ProfilePage() {
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold text-white"
-                    style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+                    style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
                     {project.name?.[0]}
                   </div>
                   <div>

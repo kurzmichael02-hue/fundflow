@@ -15,7 +15,7 @@ export default function TermsPage() {
 
         <div className="flex items-center gap-3 mb-2">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-black text-white"
-            style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>FF</div>
+            style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>FF</div>
           <span className="text-[15px] font-bold text-white">FundFlow</span>
         </div>
 
@@ -51,7 +51,7 @@ export default function TermsPage() {
                 "Use the platform to spam or harass investors or founders",
               ].map(item => (
                 <li key={item} className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500 mt-2 shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0" />
                   {item}
                 </li>
               ))}
@@ -90,7 +90,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-white font-semibold text-lg mb-3">11. Contact</h2>
-            <p>For any questions about these terms, contact us at <a href="mailto:hello@fundflow.io" className="text-sky-400 hover:text-sky-300 transition-colors">hello@fundflow.io</a>.</p>
+            <p>For any questions about these terms, contact us at <a href="mailto:hello@fundflow.io" className="text-emerald-400 hover:text-emerald-300 transition-colors">hello@fundflow.io</a>.</p>
           </section>
 
         </div>

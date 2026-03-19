@@ -15,7 +15,7 @@ export default function PrivacyPage() {
 
         <div className="flex items-center gap-3 mb-2">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-black text-white"
-            style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>FF</div>
+            style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>FF</div>
           <span className="text-[15px] font-bold text-white">FundFlow</span>
         </div>
 
@@ -35,7 +35,7 @@ export default function PrivacyPage() {
             <ul className="flex flex-col gap-2 pl-4">
               {["Your name and email address", "Investor data you enter into the platform (names, companies, notes, deal sizes)", "Wallet addresses you connect (MetaMask, WalletConnect)", "Usage data such as pages visited and features used", "Technical data such as IP address, browser type, and device information"].map(item => (
                 <li key={item} className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500 mt-2 shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0" />
                   {item}
                 </li>
               ))}
@@ -48,7 +48,7 @@ export default function PrivacyPage() {
             <ul className="flex flex-col gap-2 pl-4">
               {["Provide and improve the FundFlow platform", "Authenticate your account and keep it secure", "Send transactional emails (e.g. email confirmation, password reset)", "Analyze usage patterns to improve product features", "Comply with legal obligations"].map(item => (
                 <li key={item} className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500 mt-2 shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0" />
                   {item}
                 </li>
               ))}
@@ -66,7 +66,7 @@ export default function PrivacyPage() {
             <ul className="flex flex-col gap-2 pl-4">
               {["Supabase — database and authentication", "Vercel — hosting and deployment", "Resend — transactional email delivery", "Stripe — payment processing (when applicable)"].map(item => (
                 <li key={item} className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500 mt-2 shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0" />
                   {item}
                 </li>
               ))}
@@ -75,7 +75,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-white font-semibold text-lg mb-3">6. Your Rights</h2>
-            <p>You have the right to access, correct, or delete your personal data at any time. To exercise these rights, contact us at <a href="mailto:hello@fundflow.io" className="text-sky-400 hover:text-sky-300 transition-colors">hello@fundflow.io</a>.</p>
+            <p>You have the right to access, correct, or delete your personal data at any time. To exercise these rights, contact us at <a href="mailto:hello@fundflow.io" className="text-emerald-400 hover:text-emerald-300 transition-colors">hello@fundflow.io</a>.</p>
           </section>
 
           <section>
@@ -90,7 +90,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-white font-semibold text-lg mb-3">9. Contact</h2>
-            <p>For any privacy-related questions, contact us at <a href="mailto:hello@fundflow.io" className="text-sky-400 hover:text-sky-300 transition-colors">hello@fundflow.io</a>.</p>
+            <p>For any privacy-related questions, contact us at <a href="mailto:hello@fundflow.io" className="text-emerald-400 hover:text-emerald-300 transition-colors">hello@fundflow.io</a>.</p>
           </section>
 
         </div>
