@@ -36,7 +36,7 @@ export default function Home() {
       (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("animate-in"); observer.unobserve(e.target) } }),
       { threshold: 0.1 }
     )
-    document.querySelectorAll(".scroll-reveal").forEach(el => observer.observe(el))
+    document.querySelectorAll(".bounce-reveal").forEach(el => observer.observe(el))
     return () => { window.removeEventListener("mousemove", m); observer.disconnect() }
   }, [])
 
@@ -48,8 +48,11 @@ export default function Home() {
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
         * { font-family: 'DM Sans', sans-serif; }
         h1, h2, h3, .syne { font-family: 'Syne', sans-serif; }
-        .scroll-reveal { opacity: 0; transform: translateY(32px); transition: opacity 0.7s ease, transform 0.7s ease; }
-        .scroll-reveal.animate-in { opacity: 1; transform: translateY(0); }
+        .bounce-reveal { opacity: 0; transform: translateY(40px) scale(0.96); transition: opacity 0.6s cubic-bezier(0.16,1,0.3,1), transform 0.6s cubic-bezier(0.16,1,0.3,1); }
+.bounce-reveal.animate-in { opacity: 1; transform: translateY(0) scale(1); }
+@keyframes bounce-in { 0% { opacity: 0; transform: translateY(50px) scale(0.94); } 60% { transform: translateY(-6px) scale(1.01); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+.bounce-reveal { opacity: 0; }
+.bounce-reveal.animate-in { animation: bounce-in 0.7s cubic-bezier(0.16,1,0.3,1) forwards; }
         @keyframes scroll-x { from { transform: translateX(0); } to { transform: translateX(-50%); } }
         @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-8px); } }
         @keyframes glow-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.7; } }
@@ -243,7 +246,7 @@ export default function Home() {
 
       {/* HOW IT WORKS */}
       <section className="relative z-10 max-w-5xl mx-auto px-6 md:px-16 py-20 md:py-28">
-        <div className="text-center mb-16 scroll-reveal">
+        <div className="text-center mb-16 bounce-reveal">
           <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "#10b981", fontFamily: "'DM Sans', sans-serif" }}>How it works</p>
           <h2 className="syne font-black text-white" style={{ fontSize: "clamp(28px,4vw,48px)", letterSpacing: "-0.03em" }}>
             Three steps to close faster
@@ -255,7 +258,7 @@ export default function Home() {
             { step: "02", title: "Track your pipeline", desc: "Kanban board from Outreach to Closed. See your round progress update in real time.", color: "#38bdf8" },
             { step: "03", title: "Get inbound interest", desc: "Publish your project. Let VCs discover you and express interest directly through the portal.", color: "#a78bfa" },
           ].map((item, i) => (
-            <div key={item.step} className="scroll-reveal card-hover rounded-2xl p-7 relative overflow-hidden"
+            <div key={item.step} className="bounce-reveal card-hover rounded-2xl p-7 relative overflow-hidden"
               style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", transitionDelay: `${i * 0.12}s` }}>
               <div className="syne font-black mb-5 leading-none select-none" style={{ fontSize: "72px", color: `${item.color}10`, letterSpacing: "-0.04em" }}>{item.step}</div>
               <h3 className="syne font-bold text-white mb-2" style={{ fontSize: "16px" }}>{item.title}</h3>
@@ -268,7 +271,7 @@ export default function Home() {
 
       {/* FEATURES */}
       <section id="features" className="relative z-10 max-w-6xl mx-auto px-6 md:px-16 py-20 md:py-24" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-        <div className="text-center mb-16 scroll-reveal">
+        <div className="text-center mb-16 bounce-reveal">
           <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "#10b981" }}>Features</p>
           <h2 className="syne font-black text-white" style={{ fontSize: "clamp(28px,4vw,48px)", letterSpacing: "-0.03em" }}>
             Everything you need to<br />close your round
@@ -283,7 +286,7 @@ export default function Home() {
             { icon: <RiTeamLine size={18} />, title: "Investor Network", desc: "Discover investors actively deploying capital into Web3 projects like yours." },
             { icon: <RiShieldLine size={18} />, title: "Enterprise Security", desc: "Your deal flow is your moat. Bank-grade encryption keeps it locked down." },
           ].map((f, i) => (
-            <div key={f.title} className="scroll-reveal card-hover group rounded-2xl p-6"
+            <div key={f.title} className="bounce-reveal card-hover group rounded-2xl p-6"
               style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", transitionDelay: `${i * 0.07}s` }}>
               <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
                 style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.15)", color: "#34d399" }}>
@@ -298,7 +301,7 @@ export default function Home() {
 
       {/* PRICING */}
       <section id="pricing" className="relative z-10 max-w-4xl mx-auto px-6 md:px-16 py-20 md:py-24" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-        <div className="text-center mb-14 scroll-reveal">
+        <div className="text-center mb-14 bounce-reveal">
           <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "#10b981" }}>Pricing</p>
           <h2 className="syne font-black text-white" style={{ fontSize: "clamp(28px,4vw,48px)", letterSpacing: "-0.03em" }}>Simple pricing</h2>
           <p className="mt-3" style={{ fontSize: "15px", color: "#64748b" }}>Start free. Upgrade when you&apos;re ready to scale.</p>
@@ -308,7 +311,7 @@ export default function Home() {
             { name: "Starter", price: "Free", period: "forever", desc: "For early-stage fundraising", features: ["Up to 25 investors", "Full pipeline view", "Basic analytics", "Email support"], cta: "Get started free", featured: false },
             { name: "Pro", price: "$99", period: "/month", desc: "For founders closing serious rounds", features: ["Unlimited investors", "Advanced analytics", "Investor network access", "API access", "Priority support"], cta: "Get started", featured: true }
           ].map((plan, i) => (
-            <div key={plan.name} className="scroll-reveal card-hover rounded-2xl p-8"
+            <div key={plan.name} className="bounce-reveal card-hover rounded-2xl p-8"
               style={{
                 background: plan.featured ? "rgba(16,185,129,0.05)" : "rgba(255,255,255,0.02)",
                 border: plan.featured ? "1px solid rgba(16,185,129,0.2)" : "1px solid rgba(255,255,255,0.05)",
@@ -343,13 +346,13 @@ export default function Home() {
 
       {/* FAQ */}
       <section id="faq" className="relative z-10 max-w-3xl mx-auto px-6 md:px-16 py-20 md:py-24" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-        <div className="text-center mb-14 scroll-reveal">
+        <div className="text-center mb-14 bounce-reveal">
           <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "#10b981" }}>FAQ</p>
           <h2 className="syne font-black text-white" style={{ fontSize: "clamp(28px,4vw,48px)", letterSpacing: "-0.03em" }}>Common questions</h2>
         </div>
         <div className="flex flex-col gap-2">
           {FAQS.map((faq, i) => (
-            <div key={i} className="scroll-reveal rounded-2xl overflow-hidden transition-all"
+            <div key={i} className="bounce-reveal rounded-2xl overflow-hidden transition-all"
               style={{
                 background: openFaq === i ? "rgba(16,185,129,0.04)" : "rgba(255,255,255,0.02)",
                 border: openFaq === i ? "1px solid rgba(16,185,129,0.15)" : "1px solid rgba(255,255,255,0.05)",
@@ -376,7 +379,7 @@ export default function Home() {
 
       {/* CTA */}
       <section className="relative z-10 max-w-4xl mx-auto px-6 md:px-16 pb-24">
-        <div className="scroll-reveal text-center rounded-2xl p-12 md:p-16 relative overflow-hidden"
+        <div className="bounce-reveal text-center rounded-2xl p-12 md:p-16 relative overflow-hidden"
           style={{ background: "rgba(16,185,129,0.04)", border: "1px solid rgba(16,185,129,0.12)" }}>
           <div className="absolute top-1/2 left-1/2 pointer-events-none rounded-full"
             style={{ width: "500px", height: "250px", transform: "translate(-50%, -50%)", background: "radial-gradient(ellipse, rgba(16,185,129,0.08), transparent 70%)", filter: "blur(40px)" }} />
