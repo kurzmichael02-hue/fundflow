@@ -4,7 +4,7 @@ import { RiArrowLeftLine } from "react-icons/ri"
 
 export default function PrivacyPage() {
   return (
-    <main className="bg-[#04070f] min-h-screen text-slate-200">
+    <main className="bg-[#050508] min-h-screen text-slate-200">
       <div className="fixed inset-0 pointer-events-none opacity-[0.025]"
         style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
 
