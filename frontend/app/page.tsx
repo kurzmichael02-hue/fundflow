@@ -84,12 +84,28 @@ export default function Home() {
     setIsLoggedIn(!!localStorage.getItem("token"))
     const m = (e: MouseEvent) => setMousePos({ x: e.clientX, y: e.clientY })
     window.addEventListener("mousemove", m)
-    return () => window.removeEventListener("mousemove", m)
+
+    // Scroll animations
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add("animate-in")
+          observer.unobserve(e.target)
+        }
+      }),
+      { threshold: 0.1 }
+    )
+    document.querySelectorAll(".scroll-reveal").forEach(el => observer.observe(el))
+
+    return () => {
+      window.removeEventListener("mousemove", m)
+      observer.disconnect()
+    }
   }, [])
 
   useEffect(() => {
     const current = TYPING_PHRASES[phraseIndex]
-    let speed = isDeleting ? 40 : 80
+    const speed = isDeleting ? 40 : 80
     if (!isDeleting && charIndex === current.length) {
       typingRef.current = setTimeout(() => setIsDeleting(true), 2000)
       return
@@ -311,9 +327,60 @@ export default function Home() {
         </div>
       </div>
 
+      {/* HOW IT WORKS */}
+      <section className="relative z-10 max-w-5xl mx-auto px-6 md:px-16 py-20 md:py-24">
+        <div className="text-center mb-14 scroll-reveal">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium text-sky-400 border border-sky-500/20 mb-4"
+            style={{ background: "rgba(14,165,233,0.08)" }}>How it works</div>
+          <h2 className="text-[clamp(28px,4vw,44px)] font-bold text-white tracking-tight">
+            Up and running{" "}
+            <span style={{ background: "linear-gradient(135deg, #ffffff 0%, #0ea5e9 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+              in minutes
+            </span>
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            {
+              step: "01",
+              title: "Add your investors",
+              desc: "Import or manually add every investor you're talking to. Set their status, deal size, and notes.",
+              color: "#0ea5e9",
+            },
+            {
+              step: "02",
+              title: "Track your pipeline",
+              desc: "Move investors through your kanban — Outreach → Meeting → Term Sheet → Closed. See your round progress in real time.",
+              color: "#a78bfa",
+            },
+            {
+              step: "03",
+              title: "Get inbound interest",
+              desc: "Publish your project to the investor portal. Let VCs find you and express interest directly.",
+              color: "#34d399",
+            },
+          ].map((item, i) => (
+            <div key={item.step}
+              className="scroll-reveal rounded-2xl border border-white/[0.06] p-7 relative overflow-hidden"
+              style={{
+                background: "rgba(255,255,255,0.02)",
+                transitionDelay: `${i * 0.15}s`
+              }}>
+              <div className="text-[64px] font-black mb-4 leading-none select-none"
+                style={{ color: `${item.color}18`, letterSpacing: "-0.04em" }}>
+                {item.step}
+              </div>
+              <h3 className="text-[16px] font-semibold text-white mb-2 tracking-tight">{item.title}</h3>
+              <p className="text-[13px] text-slate-500 leading-relaxed">{item.desc}</p>
+              <div className="absolute top-6 right-6 w-2 h-2 rounded-full" style={{ background: item.color }} />
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* FEATURES */}
       <section id="features" className="relative z-10 max-w-6xl mx-auto px-6 md:px-16 py-20 md:py-24">
-        <div className="text-center mb-14">
+        <div className="text-center mb-14 scroll-reveal">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium text-sky-400 border border-sky-500/20 mb-4"
             style={{ background: "rgba(14,165,233,0.08)" }}>Features</div>
           <h2 className="text-[clamp(28px,4vw,44px)] font-bold text-white tracking-tight leading-tight">
@@ -331,10 +398,13 @@ export default function Home() {
             { icon: <RiGlobalLine size={18} />, title: "Web3 Native", desc: "Built for crypto founders. Token rounds, SAFTs, and wallet login — all supported." },
             { icon: <RiTeamLine size={18} />, title: "Investor Network", desc: "Discover investors actively deploying capital into Web3 projects like yours." },
             { icon: <RiShieldLine size={18} />, title: "Enterprise Security", desc: "Your deal flow is your moat. Bank-grade encryption keeps it locked down." },
-          ].map(f => (
+          ].map((f, i) => (
             <div key={f.title}
-              className="group rounded-2xl p-6 border border-white/[0.06] transition-all duration-300 hover:border-sky-500/20 hover:-translate-y-1 cursor-default"
-              style={{ background: "rgba(255,255,255,0.02)" }}>
+              className="scroll-reveal group rounded-2xl p-6 border border-white/[0.06] hover:border-sky-500/20 hover:-translate-y-1 cursor-default"
+              style={{
+                background: "rgba(255,255,255,0.02)",
+                transitionDelay: `${i * 0.08}s`
+              }}>
               <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sky-400 border border-sky-500/20 mb-4 group-hover:border-sky-500/40 transition-colors"
                 style={{ background: "rgba(14,165,233,0.08)" }}>{f.icon}</div>
               <h3 className="text-[15px] font-semibold text-white mb-2 tracking-tight">{f.title}</h3>
@@ -346,7 +416,7 @@ export default function Home() {
 
       {/* PRICING */}
       <section id="pricing" className="relative z-10 max-w-4xl mx-auto px-6 md:px-16 py-20 md:py-24">
-        <div className="text-center mb-12">
+        <div className="text-center mb-12 scroll-reveal">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium text-sky-400 border border-sky-500/20 mb-4"
             style={{ background: "rgba(14,165,233,0.08)" }}>Pricing</div>
           <h2 className="text-[clamp(28px,4vw,44px)] font-bold text-white tracking-tight">
@@ -371,10 +441,13 @@ export default function Home() {
               features: ["Unlimited investors", "Advanced analytics", "Investor network access", "API access", "Priority support"],
               cta: "Get started", featured: true
             }
-          ].map(plan => (
+          ].map((plan, i) => (
             <div key={plan.name}
-              className={`rounded-2xl p-8 border transition-all hover:-translate-y-1 ${plan.featured ? "border-sky-500/30 shadow-[0_0_60px_rgba(14,165,233,0.1)]" : "border-white/[0.07]"}`}
-              style={{ background: plan.featured ? "rgba(14,165,233,0.06)" : "rgba(255,255,255,0.02)" }}>
+              className={`scroll-reveal rounded-2xl p-8 border transition-all hover:-translate-y-1 ${plan.featured ? "border-sky-500/30 shadow-[0_0_60px_rgba(14,165,233,0.1)]" : "border-white/[0.07]"}`}
+              style={{
+                background: plan.featured ? "rgba(14,165,233,0.06)" : "rgba(255,255,255,0.02)",
+                transitionDelay: `${i * 0.1}s`
+              }}>
               {plan.featured && <p className="text-[11px] text-sky-400 font-semibold tracking-widest uppercase mb-3">Most Popular</p>}
               <p className="text-base font-semibold text-white mb-2">{plan.name}</p>
               <div className="flex items-baseline gap-1 mb-2">
@@ -401,7 +474,7 @@ export default function Home() {
 
       {/* FAQ */}
       <section id="faq" className="relative z-10 max-w-3xl mx-auto px-6 md:px-16 py-20 md:py-24">
-        <div className="text-center mb-12">
+        <div className="text-center mb-12 scroll-reveal">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium text-sky-400 border border-sky-500/20 mb-4"
             style={{ background: "rgba(14,165,233,0.08)" }}>FAQ</div>
           <h2 className="text-[clamp(28px,4vw,44px)] font-bold text-white tracking-tight">
@@ -414,8 +487,12 @@ export default function Home() {
         <div className="flex flex-col gap-2">
           {FAQS.map((faq, i) => (
             <div key={i}
-              className="rounded-2xl border border-white/[0.06] overflow-hidden transition-all"
-              style={{ background: openFaq === i ? "rgba(14,165,233,0.04)" : "rgba(255,255,255,0.02)", borderColor: openFaq === i ? "rgba(14,165,233,0.15)" : "rgba(255,255,255,0.06)" }}>
+              className="scroll-reveal rounded-2xl border border-white/[0.06] overflow-hidden transition-all"
+              style={{
+                background: openFaq === i ? "rgba(14,165,233,0.04)" : "rgba(255,255,255,0.02)",
+                borderColor: openFaq === i ? "rgba(14,165,233,0.15)" : "rgba(255,255,255,0.06)",
+                transitionDelay: `${i * 0.05}s`
+              }}>
               <button onClick={() => setOpenFaq(openFaq === i ? null : i)}
                 className="w-full flex items-center justify-between px-5 py-4 text-left cursor-pointer bg-transparent border-0 gap-4">
                 <span className="text-[14px] font-medium text-white">{faq.q}</span>
@@ -436,7 +513,7 @@ export default function Home() {
 
       {/* CTA */}
       <section className="relative z-10 max-w-4xl mx-auto px-6 md:px-16 pb-24">
-        <div className="text-center rounded-2xl p-12 md:p-16 border border-sky-500/15 relative overflow-hidden"
+        <div className="scroll-reveal text-center rounded-2xl p-12 md:p-16 border border-sky-500/15 relative overflow-hidden"
           style={{ background: "rgba(14,165,233,0.05)" }}>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[250px] pointer-events-none rounded-full blur-[60px]"
             style={{ background: "radial-gradient(ellipse, rgba(14,165,233,0.1), transparent 70%)" }} />
@@ -529,6 +606,8 @@ export default function Home() {
       <style>{`
         @keyframes scroll-x { from { transform: translateX(0); } to { transform: translateX(-50%); } }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        .scroll-reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.65s ease, transform 0.65s ease; }
+        .scroll-reveal.animate-in { opacity: 1; transform: translateY(0); }
       `}</style>
     </main>
   )
