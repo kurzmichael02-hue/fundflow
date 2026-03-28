@@ -5,7 +5,8 @@ import Navbar from "@/components/Navbar"
 import { ToastContainer, useToast } from "@/components/Toast"
 import {
   RiAddLine, RiSearchLine, RiEditLine, RiDeleteBinLine,
-  RiCheckLine, RiCloseLine, RiDownloadLine, RiUserLine
+  RiCheckLine, RiCloseLine, RiDownloadLine, RiUserLine,
+  RiStickyNoteLine, RiTimeLine, RiArrowRightSLine,
 } from "react-icons/ri"
 
 const STATUSES = ["outreach", "interested", "meeting", "term_sheet", "closed"]
@@ -33,6 +34,11 @@ export default function InvestorsPage() {
   const [editId, setEditId] = useState<string | null>(null)
   const [editData, setEditData] = useState<any>({})
 
+  // Detail panel
+  const [selectedInv, setSelectedInv] = useState<any>(null)
+  const [panelNotes, setPanelNotes] = useState("")
+  const [savingNotes, setSavingNotes] = useState(false)
+
   useEffect(() => {
     const token = localStorage.getItem("token")
     if (!token) { router.push("/login"); return }
@@ -48,6 +54,57 @@ export default function InvestorsPage() {
       addToast("Failed to load investors", "error")
     } finally {
       setLoading(false)
+    }
+  }
+
+  function openPanel(inv: any) {
+    setSelectedInv(inv)
+    setPanelNotes(inv.notes || "")
+  }
+
+  function closePanel() {
+    setSelectedInv(null)
+    setPanelNotes("")
+  }
+
+  async function handleSaveNotes() {
+    if (!selectedInv) return
+    setSavingNotes(true)
+    const token = localStorage.getItem("token")!
+    try {
+      const res = await fetch(`/api/investors?id=${selectedInv.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ...selectedInv, notes: panelNotes }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setInvestors(prev => prev.map(i => i.id === selectedInv.id ? data : i))
+      setSelectedInv(data)
+      addToast("Notes saved!")
+    } catch (err: any) {
+      addToast(err.message || "Failed to save notes", "error")
+    } finally {
+      setSavingNotes(false)
+    }
+  }
+
+  async function handlePanelStatusChange(newStatus: string) {
+    if (!selectedInv) return
+    const token = localStorage.getItem("token")!
+    try {
+      const res = await fetch(`/api/investors?id=${selectedInv.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ...selectedInv, status: newStatus }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setInvestors(prev => prev.map(i => i.id === selectedInv.id ? data : i))
+      setSelectedInv(data)
+      addToast(`Moved to ${STATUS_STYLES[newStatus]?.label}`)
+    } catch (err: any) {
+      addToast(err.message || "Failed to update", "error")
     }
   }
 
@@ -114,6 +171,7 @@ export default function InvestorsPage() {
       })
       if (!res.ok) throw new Error("Failed to delete")
       setInvestors(prev => prev.filter(i => i.id !== id))
+      if (selectedInv?.id === id) closePanel()
       addToast(`${name} deleted`)
     } catch (err: any) {
       addToast(err.message || "Failed to delete", "error")
@@ -144,267 +202,374 @@ export default function InvestorsPage() {
   })
 
   if (loading) return (
-    <div className="min-h-screen bg-[#050508] flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "#050508" }}>
       <div className="flex items-center gap-3 text-slate-500 text-sm">
-        <div className="w-4 h-4 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+        <div className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "#10b981", borderTopColor: "transparent" }} />
         Loading...
       </div>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-[#050508] text-slate-200">
+    <div className="min-h-screen text-slate-200" style={{ background: "#050508" }}>
       <ToastContainer toasts={toasts} removeToast={removeToast} />
       <Navbar />
-      <div className="px-4 md:px-12 py-8 max-w-5xl mx-auto">
 
-        {/* Header */}
-        <div className="mb-6 flex items-start justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">Investors</h1>
-            <p className="text-xs text-slate-500 mt-0.5">{investors.length} investors in your pipeline</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={handleExportCSV}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium cursor-pointer border transition-all"
-              style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.08)", color: "#64748b" }}>
-              <RiDownloadLine size={13} /> Export CSV
-            </button>
-            <button onClick={() => setShowAdd(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white cursor-pointer border-0"
-              style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
-              <RiAddLine size={15} /> Add Investor
-            </button>
-          </div>
-        </div>
+      <div className="flex">
+        {/* Main content */}
+        <div className={`flex-1 px-4 md:px-12 py-8 transition-all ${selectedInv ? "md:mr-[380px]" : ""}`} style={{ maxWidth: selectedInv ? "calc(100% - 380px)" : "1024px", margin: "0 auto" }}>
 
-        {/* Search + Filter */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-5">
-          <div className="relative flex-1">
-            <RiSearchLine size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600" />
-            <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search by name, company or email..."
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-slate-200 border border-white/[0.08] outline-none"
-              style={{ background: "rgba(255,255,255,0.03)" }} />
+          {/* Header */}
+          <div className="mb-6 flex items-start justify-between flex-wrap gap-3">
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>Investors</h1>
+              <p className="text-xs text-slate-500 mt-0.5">{investors.length} investors in your pipeline</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={handleExportCSV}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium cursor-pointer border transition-all"
+                style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.08)", color: "#64748b" }}>
+                <RiDownloadLine size={13} /> Export CSV
+              </button>
+              <button onClick={() => setShowAdd(true)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white cursor-pointer border-0"
+                style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
+                <RiAddLine size={15} /> Add Investor
+              </button>
+            </div>
           </div>
-          <div className="flex gap-1.5 flex-wrap">
-            {["all", ...STATUSES].map(s => {
-              const st = STATUS_STYLES[s]
+
+          {/* Search + Filter */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-5">
+            <div className="relative flex-1">
+              <RiSearchLine size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600" />
+              <input value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="Search by name, company or email..."
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-slate-200 border border-white/[0.08] outline-none"
+                style={{ background: "rgba(255,255,255,0.03)" }} />
+            </div>
+            <div className="flex gap-1.5 flex-wrap">
+              {["all", ...STATUSES].map(s => {
+                const st = STATUS_STYLES[s]
+                return (
+                  <button key={s} onClick={() => setStatusFilter(s)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-medium cursor-pointer border transition-all"
+                    style={{
+                      background: statusFilter === s ? (st ? st.bg : "rgba(16,185,129,0.15)") : "rgba(255,255,255,0.03)",
+                      borderColor: statusFilter === s ? (st ? st.border : "rgba(16,185,129,0.4)") : "rgba(255,255,255,0.07)",
+                      color: statusFilter === s ? (st ? st.color : "#10b981") : "#64748b",
+                    }}>
+                    {s === "all" ? "All" : STATUS_STYLES[s]?.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Add Form */}
+          {showAdd && (
+            <div className="rounded-2xl border border-emerald-500/20 p-5 mb-5"
+              style={{ background: "rgba(16,185,129,0.04)" }}>
+              <h3 className="text-sm font-semibold text-white mb-4">Add New Investor</h3>
+              <form onSubmit={handleAdd} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+                  placeholder="Name *" className="rounded-xl px-4 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
+                  style={{ background: "rgba(255,255,255,0.03)" }} />
+                <input value={form.company} onChange={e => setForm({ ...form, company: e.target.value })}
+                  placeholder="Company" className="rounded-xl px-4 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
+                  style={{ background: "rgba(255,255,255,0.03)" }} />
+                <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
+                  placeholder="Email" className="rounded-xl px-4 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
+                  style={{ background: "rgba(255,255,255,0.03)" }} />
+                <input value={form.deal_size} onChange={e => setForm({ ...form, deal_size: e.target.value })}
+                  placeholder="Deal size (e.g. $500k)" className="rounded-xl px-4 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
+                  style={{ background: "rgba(255,255,255,0.03)" }} />
+                <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}
+                  className="rounded-xl px-4 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
+                  style={{ background: "rgba(255,255,255,0.03)" }}>
+                  {STATUSES.map(s => <option key={s} value={s}>{STATUS_STYLES[s]?.label}</option>)}
+                </select>
+                <input value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
+                  placeholder="Notes" className="rounded-xl px-4 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
+                  style={{ background: "rgba(255,255,255,0.03)" }} />
+                <div className="sm:col-span-2 flex gap-2 justify-end mt-1">
+                  <button type="button" onClick={() => { setShowAdd(false); setForm(EMPTY_FORM) }}
+                    className="px-4 py-2 rounded-xl text-sm text-slate-400 cursor-pointer border border-white/[0.08] bg-transparent">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={saving}
+                    className="px-4 py-2 rounded-xl text-sm font-semibold text-white cursor-pointer border-0 disabled:opacity-60"
+                    style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
+                    {saving ? "Adding..." : "Add Investor"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Table — desktop */}
+          <div className="hidden md:block rounded-2xl border border-white/[0.06] overflow-hidden"
+            style={{ background: "rgba(255,255,255,0.02)" }}>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-white/[0.05]" style={{ background: "rgba(255,255,255,0.02)" }}>
+                  {["Investor", "Status", "Deal Size", "Notes", ""].map(h => (
+                    <th key={h} className="text-left px-5 py-3 text-[11px] text-slate-600 uppercase tracking-wider font-medium">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.04]">
+                {filtered.length === 0 ? (
+                  <tr><td colSpan={5}>
+                    <div className="flex flex-col items-center gap-2 py-12">
+                      <RiUserLine size={20} className="text-slate-700" />
+                      <p className="text-xs text-slate-700">No investors found</p>
+                    </div>
+                  </td></tr>
+                ) : filtered.map(inv => {
+                  const s = STATUS_STYLES[inv.status] || STATUS_STYLES.outreach
+                  const isEditing = editId === inv.id
+                  const isSelected = selectedInv?.id === inv.id
+                  return (
+                    <tr key={inv.id}
+                      className="transition-colors cursor-pointer"
+                      style={{ background: isSelected ? "rgba(16,185,129,0.04)" : "transparent" }}
+                      onClick={() => !isEditing && openPanel(inv)}>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold flex-shrink-0"
+                            style={{ background: `${s.color}20`, color: s.color }}>
+                            {inv.name?.[0]?.toUpperCase()}
+                          </div>
+                          <div>
+                            {isEditing ? (
+                              <input value={editData.name} onChange={e => setEditData({ ...editData, name: e.target.value })}
+                                className="rounded-lg px-2 py-1 text-sm text-white border border-emerald-500/30 outline-none w-32"
+                                style={{ background: "rgba(16,185,129,0.08)" }} onClick={e => e.stopPropagation()} />
+                            ) : (
+                              <p className="text-[13px] text-slate-200 font-medium">{inv.name}</p>
+                            )}
+                            {isEditing ? (
+                              <input value={editData.company} onChange={e => setEditData({ ...editData, company: e.target.value })}
+                                className="rounded-lg px-2 py-1 text-xs text-slate-400 border border-white/[0.08] outline-none w-32 mt-1"
+                                style={{ background: "rgba(255,255,255,0.03)" }} onClick={e => e.stopPropagation()} />
+                            ) : (
+                              <p className="text-[11px] text-slate-600">{inv.company || inv.email || "—"}</p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        {isEditing ? (
+                          <select value={editData.status} onChange={e => setEditData({ ...editData, status: e.target.value })}
+                            className="rounded-lg px-2 py-1 text-xs border border-white/[0.08] outline-none"
+                            style={{ background: "rgba(255,255,255,0.05)", color: "#94a3b8" }}
+                            onClick={e => e.stopPropagation()}>
+                            {STATUSES.map(s => <option key={s} value={s}>{STATUS_STYLES[s]?.label}</option>)}
+                          </select>
+                        ) : (
+                          <span className="text-[11px] px-2.5 py-1 rounded-full font-medium"
+                            style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
+                            {s.label}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        {isEditing ? (
+                          <input value={editData.deal_size} onChange={e => setEditData({ ...editData, deal_size: e.target.value })}
+                            className="rounded-lg px-2 py-1 text-xs border border-white/[0.08] outline-none w-24"
+                            style={{ background: "rgba(255,255,255,0.03)", color: "#94a3b8" }}
+                            onClick={e => e.stopPropagation()} />
+                        ) : (
+                          <span className="text-[13px] text-slate-400">{inv.deal_size || "—"}</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 max-w-[160px]">
+                        {isEditing ? (
+                          <input value={editData.notes} onChange={e => setEditData({ ...editData, notes: e.target.value })}
+                            className="rounded-lg px-2 py-1 text-xs border border-white/[0.08] outline-none w-full"
+                            style={{ background: "rgba(255,255,255,0.03)", color: "#94a3b8" }}
+                            onClick={e => e.stopPropagation()} />
+                        ) : (
+                          <span className="text-[11px] text-slate-600 truncate block">{inv.notes || "—"}</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-1.5 justify-end" onClick={e => e.stopPropagation()}>
+                          {isEditing ? (
+                            <>
+                              <button onClick={() => handleSaveEdit(inv.id)}
+                                className="w-7 h-7 rounded-lg flex items-center justify-center text-emerald-400 hover:bg-emerald-400/10 cursor-pointer border-0 bg-transparent transition-colors">
+                                <RiCheckLine size={14} />
+                              </button>
+                              <button onClick={() => setEditId(null)}
+                                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:bg-white/5 cursor-pointer border-0 bg-transparent transition-colors">
+                                <RiCloseLine size={14} />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button onClick={() => handleEdit(inv)}
+                                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 hover:text-slate-300 cursor-pointer border-0 bg-transparent transition-colors">
+                                <RiEditLine size={13} />
+                              </button>
+                              <button onClick={() => handleDelete(inv.id, inv.name)}
+                                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 hover:text-red-400 cursor-pointer border-0 bg-transparent transition-colors">
+                                <RiDeleteBinLine size={13} />
+                              </button>
+                              <RiArrowRightSLine size={14} className="text-slate-700" />
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden flex flex-col gap-3">
+            {filtered.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-12">
+                <RiUserLine size={20} className="text-slate-700" />
+                <p className="text-xs text-slate-700">No investors found</p>
+              </div>
+            ) : filtered.map(inv => {
+              const s = STATUS_STYLES[inv.status] || STATUS_STYLES.outreach
               return (
-                <button key={s} onClick={() => setStatusFilter(s)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-medium cursor-pointer border transition-all"
-                  style={{
-                    background: statusFilter === s ? (st ? st.bg : "rgba(14,165,233,0.15)") : "rgba(255,255,255,0.03)",
-                    borderColor: statusFilter === s ? (st ? st.border : "rgba(14,165,233,0.4)") : "rgba(255,255,255,0.07)",
-                    color: statusFilter === s ? (st ? st.color : "#38bdf8") : "#64748b",
-                  }}>
-                  {s === "all" ? "All" : STATUS_STYLES[s]?.label}
-                </button>
+                <div key={inv.id} className="rounded-2xl border border-white/[0.06] p-4 cursor-pointer"
+                  style={{ background: selectedInv?.id === inv.id ? "rgba(16,185,129,0.04)" : "rgba(255,255,255,0.02)" }}
+                  onClick={() => openPanel(inv)}>
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
+                        style={{ background: `${s.color}20`, color: s.color }}>
+                        {inv.name?.[0]?.toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-semibold text-white truncate">{inv.name}</p>
+                        <p className="text-[11px] text-slate-500 truncate">{inv.company || inv.email || "—"}</p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] px-2.5 py-1 rounded-full font-medium flex-shrink-0"
+                      style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
+                      {s.label}
+                    </span>
+                  </div>
+                  {inv.deal_size && <p className="text-[11px] text-slate-500 mb-1">Deal: {inv.deal_size}</p>}
+                  {inv.notes && <p className="text-[11px] text-slate-600 mb-3 line-clamp-2">{inv.notes}</p>}
+                  <div className="flex items-center gap-2 pt-2 border-t border-white/[0.05]" onClick={e => e.stopPropagation()}>
+                    <button onClick={() => handleEdit(inv)}
+                      className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-300 cursor-pointer border-0 bg-transparent transition-colors">
+                      <RiEditLine size={12} /> Edit
+                    </button>
+                    <button onClick={() => handleDelete(inv.id, inv.name)}
+                      className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-red-400 cursor-pointer border-0 bg-transparent transition-colors ml-auto">
+                      <RiDeleteBinLine size={12} /> Delete
+                    </button>
+                  </div>
+                </div>
               )
             })}
           </div>
         </div>
 
-        {/* Add Form */}
-        {showAdd && (
-          <div className="rounded-2xl border border-emerald-500/20 p-5 mb-5"
-            style={{ background: "rgba(16,185,129,0.04)" }}>
-            <h3 className="text-sm font-semibold text-white mb-4">Add New Investor</h3>
-            <form onSubmit={handleAdd} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                placeholder="Name *" className="rounded-xl px-4 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
-                style={{ background: "rgba(255,255,255,0.03)" }} />
-              <input value={form.company} onChange={e => setForm({ ...form, company: e.target.value })}
-                placeholder="Company" className="rounded-xl px-4 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
-                style={{ background: "rgba(255,255,255,0.03)" }} />
-              <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
-                placeholder="Email" className="rounded-xl px-4 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
-                style={{ background: "rgba(255,255,255,0.03)" }} />
-              <input value={form.deal_size} onChange={e => setForm({ ...form, deal_size: e.target.value })}
-                placeholder="Deal size (e.g. $500k)" className="rounded-xl px-4 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
-                style={{ background: "rgba(255,255,255,0.03)" }} />
-              <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}
-                className="rounded-xl px-4 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
-                style={{ background: "rgba(255,255,255,0.03)" }}>
-                {STATUSES.map(s => <option key={s} value={s}>{STATUS_STYLES[s]?.label}</option>)}
-              </select>
-              <input value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
-                placeholder="Notes" className="rounded-xl px-4 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
-                style={{ background: "rgba(255,255,255,0.03)" }} />
-              <div className="sm:col-span-2 flex gap-2 justify-end mt-1">
-                <button type="button" onClick={() => { setShowAdd(false); setForm(EMPTY_FORM) }}
-                  className="px-4 py-2 rounded-xl text-sm text-slate-400 cursor-pointer border border-white/[0.08] bg-transparent">
-                  Cancel
-                </button>
-                <button type="submit" disabled={saving}
-                  className="px-4 py-2 rounded-xl text-sm font-semibold text-white cursor-pointer border-0 disabled:opacity-60"
-                  style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
-                  {saving ? "Adding..." : "Add Investor"}
+        {/* Detail Panel */}
+        {selectedInv && (() => {
+          const s = STATUS_STYLES[selectedInv.status] || STATUS_STYLES.outreach
+          return (
+            <div className="fixed right-0 top-0 h-full w-[380px] border-l flex flex-col z-40 hidden md:flex"
+              style={{ background: "#050508", borderColor: "rgba(255,255,255,0.06)", marginTop: "0" }}>
+              {/* Panel header */}
+              <div className="flex items-center justify-between px-6 py-5 border-b" style={{ borderColor: "rgba(255,255,255,0.06)", paddingTop: "72px" }}>
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
+                    style={{ background: `${s.color}20`, color: s.color }}>
+                    {selectedInv.name?.[0]?.toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[15px] font-bold text-white truncate" style={{ fontFamily: "'Syne', sans-serif" }}>{selectedInv.name}</p>
+                    <p className="text-[12px] text-slate-500 truncate">{selectedInv.company || selectedInv.email || "—"}</p>
+                  </div>
+                </div>
+                <button onClick={closePanel}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-300 cursor-pointer border-0 bg-transparent flex-shrink-0">
+                  <RiCloseLine size={16} />
                 </button>
               </div>
-            </form>
-          </div>
-        )}
 
-        {/* Table — desktop */}
-        <div className="hidden md:block rounded-2xl border border-white/[0.06] overflow-hidden"
-          style={{ background: "rgba(255,255,255,0.02)" }}>
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/[0.05]" style={{ background: "rgba(255,255,255,0.02)" }}>
-                {["Investor", "Status", "Deal Size", "Notes", ""].map(h => (
-                  <th key={h} className="text-left px-5 py-3 text-[11px] text-slate-600 uppercase tracking-wider font-medium">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/[0.04]">
-              {filtered.length === 0 ? (
-                <tr><td colSpan={5}>
-                  <div className="flex flex-col items-center gap-2 py-12">
-                    <RiUserLine size={20} className="text-slate-700" />
-                    <p className="text-xs text-slate-700">No investors found</p>
+              <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+                {/* Status */}
+                <div>
+                  <p className="text-[11px] text-slate-600 uppercase tracking-wider mb-2">Pipeline Stage</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {STATUSES.map(st => {
+                      const style = STATUS_STYLES[st]
+                      const active = selectedInv.status === st
+                      return (
+                        <button key={st} onClick={() => handlePanelStatusChange(st)}
+                          className="px-3 py-1.5 rounded-xl text-xs font-medium cursor-pointer border transition-all"
+                          style={{
+                            background: active ? style.bg : "rgba(255,255,255,0.02)",
+                            borderColor: active ? style.border : "rgba(255,255,255,0.06)",
+                            color: active ? style.color : "#64748b",
+                          }}>
+                          {style.label}
+                        </button>
+                      )
+                    })}
                   </div>
-                </td></tr>
-              ) : filtered.map(inv => {
-                const s = STATUS_STYLES[inv.status] || STATUS_STYLES.outreach
-                const isEditing = editId === inv.id
-                return (
-                  <tr key={inv.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold flex-shrink-0"
-                          style={{ background: `${s.color}20`, color: s.color }}>
-                          {inv.name?.[0]?.toUpperCase()}
-                        </div>
-                        <div>
-                          {isEditing ? (
-                            <input value={editData.name} onChange={e => setEditData({ ...editData, name: e.target.value })}
-                              className="rounded-lg px-2 py-1 text-sm text-white border border-emerald-500/30 outline-none w-32"
-              style={{ background: "rgba(16,185,129,0.08)" }} />
-                          ) : (
-                            <p className="text-[13px] text-slate-200 font-medium">{inv.name}</p>
-                          )}
-                          {isEditing ? (
-                            <input value={editData.company} onChange={e => setEditData({ ...editData, company: e.target.value })}
-                              className="rounded-lg px-2 py-1 text-xs text-slate-400 border border-white/[0.08] outline-none w-32 mt-1"
-                              style={{ background: "rgba(255,255,255,0.03)" }} />
-                          ) : (
-                            <p className="text-[11px] text-slate-600">{inv.company || inv.email || "—"}</p>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      {isEditing ? (
-                        <select value={editData.status} onChange={e => setEditData({ ...editData, status: e.target.value })}
-                          className="rounded-lg px-2 py-1 text-xs border border-white/[0.08] outline-none"
-                          style={{ background: "rgba(255,255,255,0.05)", color: "#94a3b8" }}>
-                          {STATUSES.map(s => <option key={s} value={s}>{STATUS_STYLES[s]?.label}</option>)}
-                        </select>
-                      ) : (
-                        <span className="text-[11px] px-2.5 py-1 rounded-full font-medium"
-                          style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
-                          {s.label}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      {isEditing ? (
-                        <input value={editData.deal_size} onChange={e => setEditData({ ...editData, deal_size: e.target.value })}
-                          className="rounded-lg px-2 py-1 text-xs border border-white/[0.08] outline-none w-24"
-                          style={{ background: "rgba(255,255,255,0.03)", color: "#94a3b8" }} />
-                      ) : (
-                        <span className="text-[13px] text-slate-400">{inv.deal_size || "—"}</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3.5 max-w-[200px]">
-                      {isEditing ? (
-                        <input value={editData.notes} onChange={e => setEditData({ ...editData, notes: e.target.value })}
-                          className="rounded-lg px-2 py-1 text-xs border border-white/[0.08] outline-none w-full"
-                          style={{ background: "rgba(255,255,255,0.03)", color: "#94a3b8" }} />
-                      ) : (
-                        <span className="text-[11px] text-slate-600 truncate block">{inv.notes || "—"}</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-1.5 justify-end">
-                        {isEditing ? (
-                          <>
-                            <button onClick={() => handleSaveEdit(inv.id)}
-                              className="w-7 h-7 rounded-lg flex items-center justify-center text-emerald-400 hover:bg-emerald-400/10 cursor-pointer border-0 bg-transparent transition-colors">
-                              <RiCheckLine size={14} />
-                            </button>
-                            <button onClick={() => setEditId(null)}
-                              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:bg-white/5 cursor-pointer border-0 bg-transparent transition-colors">
-                              <RiCloseLine size={14} />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button onClick={() => handleEdit(inv)}
-                              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 hover:text-slate-300 cursor-pointer border-0 bg-transparent transition-colors">
-                              <RiEditLine size={13} />
-                            </button>
-                            <button onClick={() => handleDelete(inv.id, inv.name)}
-                              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 hover:text-red-400 cursor-pointer border-0 bg-transparent transition-colors">
-                              <RiDeleteBinLine size={13} />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+                </div>
 
-        {/* Mobile cards */}
-        <div className="md:hidden flex flex-col gap-3">
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-12">
-              <RiUserLine size={20} className="text-slate-700" />
-              <p className="text-xs text-slate-700">No investors found</p>
+                {/* Info */}
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: "Email", value: selectedInv.email || "—" },
+                    { label: "Deal Size", value: selectedInv.deal_size || "—" },
+                  ].map(f => (
+                    <div key={f.label} className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                      <p className="text-[10px] text-slate-600 uppercase tracking-wider mb-1">{f.label}</p>
+                      <p className="text-[13px] text-slate-200 truncate">{f.value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Last updated */}
+                {selectedInv.updated_at && (
+                  <div className="flex items-center gap-2 text-[11px] text-slate-700">
+                    <RiTimeLine size={12} />
+                    Last updated {new Date(selectedInv.updated_at).toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })}
+                  </div>
+                )}
+
+                {/* Notes */}
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <RiStickyNoteLine size={13} className="text-slate-600" />
+                    <p className="text-[11px] text-slate-600 uppercase tracking-wider">Notes</p>
+                  </div>
+                  <textarea
+                    value={panelNotes}
+                    onChange={e => setPanelNotes(e.target.value)}
+                    placeholder="Add notes about this investor..."
+                    rows={8}
+                    className="w-full rounded-xl px-4 py-3 text-sm text-slate-200 border border-white/[0.08] outline-none resize-none"
+                    style={{ background: "rgba(255,255,255,0.03)", lineHeight: "1.7" }}
+                  />
+                  <button
+                    onClick={handleSaveNotes}
+                    disabled={savingNotes || panelNotes === (selectedInv.notes || "")}
+                    className="mt-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white cursor-pointer border-0 disabled:opacity-40 transition-all"
+                    style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
+                    {savingNotes ? "Saving..." : "Save Notes"}
+                  </button>
+                </div>
+              </div>
             </div>
-          ) : filtered.map(inv => {
-            const s = STATUS_STYLES[inv.status] || STATUS_STYLES.outreach
-            return (
-              <div key={inv.id} className="rounded-2xl border border-white/[0.06] p-4"
-                style={{ background: "rgba(255,255,255,0.02)" }}>
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
-                      style={{ background: `${s.color}20`, color: s.color }}>
-                      {inv.name?.[0]?.toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[13px] font-semibold text-white truncate">{inv.name}</p>
-                      <p className="text-[11px] text-slate-500 truncate">{inv.company || inv.email || "—"}</p>
-                    </div>
-                  </div>
-                  <span className="text-[11px] px-2.5 py-1 rounded-full font-medium flex-shrink-0"
-                    style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
-                    {s.label}
-                  </span>
-                </div>
-                {inv.deal_size && <p className="text-[11px] text-slate-500 mb-1">Deal: {inv.deal_size}</p>}
-                {inv.notes && <p className="text-[11px] text-slate-600 mb-3 line-clamp-2">{inv.notes}</p>}
-                <div className="flex items-center gap-2 pt-2 border-t border-white/[0.05]">
-                  <button onClick={() => handleEdit(inv)}
-                    className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-300 cursor-pointer border-0 bg-transparent transition-colors">
-                    <RiEditLine size={12} /> Edit
-                  </button>
-                  <button onClick={() => handleDelete(inv.id, inv.name)}
-                    className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-red-400 cursor-pointer border-0 bg-transparent transition-colors ml-auto">
-                    <RiDeleteBinLine size={12} /> Delete
-                  </button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
+          )
+        })()}
       </div>
     </div>
   )
