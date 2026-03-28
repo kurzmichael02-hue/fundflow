@@ -36,7 +36,7 @@ export default function Home() {
       (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("animate-in"); observer.unobserve(e.target) } }),
       { threshold: 0.1 }
     )
-    document.querySelectorAll(".bounce-reveal").forEach(el => observer.observe(el))
+    document.querySelectorAll(".bounce-reveal, .scroll-reveal").forEach(el => observer.observe(el))
     return () => { window.removeEventListener("mousemove", m); observer.disconnect() }
   }, [])
 
