@@ -1,10 +1,29 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import Navbar from "@/components/Navbar"
-import { RiBarChartLine, RiArrowRightLine, RiTrophyLine, RiTimeLine, RiFundsLine } from "react-icons/ri"
+import AppNav from "@/components/AppNav"
+import { RiArrowUpLine, RiArrowDownLine, RiSubtractLine } from "react-icons/ri"
 
-const STAGES = [
+// Analytics — editorial "terminal" styling.
+// Numbers in Fraunces serif, labels + dates in mono, hairline rows.
+// Reads like a financial terminal or an editorial statistical spread,
+// not a generic SaaS dashboard.
+
+type Status = "outreach" | "interested" | "meeting" | "term_sheet" | "closed"
+type Investor = {
+  id: string
+  name: string
+  company?: string | null
+  email?: string | null
+  status: Status
+  deal_size?: string | null
+}
+type Interest = {
+  id: string
+  created_at: string
+}
+
+const STAGES: Array<{ key: Status; label: string; color: string }> = [
   { key: "outreach",   label: "Outreach",   color: "#9ca3af" },
   { key: "interested", label: "Interested", color: "#a78bfa" },
   { key: "meeting",    label: "Meeting",    color: "#fbbf24" },
@@ -12,32 +31,22 @@ const STAGES = [
   { key: "closed",     label: "Closed",     color: "#34d399" },
 ]
 
-// Deal size is a free-text field, so founders write "$500k", "2.5M", "1b",
-// "€500.000" etc. Without this, "$5M" was parsed as 5 and the totals were off
-// by six orders of magnitude.
 function parseDealSize(raw: unknown): number {
   if (raw == null) return 0
   const s = String(raw).trim().toLowerCase()
   if (!s) return 0
-  // Suffix check first — must come before digit extraction.
-  let multiplier = 1
-  if (/\bb\b|billion/.test(s))        multiplier = 1_000_000_000
-  else if (/\bm\b|million|mm\b/.test(s)) multiplier = 1_000_000
-  else if (/\bk\b|thousand/.test(s))     multiplier = 1_000
-  // European "500.000" vs US "500,000": if there are >= 2 groups of three digits
-  // separated by the same character and no other decimal, treat it as thousands.
-  // Otherwise drop commas (US thousands separator) and keep the dot as decimal.
-  const onlyNums = s.replace(/[^0-9.,]/g, "")
-  const hasCommaDecimal = /\d,\d{1,2}(?!\d)/.test(onlyNums) && !/\.\d/.test(onlyNums)
-  const normalised = hasCommaDecimal
-    ? onlyNums.replace(/\./g, "").replace(",", ".")
-    : onlyNums.replace(/,/g, "")
-  const num = parseFloat(normalised)
-  if (isNaN(num)) return 0
-  return num * multiplier
+  let mult = 1
+  if (/\bb\b|billion/.test(s))          mult = 1_000_000_000
+  else if (/\bm\b|million|mm\b/.test(s)) mult = 1_000_000
+  else if (/\bk\b|thousand/.test(s))     mult = 1_000
+  const only = s.replace(/[^0-9.,]/g, "")
+  const hasCommaDecimal = /\d,\d{1,2}(?!\d)/.test(only) && !/\.\d/.test(only)
+  const norm = hasCommaDecimal ? only.replace(/\./g, "").replace(",", ".") : only.replace(/,/g, "")
+  const n = parseFloat(norm)
+  return isNaN(n) ? 0 : n * mult
 }
 
-function formatCurrency(n: number): string {
+function formatUsd(n: number): string {
   if (n <= 0) return "$0"
   if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(n >= 10_000_000_000 ? 0 : 1)}B`
   if (n >= 1_000_000)     return `$${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`
@@ -47,14 +56,15 @@ function formatCurrency(n: number): string {
 
 export default function AnalyticsPage() {
   const router = useRouter()
-  const [investors, setInvestors] = useState<any[]>([])
-  const [interests, setInterests] = useState<any[]>([])
+  const [investors, setInvestors] = useState<Investor[]>([])
+  const [interests, setInterests] = useState<Interest[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const token = localStorage.getItem("token")
     if (!token) { router.push("/login"); return }
     fetchAll(token)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function fetchAll(token: string) {
@@ -74,204 +84,254 @@ export default function AnalyticsPage() {
     }
   }
 
-  // Pipeline funnel counts
-  const funnelData = STAGES.map(s => ({
-    ...s,
-    count: investors.filter(i => i.status === s.key).length,
-  }))
-  const maxCount = Math.max(...funnelData.map(s => s.count), 1)
-
-  // Conversion rate: outreach → closed
+  // ── Derived ────────────────────────────────────────────────────────────
+  const funnel = useMemo(() =>
+    STAGES.map(s => ({ ...s, count: investors.filter(i => i.status === s.key).length })),
+    [investors]
+  )
+  const maxCount = useMemo(() => Math.max(...funnel.map(s => s.count), 1), [funnel])
   const total = investors.length
   const closed = investors.filter(i => i.status === "closed").length
   const conversionRate = total > 0 ? ((closed / total) * 100).toFixed(1) : "0.0"
-
-  // Response rate: moved past outreach
-  const movedOn = investors.filter(i => i.status !== "outreach").length
-  const responseRate = total > 0 ? ((movedOn / total) * 100).toFixed(1) : "0.0"
-
-  // Total raised from closed deals
-  const totalRaised = investors
+  const movedPastOutreach = investors.filter(i => i.status !== "outreach").length
+  const responseRate = total > 0 ? ((movedPastOutreach / total) * 100).toFixed(1) : "0.0"
+  const totalCommitted = investors
     .filter(i => i.status === "closed" && i.deal_size)
     .reduce((sum, i) => sum + parseDealSize(i.deal_size), 0)
+  const avgDealSize = closed > 0 ? totalCommitted / closed : 0
 
-  // Top investors by amount
-  const topInvestors = [...investors]
+  const topInvestors = useMemo(() => [...investors]
     .filter(i => i.deal_size)
     .sort((a, b) => parseDealSize(b.deal_size) - parseDealSize(a.deal_size))
-    .slice(0, 5)
+    .slice(0, 6), [investors])
 
-  // Interests over last 7 days
-  const last7Days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date()
-    d.setDate(d.getDate() - (6 - i))
-    return d.toISOString().split("T")[0]
-  })
-  const interestsByDay = last7Days.map(day => ({
-    day: new Date(day).toLocaleDateString("en", { weekday: "short" }),
-    count: interests.filter(int => int.created_at?.startsWith(day)).length,
-  }))
+  // 7-day interest chart
+  const last7 = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date()
+      d.setDate(d.getDate() - (6 - i))
+      return d.toISOString().split("T")[0]
+    })
+  }, [])
+  const interestsByDay = useMemo(() => last7.map(day => ({
+    day,
+    label: new Date(day).toLocaleDateString("en", { weekday: "short" }),
+    count: interests.filter(it => it.created_at?.startsWith(day)).length,
+  })), [last7, interests])
   const maxInterests = Math.max(...interestsByDay.map(d => d.count), 1)
+  const totalInterests = interests.length
 
   if (loading) return (
-    <div className="min-h-screen bg-[#050508] flex items-center justify-center">
-      <div className="flex items-center gap-3 text-slate-500 text-sm">
-        <div className="w-4 h-4 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
-        Loading...
+    <div style={{ minHeight: "100vh", background: "#060608" }}>
+      <AppNav />
+      <div className="max-w-[1280px] mx-auto px-6 md:px-10 py-20 flex items-center gap-3">
+        <div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid #10b981", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
+        <span className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>Loading numbers...</span>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-[#050508] text-slate-200">
-      <Navbar />
-      <div className="px-4 md:px-12 py-8 max-w-5xl mx-auto">
+    <main style={{ minHeight: "100vh", background: "#060608", color: "#e5e7eb", fontFamily: "'DM Sans', sans-serif" }}>
+      <AppNav />
 
-        <div className="mb-7">
-          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">Analytics</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Pipeline performance & fundraising insights</p>
+      <div className="max-w-[1280px] mx-auto px-6 md:px-10">
+
+        {/* ── Ticker ── */}
+        <div className="flex items-center justify-between flex-wrap gap-3 pt-8 pb-6"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="mono flex items-center gap-x-5 gap-y-2 flex-wrap" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            <span>Analytics</span>
+            <span style={{ color: "#334155" }}>·</span>
+            <span>{new Date().toLocaleDateString("en", { month: "short", day: "numeric" })}</span>
+            <span style={{ color: "#334155" }}>·</span>
+            <span><span style={{ color: "#34d399" }}>{conversionRate}%</span> conversion</span>
+          </div>
         </div>
 
-        {/* Top stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          {[
-            { label: "Total in Pipeline", value: total, sub: "investors tracked", icon: <RiBarChartLine size={16} />, color: "#38bdf8" },
-            { label: "Conversion Rate", value: `${conversionRate}%`, sub: "outreach → closed", icon: <RiTrophyLine size={16} />, color: "#34d399" },
-            { label: "Response Rate", value: `${responseRate}%`, sub: "moved past outreach", icon: <RiArrowRightLine size={16} />, color: "#a78bfa" },
-            { label: "Total Raised", value: formatCurrency(totalRaised), sub: "from closed deals", icon: <RiFundsLine size={16} />, color: "#fbbf24" },
-          ].map(s => (
-            <div key={s.label} className="rounded-2xl border border-white/[0.06] p-4"
-              style={{ background: "rgba(255,255,255,0.02)" }}>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[11px] text-slate-600 uppercase tracking-wider font-medium">{s.label}</span>
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-                  style={{ background: `${s.color}15`, color: s.color }}>
-                  {s.icon}
-                </div>
-              </div>
-              <div className="text-2xl font-bold text-white" style={{ letterSpacing: "-0.02em" }}>{s.value}</div>
-              <div className="text-[11px] text-slate-600 mt-0.5">{s.sub}</div>
-            </div>
-          ))}
-        </div>
+        {/* ── Masthead + hero numbers ── */}
+        <section className="grid grid-cols-1 md:grid-cols-12 gap-10 pt-10 md:pt-14 pb-10 items-end">
+          <div className="md:col-span-6">
+            <p className="mono mb-3" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+              § Signal
+            </p>
+            <h1 className="serif text-white" style={{
+              fontSize: "clamp(40px, 5.5vw, 72px)", lineHeight: 0.95, letterSpacing: "-0.045em", fontWeight: 500,
+            }}>
+              The honest <span style={{ fontStyle: "italic", fontWeight: 400 }}>numbers.</span>
+            </h1>
+            <p style={{ fontSize: 16, color: "#94a3b8", marginTop: 20, maxWidth: 480, lineHeight: 1.6 }}>
+              Every investor you&apos;ve added, where they sit in the funnel, how fast the round is
+              moving, and what was committed. No vanity metrics.
+            </p>
+          </div>
+          <div className="md:col-span-6 grid grid-cols-2 gap-x-8 gap-y-6 md:text-right">
+            <HeroStat label="Conversion" value={`${conversionRate}%`} hint={`${closed} / ${total}`} trend={parseFloat(conversionRate) >= 5 ? "up" : "flat"} />
+            <HeroStat label="Response rate" value={`${responseRate}%`} hint={`${movedPastOutreach} moved on`} trend="flat" />
+            <HeroStat label="Committed" value={formatUsd(totalCommitted)} hint={`${closed} closed`} trend={closed > 0 ? "up" : "flat"} />
+            <HeroStat label="Avg deal size" value={formatUsd(avgDealSize)} hint="closed only" trend="flat" />
+          </div>
+        </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-
-          {/* Pipeline Funnel */}
-          <div className="rounded-2xl border border-white/[0.06] overflow-hidden" style={{ background: "rgba(255,255,255,0.02)" }}>
-            <div className="px-5 py-4 border-b border-white/[0.05]" style={{ background: "rgba(255,255,255,0.02)" }}>
-              <h2 className="text-[13px] font-semibold text-white">Pipeline Funnel</h2>
-              <p className="text-[11px] text-slate-600 mt-0.5">Investors by stage</p>
-            </div>
-            <div className="p-5 flex flex-col gap-3">
-              {funnelData.map((stage, idx) => (
-                <div key={stage.key}>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-slate-500">{String(idx + 1).padStart(2, "0")}</span>
-                      <span className="text-[12px] text-slate-300 font-medium">{stage.label}</span>
-                    </div>
-                    <span className="text-[12px] font-bold" style={{ color: stage.color }}>{stage.count}</span>
-                  </div>
-                  <div className="h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.04)" }}>
-                    <div className="h-full rounded-full transition-all duration-700"
-                      style={{
-                        width: `${(stage.count / maxCount) * 100}%`,
-                        background: stage.color,
-                        opacity: 0.8,
-                        minWidth: stage.count > 0 ? "4px" : "0",
-                      }} />
-                  </div>
-                  {idx < funnelData.length - 1 && stage.count > 0 && funnelData[idx + 1].count > 0 && (
-                    <div className="text-[10px] text-slate-700 mt-1 text-right">
-                      {((funnelData[idx + 1].count / stage.count) * 100).toFixed(0)}% → next stage
-                    </div>
-                  )}
-                </div>
-              ))}
-              {total === 0 && (
-                <p className="text-xs text-slate-700 text-center py-4">No investors in pipeline yet</p>
-              )}
-            </div>
+        {/* ── Funnel ── full width, editorial */}
+        <section className="py-12" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+          <div className="flex items-baseline justify-between mb-8">
+            <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+              § Funnel
+            </p>
+            <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              Stage → next stage
+            </span>
           </div>
 
-          {/* Deal Flow Interests — last 7 days */}
-          <div className="rounded-2xl border border-white/[0.06] overflow-hidden" style={{ background: "rgba(255,255,255,0.02)" }}>
-            <div className="px-5 py-4 border-b border-white/[0.05]" style={{ background: "rgba(255,255,255,0.02)" }}>
-              <h2 className="text-[13px] font-semibold text-white">Investor Interest</h2>
-              <p className="text-[11px] text-slate-600 mt-0.5">Deal flow signals — last 7 days</p>
-            </div>
-            <div className="p-5">
-              <div className="flex items-end gap-2 h-28">
-                {interestsByDay.map(d => (
-                  <div key={d.day} className="flex-1 flex flex-col items-center gap-1.5">
-                    <div className="w-full rounded-t-lg transition-all duration-700 relative group"
-                      style={{
-                        height: `${Math.max((d.count / maxInterests) * 96, d.count > 0 ? 8 : 2)}px`,
-                        background: d.count > 0 ? "rgba(16,185,129,0.4)" : "rgba(255,255,255,0.04)",
-                        border: d.count > 0 ? "1px solid rgba(16,185,129,0.3)" : "1px solid rgba(255,255,255,0.06)",
-                      }}>
-                      {d.count > 0 && (
-                        <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-bold text-emerald-400">
-                          {d.count}
-                        </div>
-                      )}
-                    </div>
-                    <span className="text-[10px] text-slate-600">{d.day}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 pt-4 border-t border-white/[0.04] flex items-center justify-between">
-                <span className="text-[11px] text-slate-600">Total interests received</span>
-                <span className="text-[13px] font-bold text-white">{interests.length}</span>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Top Investors by Amount */}
-        <div className="rounded-2xl border border-white/[0.06] overflow-hidden" style={{ background: "rgba(255,255,255,0.02)" }}>
-          <div className="px-5 py-4 border-b border-white/[0.05]" style={{ background: "rgba(255,255,255,0.02)" }}>
-            <h2 className="text-[13px] font-semibold text-white">Top Investors by Deal Size</h2>
-            <p className="text-[11px] text-slate-600 mt-0.5">Ranked by committed amount</p>
-          </div>
-          <div className="divide-y divide-white/[0.04]">
-            {topInvestors.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 py-10">
-                <RiTimeLine size={20} className="text-slate-700" />
-                <p className="text-xs text-slate-700">No deal sizes tracked yet</p>
-                <p className="text-[11px] text-slate-800">Add amounts to your investors to see rankings</p>
-              </div>
-            ) : topInvestors.map((inv, idx) => {
-              const statusColors: Record<string, string> = {
-  outreach: "#9ca3af", interested: "#a78bfa", meeting: "#fbbf24",
-  term_sheet: "#38bdf8", closed: "#34d399"
-}
-const statusColor = statusColors[inv.status] || "#9ca3af"
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+            {funnel.map((s, idx) => {
+              const nextCount = idx < funnel.length - 1 ? funnel[idx + 1].count : null
+              const conv = (nextCount != null && s.count > 0)
+                ? Math.round((nextCount / s.count) * 100)
+                : null
+              const width = (s.count / maxCount) * 100
               return (
-                <div key={inv.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-white/[0.02]">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="text-[11px] text-slate-700 w-5 flex-shrink-0">#{idx + 1}</span>
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold flex-shrink-0"
-                      style={{ background: `${statusColor}20`, color: statusColor }}>
-                      {inv.name?.[0]?.toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[13px] text-slate-200 font-medium truncate">{inv.name}</p>
-                      <p className="text-[11px] text-slate-600 truncate">{inv.company || inv.email || "—"}</p>
+                <div key={s.key} className="grid grid-cols-[60px_1fr_80px_140px] md:grid-cols-[80px_1fr_100px_180px] gap-4 items-center py-4"
+                  style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                  <span className="mono" style={{ fontSize: 11, color: "#334155", letterSpacing: "0.08em" }}>
+                    {String(idx + 1).padStart(2, "0")}
+                  </span>
+                  <div>
+                    <div style={{ fontSize: 13, color: "#e5e7eb", marginBottom: 6 }}>{s.label}</div>
+                    <div style={{ height: 2, background: "rgba(255,255,255,0.04)", position: "relative" }}>
+                      <div style={{ width: `${width}%`, height: "100%", background: s.color, opacity: 0.9, transition: "width 600ms ease" }} />
                     </div>
                   </div>
-                  <div className="text-right flex-shrink-0 ml-3">
-                    <p className="text-[13px] font-bold text-white">{inv.deal_size}</p>
-                    <p className="text-[10px]" style={{ color: statusColor }}>{inv.status?.replace("_", " ")}</p>
-                  </div>
+                  <span className="serif text-right md:text-left" style={{ fontSize: 26, color: s.color, fontWeight: 500, letterSpacing: "-0.02em", lineHeight: 1 }}>
+                    {s.count}
+                  </span>
+                  <span className="mono text-right" style={{ fontSize: 10, color: conv != null ? "#94a3b8" : "#334155", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                    {conv != null ? `${conv}% → next` : "—"}
+                  </span>
                 </div>
               )
             })}
           </div>
-        </div>
 
+          {total === 0 && (
+            <div className="py-12 text-center mono" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              Nothing in the pipeline yet
+            </div>
+          )}
+        </section>
+
+        {/* ── Two-column: interest chart + top deals ── */}
+        <section className="grid grid-cols-1 md:grid-cols-12 gap-10 py-12"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+
+          <div className="md:col-span-6">
+            <div className="flex items-baseline justify-between mb-8">
+              <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                § Inbound signal
+              </p>
+              <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                Last 7 days · {totalInterests} total
+              </span>
+            </div>
+
+            <div className="flex items-end gap-2" style={{ height: 140 }}>
+              {interestsByDay.map(d => (
+                <div key={d.day} className="flex-1 flex flex-col items-center gap-2" style={{ height: "100%" }}>
+                  <div className="flex-1 w-full relative" style={{ display: "flex", alignItems: "flex-end" }}>
+                    <div style={{
+                      width: "100%",
+                      height: `${Math.max((d.count / maxInterests) * 100, d.count > 0 ? 8 : 2)}%`,
+                      background: d.count > 0 ? "#10b981" : "rgba(255,255,255,0.04)",
+                      opacity: d.count > 0 ? 0.85 : 1,
+                      transition: "height 600ms ease",
+                    }} />
+                    {d.count > 0 && (
+                      <span className="mono absolute" style={{ top: -18, left: "50%", transform: "translateX(-50%)", fontSize: 10, color: "#34d399", letterSpacing: "0.04em", fontWeight: 600 }}>
+                        {d.count}
+                      </span>
+                    )}
+                  </div>
+                  <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.04em" }}>{d.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="md:col-span-6">
+            <div className="flex items-baseline justify-between mb-8">
+              <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                § Top cheques
+              </p>
+              <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                By deal size
+              </span>
+            </div>
+
+            {topInvestors.length === 0 ? (
+              <div className="py-10 mono" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                No deal sizes tracked
+              </div>
+            ) : (
+              <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                {topInvestors.map((inv, i) => {
+                  const stage = STAGES.find(s => s.key === inv.status)
+                  return (
+                    <div key={inv.id}
+                      className="grid grid-cols-[30px_1fr_auto] gap-3 items-center py-3"
+                      style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                      <span className="mono" style={{ fontSize: 11, color: "#334155", letterSpacing: "0.04em" }}>
+                        #{String(i + 1).padStart(2, "0")}
+                      </span>
+                      <div className="min-w-0">
+                        <div style={{ fontSize: 13, color: "#e5e7eb" }} className="truncate">{inv.name}</div>
+                        <div className="mono truncate" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.04em", marginTop: 2 }}>
+                          {inv.company || inv.email || "—"}
+                          {stage && <span style={{ marginLeft: 8, color: stage.color }}>· {stage.label}</span>}
+                        </div>
+                      </div>
+                      <span className="mono flex-shrink-0" style={{ fontSize: 13, color: "#fff", fontWeight: 500 }}>
+                        {inv.deal_size}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+
+        <div style={{ height: 80 }} />
+      </div>
+    </main>
+  )
+}
+
+function HeroStat({ label, value, hint, trend }: {
+  label: string
+  value: string
+  hint: string
+  trend: "up" | "down" | "flat"
+}) {
+  const trendIcon =
+    trend === "up"   ? <RiArrowUpLine size={11} /> :
+    trend === "down" ? <RiArrowDownLine size={11} /> :
+                       <RiSubtractLine size={11} />
+  const trendColor =
+    trend === "up"   ? "#34d399" :
+    trend === "down" ? "#f87171" :
+                       "#64748b"
+  return (
+    <div>
+      <div className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>
+        {label}
+      </div>
+      <div className="serif text-white" style={{ fontSize: 34, fontWeight: 500, letterSpacing: "-0.02em", lineHeight: 1 }}>
+        {value}
+      </div>
+      <div className="mono flex md:justify-end items-center gap-1.5 mt-2" style={{ fontSize: 10, color: trendColor, letterSpacing: "0.04em" }}>
+        {trendIcon} <span style={{ color: "#64748b" }}>{hint}</span>
       </div>
     </div>
   )

@@ -1,36 +1,25 @@
-import { createClient } from '@supabase/supabase-js'
-import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from "@supabase/supabase-js"
+import { NextRequest, NextResponse } from "next/server"
+import { requireUser } from "@/lib/auth"
 
 function getClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
+    { auth: { autoRefreshToken: false, persistSession: false } },
   )
 }
 
-function getUserIdFromToken(token: string): string | null {
-  try {
-    const payload = token.split('.')[1]
-    const decoded = JSON.parse(Buffer.from(payload, 'base64').toString('utf8'))
-    return decoded.sub || null
-  } catch {
-    return null
-  }
-}
-
 export async function GET(req: NextRequest) {
-  const token = req.headers.get('authorization')?.replace('Bearer ', '')
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const userId = getUserIdFromToken(token)
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const guard = await requireUser(req)
+  if ("error" in guard) return guard.error
+  const { user } = guard
 
   const supabase = getClient()
   const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -41,14 +30,12 @@ export async function GET(req: NextRequest) {
 // Everything else (plan, stripe_*, user_type, email, id, timestamps) is
 // either owned by Stripe webhooks or by the auth layer and must never be
 // client-writable — otherwise anyone could PATCH { plan: "pro" } for free.
-const PROFILE_WRITABLE_FIELDS = ['name', 'company', 'bio', 'wallet_address'] as const
+const PROFILE_WRITABLE_FIELDS = ["name", "company", "bio", "wallet_address"] as const
 
 export async function PATCH(req: NextRequest) {
-  const token = req.headers.get('authorization')?.replace('Bearer ', '')
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const userId = getUserIdFromToken(token)
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const guard = await requireUser(req)
+  if ("error" in guard) return guard.error
+  const { user } = guard
 
   const body = await req.json()
   const updateData: Record<string, unknown> = {}
@@ -57,14 +44,14 @@ export async function PATCH(req: NextRequest) {
   }
 
   if (Object.keys(updateData).length === 0) {
-    return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+    return NextResponse.json({ error: "No valid fields to update" }, { status: 400 })
   }
 
   const supabase = getClient()
   const { data, error } = await supabase
-    .from('profiles')
+    .from("profiles")
     .update(updateData)
-    .eq('id', userId)
+    .eq("id", user.id)
     .select()
     .single()
 

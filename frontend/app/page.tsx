@@ -1,9 +1,11 @@
 "use client"
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import PublicNav from "@/components/PublicNav"
+import PublicFooter from "@/components/PublicFooter"
 import {
   RiCheckLine, RiArrowRightLine,
-  RiMenuLine, RiCloseLine, RiAddLine, RiSubtractLine,
+  RiAddLine, RiSubtractLine,
   RiWallet3Line, RiQrCodeLine, RiPencilLine,
   RiFlashlightLine, RiDownloadLine,
   RiMailLine, RiRadioButtonLine,
@@ -30,13 +32,6 @@ import {
 //   · Hard hairline borders (rgba white 4%) instead of soft shadows.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const NAV_LINKS = [
-  { label: "Product",  href: "#features" },
-  { label: "Pricing",  href: "#pricing" },
-  { label: "FAQ",      href: "#faq" },
-  { label: "About",    href: "/about" },
-]
-
 const FAQS = [
   { q: "Is FundFlow really free to start?", a: "Yes. Starter is free forever up to 25 investors. Full pipeline, basic analytics, no card required. Upgrade to Pro when you need more seats." },
   { q: "What's the difference between Free and Pro?", a: "Free caps at 25 investors. Pro is $99/month, gives you unlimited investors, advanced analytics, the curated investor directory, and priority support." },
@@ -47,12 +42,9 @@ const FAQS = [
 ]
 
 export default function Home() {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
 
   useEffect(() => {
-    setIsLoggedIn(!!localStorage.getItem("token"))
     // Fade-in-on-scroll for elements marked with .reveal
     const observer = new IntersectionObserver(
       entries => entries.forEach(e => {
@@ -66,80 +58,7 @@ export default function Home() {
 
   return (
     <main style={{ background: "#060608", color: "#e5e7eb", fontFamily: "'DM Sans', sans-serif" }}>
-      <style>{`
-        .serif { font-family: 'Fraunces', Georgia, serif; font-variation-settings: "opsz" 144; }
-        .mono  { font-family: 'JetBrains Mono', ui-monospace, monospace; }
-        .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.7s ease, transform 0.7s ease; }
-        .reveal.is-in { opacity: 1; transform: translateY(0); }
-        .rule { height: 1px; background: rgba(255,255,255,0.06); width: 100%; }
-      `}</style>
-
-      {/* ─── MASTHEAD NAV ─── hairline border, no backdrop-blur drama */}
-      <nav style={{ position: "sticky", top: 0, zIndex: 50, background: "#060608", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-        <div className="max-w-[1180px] mx-auto px-6 md:px-10 flex items-center justify-between" style={{ height: 64 }}>
-          <Link href="/" className="flex items-baseline gap-3 no-underline">
-            <span className="serif text-white" style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.02em" }}>FundFlow</span>
-            <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>Beta · v0.1</span>
-          </Link>
-          <div className="hidden md:flex items-center" style={{ gap: 32 }}>
-            {NAV_LINKS.map(l => (
-              <a key={l.label} href={l.href} className="mono no-underline"
-                style={{ fontSize: 12, color: "#94a3b8", letterSpacing: "0.04em", textTransform: "uppercase" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
-                onMouseLeave={e => (e.currentTarget.style.color = "#94a3b8")}>
-                {l.label}
-              </a>
-            ))}
-          </div>
-          <div className="hidden md:flex items-center gap-3">
-            {isLoggedIn ? (
-              <Link href="/dashboard" className="no-underline flex items-center gap-1.5"
-                style={{ fontSize: 13, color: "#fff", padding: "8px 14px", background: "#10b981", borderRadius: 2, fontWeight: 600 }}>
-                Dashboard <RiArrowRightLine size={13} />
-              </Link>
-            ) : (
-              <>
-                <Link href="/login" className="no-underline"
-                  style={{ fontSize: 13, color: "#cbd5e1", padding: "8px 14px" }}>
-                  Sign in
-                </Link>
-                <Link href="/register" className="no-underline flex items-center gap-1.5"
-                  style={{ fontSize: 13, color: "#fff", padding: "8px 14px", background: "#10b981", borderRadius: 2, fontWeight: 600 }}>
-                  Start free <RiArrowRightLine size={13} />
-                </Link>
-              </>
-            )}
-          </div>
-          <button onClick={() => setMenuOpen(!menuOpen)}
-            className="md:hidden flex items-center justify-center cursor-pointer"
-            style={{ background: "transparent", width: 36, height: 36, color: "#94a3b8", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 2 }}>
-            {menuOpen ? <RiCloseLine size={18} /> : <RiMenuLine size={18} />}
-          </button>
-        </div>
-      </nav>
-
-      {menuOpen && (
-        <div className="md:hidden" style={{ background: "#060608", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-          <div className="px-6 py-5 flex flex-col gap-4">
-            {NAV_LINKS.map(l => (
-              <a key={l.label} href={l.href} onClick={() => setMenuOpen(false)} className="mono no-underline"
-                style={{ fontSize: 13, color: "#cbd5e1", letterSpacing: "0.04em", textTransform: "uppercase" }}>
-                {l.label}
-              </a>
-            ))}
-            <div className="flex gap-2 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-              <Link href="/login" onClick={() => setMenuOpen(false)} className="flex-1 text-center no-underline"
-                style={{ fontSize: 13, color: "#cbd5e1", padding: "10px 0", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 2 }}>
-                Sign in
-              </Link>
-              <Link href="/register" onClick={() => setMenuOpen(false)} className="flex-1 text-center no-underline"
-                style={{ fontSize: 13, color: "#fff", padding: "10px 0", background: "#10b981", borderRadius: 2, fontWeight: 600 }}>
-                Start free
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
+      <PublicNav />
 
       {/* ─── HERO ─── editorial masthead + asymmetric split */}
       <section>
@@ -528,68 +447,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── FOOTER ─── thin, mono, colophon-style ─── */}
-      <footer style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-        <div className="max-w-[1180px] mx-auto px-6 md:px-10 pt-14 pb-10">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
-            <div className="col-span-2">
-              <div className="flex items-baseline gap-3 mb-3">
-                <span className="serif text-white" style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.02em" }}>FundFlow</span>
-                <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>Beta · v0.1</span>
-              </div>
-              <p style={{ fontSize: 13, color: "#64748b", maxWidth: 280, lineHeight: 1.6 }}>
-                The investor CRM for Web3 founders. Built in Berlin, hosted in Frankfurt.
-              </p>
-              <div className="mono flex items-center gap-1.5 mt-5" style={{ fontSize: 11, color: "#34d399", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981" }} />
-                All systems operational
-              </div>
-            </div>
-
-            {[
-              { title: "Product", links: [{ l: "Pricing", h: "#pricing" }, { l: "FAQ", h: "#faq" }, { l: "Dashboard", h: "/dashboard" }] },
-              { title: "Investors", links: [{ l: "Sign in", h: "/investor" }, { l: "Register", h: "/investor/register" }, { l: "Deal flow", h: "/investor/discover" }] },
-              { title: "Company", links: [{ l: "About", h: "/about" }, { l: "Contact", h: "/contact" }, { l: "Privacy", h: "/privacy" }, { l: "Terms", h: "/terms" }] },
-            ].map(col => (
-              <div key={col.title}>
-                <p className="mono mb-4" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                  {col.title}
-                </p>
-                <div className="flex flex-col gap-2.5">
-                  {col.links.map(l => (
-                    <a key={l.l} href={l.h} className="no-underline" style={{ fontSize: 14, color: "#94a3b8" }}
-                      onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
-                      onMouseLeave={e => (e.currentTarget.style.color = "#94a3b8")}>
-                      {l.l}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pt-8"
-            style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-            <span className="mono" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.06em" }}>
-              © 2026 FundFlow · Set in Fraunces, DM Sans, JetBrains Mono
-            </span>
-            <div className="flex items-center gap-5">
-              {[
-                { href: "https://twitter.com/fundflow", label: "Twitter", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.213 5.567zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> },
-                { href: "https://t.me/fundflow", label: "Telegram", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.026 13.6l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.832.959h.29z"/></svg> },
-              ].map(s => (
-                <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
-                  aria-label={s.label}
-                  className="no-underline" style={{ color: "#64748b" }}
-                  onMouseEnter={e => (e.currentTarget.style.color = "#e5e7eb")}
-                  onMouseLeave={e => (e.currentTarget.style.color = "#64748b")}>
-                  {s.icon}
-                </a>
-              ))}
-            </div>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </main>
   )
 }

@@ -1,53 +1,60 @@
 "use client"
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
+import AppNav from "@/components/AppNav"
 import { ToastContainer, useToast } from "@/components/Toast"
-import Navbar from "@/components/Navbar"
+import { RiSearchLine, RiArrowRightLine } from "react-icons/ri"
 
-const STAGES = ["all", "pre-seed", "seed", "series-a", "series-b", "web3"]
+// Investor-side Discover — editorial deal flow page.
+// Replaces the glossy 3-column card grid with a dense editorial list of
+// founders, one row per project with mono meta and sharp borders.
+
+type Project = {
+  id: string
+  name: string
+  description?: string | null
+  stage?: string | null
+  chain?: string | null
+  goal?: number | null
+  raised?: number | null
+  tags?: string[] | null
+  profiles?: { name?: string | null; company?: string | null } | null
+}
+
+const STAGES = ["all", "pre-seed", "seed", "series-a", "series-b", "web3"] as const
 const STAGE_LABELS: Record<string, string> = {
-  "all": "All Stages", "pre-seed": "Pre-Seed", "seed": "Seed",
-  "series-a": "Series A", "series-b": "Series B", "web3": "Web3 / Token"
+  "all": "All",
+  "pre-seed": "Pre-Seed",
+  "seed": "Seed",
+  "series-a": "Series A",
+  "series-b": "Series B",
+  "web3": "Web3",
 }
 const STAGE_COLORS: Record<string, string> = {
-  "pre-seed": "#a78bfa", "seed": "#38bdf8", "series-a": "#fbbf24",
-  "series-b": "#f87171", "web3": "#34d399"
+  "pre-seed": "#a78bfa",
+  "seed":     "#38bdf8",
+  "series-a": "#fbbf24",
+  "series-b": "#f87171",
+  "web3":     "#34d399",
 }
 
 function formatAmount(n: number) {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`
+  if (!n || n <= 0) return "$0"
+  if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(1)}B`
+  if (n >= 1_000_000)     return `$${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000)         return `$${(n / 1_000).toFixed(0)}k`
   return `$${n}`
-}
-
-function SkeletonCard() {
-  return (
-    <div className="rounded-2xl border border-white/[0.06] overflow-hidden" style={{ background: "rgba(255,255,255,0.02)" }}>
-      <div className="h-[2px] w-full" style={{ background: "rgba(255,255,255,0.06)" }} />
-      <div className="p-5 flex flex-col gap-3">
-        <div className="flex items-start justify-between">
-          <div className="w-10 h-10 rounded-xl animate-pulse" style={{ background: "rgba(255,255,255,0.05)" }} />
-          <div className="w-16 h-5 rounded-full animate-pulse" style={{ background: "rgba(255,255,255,0.05)" }} />
-        </div>
-        <div className="w-28 h-5 rounded animate-pulse" style={{ background: "rgba(255,255,255,0.05)" }} />
-        <div className="w-full h-3 rounded animate-pulse" style={{ background: "rgba(255,255,255,0.04)" }} />
-        <div className="w-3/4 h-3 rounded animate-pulse" style={{ background: "rgba(255,255,255,0.04)" }} />
-        <div className="w-full h-1.5 rounded-full animate-pulse mt-2" style={{ background: "rgba(255,255,255,0.05)" }} />
-        <div className="w-full h-9 rounded-xl animate-pulse mt-1" style={{ background: "rgba(255,255,255,0.04)" }} />
-      </div>
-    </div>
-  )
 }
 
 export default function InvestorDiscoverPage() {
   const router = useRouter()
+  const { toasts, addToast, removeToast } = useToast()
   const [loading, setLoading] = useState(true)
-  const [projects, setProjects] = useState<any[]>([])
-  const [activeStage, setActiveStage] = useState("all")
+  const [projects, setProjects] = useState<Project[]>([])
+  const [activeStage, setActiveStage] = useState<string>("all")
   const [search, setSearch] = useState("")
   const [expressed, setExpressed] = useState<Set<string>>(new Set())
   const [submitting, setSubmitting] = useState<string | null>(null)
-  const { toasts, addToast, removeToast } = useToast()
 
   const [investorEmail, setInvestorEmail] = useState("")
   const [investorName, setInvestorName] = useState("")
@@ -56,17 +63,15 @@ export default function InvestorDiscoverPage() {
     const token = localStorage.getItem("token")
     if (!token) { router.push("/investor"); return }
     try {
-      // Supabase JWTs are URL-safe base64 without padding — plain atob
-      // rejects them if they happen to contain `-` or `_` or land on an
-      // unpadded length, so we normalise before decoding.
-      const raw = token.split('.')[1]
-      const normalised = raw.replace(/-/g, "+").replace(/_/g, "/")
-      const padded = normalised + "=".repeat((4 - normalised.length % 4) % 4)
+      const raw = token.split(".")[1]
+      const norm = raw.replace(/-/g, "+").replace(/_/g, "/")
+      const padded = norm + "=".repeat((4 - norm.length % 4) % 4)
       const payload = JSON.parse(atob(padded))
       setInvestorEmail(payload.email || "")
       setInvestorName(payload.user_metadata?.name || "")
     } catch {}
     fetchProjects()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function fetchProjects() {
@@ -81,7 +86,7 @@ export default function InvestorDiscoverPage() {
     }
   }
 
-  async function handleExpressInterest(project: any) {
+  async function handleExpressInterest(project: Project) {
     if (expressed.has(project.id) || submitting) return
     setSubmitting(project.id)
     try {
@@ -96,7 +101,7 @@ export default function InvestorDiscoverPage() {
       })
       if (!res.ok) throw new Error("Failed")
       setExpressed(prev => new Set([...prev, project.id]))
-      addToast(`Interest expressed in ${project.name}! The founder will be notified.`)
+      addToast(`Interest sent to ${project.profiles?.name || "the founder"}`)
     } catch {
       addToast("Something went wrong. Try again.", "error")
     } finally {
@@ -104,167 +109,217 @@ export default function InvestorDiscoverPage() {
     }
   }
 
-  const filtered = useMemo(() => {
-    return projects.filter(p => {
-      const matchStage = activeStage === "all" || p.stage === activeStage
-      const matchSearch = search === "" ||
-        p.name?.toLowerCase().includes(search.toLowerCase()) ||
-        p.profiles?.name?.toLowerCase().includes(search.toLowerCase()) ||
-        p.tags?.some((t: string) => t.toLowerCase().includes(search.toLowerCase()))
-      return matchStage && matchSearch
-    })
-  }, [projects, activeStage, search])
+  const filtered = useMemo(() => projects.filter(p => {
+    const matchStage = activeStage === "all" || p.stage === activeStage
+    const q = search.toLowerCase()
+    const matchSearch = !q ||
+      p.name?.toLowerCase().includes(q) ||
+      p.profiles?.name?.toLowerCase().includes(q) ||
+      p.tags?.some(t => t.toLowerCase().includes(q))
+    return matchStage && matchSearch
+  }), [projects, activeStage, search])
 
   return (
-    <div className="min-h-screen text-slate-200" style={{ background: "#050508" }}>
+    <main style={{ minHeight: "100vh", background: "#060608", color: "#e5e7eb", fontFamily: "'DM Sans', sans-serif" }}>
+      <AppNav />
       <ToastContainer toasts={toasts} removeToast={removeToast} />
-      <Navbar />
 
-      <div className="px-4 md:px-12 py-8 max-w-6xl mx-auto">
-        <div className="mb-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border mb-4"
-            style={{ background: "rgba(16,185,129,0.06)", borderColor: "rgba(16,185,129,0.15)" }}>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-emerald-400 text-xs font-medium">{projects.length} active founder{projects.length !== 1 ? "s" : ""}</span>
+      <div className="max-w-[1280px] mx-auto px-6 md:px-10">
+
+        {/* ── Ticker ── */}
+        <div className="flex items-center justify-between flex-wrap gap-3 pt-8 pb-6"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="mono flex items-center gap-x-5 gap-y-2 flex-wrap" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            <span>Deal flow</span>
+            <span style={{ color: "#334155" }}>·</span>
+            <span><span style={{ color: "#e5e7eb" }}>{projects.length}</span> live</span>
+            <span style={{ color: "#334155" }}>·</span>
+            <span>{filtered.length} shown</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight mb-1" style={{ fontFamily: "'Syne', sans-serif" }}>Deal Flow</h1>
-          <p className="text-slate-500 text-sm">Curated Web3 founders actively raising. Express interest to connect directly.</p>
+          <span className="mono flex items-center gap-1.5" style={{ fontSize: 11, color: "#34d399", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981" }} />
+            Live
+          </span>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 mb-5">
-          <div className="relative flex-1">
-            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        {/* ── Masthead ── */}
+        <section className="pt-10 md:pt-14 pb-8">
+          <p className="mono mb-3" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            § Active founders
+          </p>
+          <h1 className="serif text-white" style={{
+            fontSize: "clamp(40px, 5.5vw, 72px)", lineHeight: 0.95, letterSpacing: "-0.045em", fontWeight: 500,
+          }}>
+            Web3 rounds <span style={{ fontStyle: "italic", fontWeight: 400 }}>worth a look.</span>
+          </h1>
+          <p style={{ fontSize: 16, color: "#94a3b8", marginTop: 20, maxWidth: 560, lineHeight: 1.6 }}>
+            Curated projects that founders chose to publish. Filter by stage and sector, tap
+            Express Interest — the founder gets an email immediately.
+          </p>
+        </section>
+
+        {/* ── Filters ── */}
+        <section className="flex flex-col md:flex-row items-stretch md:items-center gap-4 pb-5"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <div style={{ position: "relative", flex: 1 }}>
+            <RiSearchLine size={14} style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", color: "#475569" }} />
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Search by project, founder, or tag..."
-              className="w-full rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-300 border border-white/[0.07] outline-none"
-              style={{ background: "rgba(255,255,255,0.03)" }} />
-          </div>
-        </div>
-
-        <div className="flex gap-2 mb-7 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-          {STAGES.map(s => (
-            <button key={s} onClick={() => setActiveStage(s)}
-              className="px-4 py-1.5 rounded-full text-[12px] font-medium whitespace-nowrap cursor-pointer border transition-all"
               style={{
-                background: activeStage === s ? `${STAGE_COLORS[s] || "rgba(16,185,129,0.1)"}18` : "rgba(255,255,255,0.02)",
-                color: activeStage === s ? (STAGE_COLORS[s] || "#10b981") : "#475569",
-                borderColor: activeStage === s ? `${STAGE_COLORS[s] || "rgba(16,185,129,0.2)"}35` : "rgba(255,255,255,0.06)",
-              }}>
-              {STAGE_LABELS[s]}
-            </button>
-          ))}
-        </div>
+                width: "100%",
+                background: "transparent", border: 0,
+                borderBottom: "1px solid rgba(255,255,255,0.12)",
+                color: "#e5e7eb", fontSize: 14, outline: "none",
+                padding: "10px 0 10px 22px", fontFamily: "inherit",
+              }} />
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {STAGES.map(s => {
+              const active = activeStage === s
+              const color = s === "all" ? "#10b981" : STAGE_COLORS[s]
+              return (
+                <button key={s} onClick={() => setActiveStage(s)}
+                  className="mono cursor-pointer"
+                  style={{
+                    padding: "6px 12px",
+                    fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500,
+                    color: active ? color : "#64748b",
+                    background: active ? `${color}12` : "transparent",
+                    border: `1px solid ${active ? color + "40" : "rgba(255,255,255,0.08)"}`,
+                    borderRadius: 2,
+                  }}>
+                  {STAGE_LABELS[s]}
+                </button>
+              )
+            })}
+          </div>
+        </section>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* ── Deal list ── */}
+        <section className="pt-2 pb-20">
           {loading ? (
-            Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+            Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)
           ) : filtered.length === 0 ? (
-            <div className="col-span-3 text-center py-20 text-slate-600 text-sm rounded-2xl border border-white/[0.05]"
-              style={{ background: "rgba(255,255,255,0.01)" }}>
-              {projects.length === 0 ? "No projects published yet. Check back soon." : "No projects match your filters."}
+            <div className="py-20 text-center">
+              <p className="mono" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                {projects.length === 0 ? "No projects published yet" : "No projects match"}
+              </p>
               {projects.length > 0 && (
                 <button onClick={() => { setSearch(""); setActiveStage("all") }}
-                  className="ml-2 cursor-pointer bg-transparent border-0"
-                  style={{ color: "#10b981" }}>
-                  Clear
+                  className="mono mt-3 cursor-pointer"
+                  style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.08em", textTransform: "uppercase", background: "transparent", border: 0 }}>
+                  Clear filters →
                 </button>
               )}
             </div>
           ) : (
             filtered.map(project => {
-              const pct = project.goal ? Math.min(100, Math.round((project.raised / project.goal) * 100)) : 0
-              const stageColor = STAGE_COLORS[project.stage] || "#94a3b8"
+              const stageColor = STAGE_COLORS[project.stage || ""] || "#94a3b8"
+              const pct = project.goal ? Math.min(100, Math.round(((project.raised || 0) / project.goal) * 100)) : 0
               const isExpressed = expressed.has(project.id)
               const isSubmitting = submitting === project.id
               const founderName = project.profiles?.name || project.profiles?.company || "Founder"
-
               return (
-                <div key={project.id}
-                  className="rounded-2xl border border-white/[0.06] overflow-hidden flex flex-col transition-all duration-200 hover:-translate-y-0.5"
-                  style={{ background: "rgba(255,255,255,0.02)" }}>
-                  <div className="h-[2px] w-full" style={{ background: `linear-gradient(90deg, ${stageColor}, transparent)` }} />
-                  <div className="p-5 flex flex-col flex-1 gap-4">
-                    <div className="flex items-start justify-between">
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
-                        style={{ background: `${stageColor}15`, border: `1px solid ${stageColor}25`, color: stageColor }}>
-                        {project.name?.[0]?.toUpperCase()}
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                          style={{ background: `${stageColor}12`, color: stageColor, border: `1px solid ${stageColor}25` }}>
-                          {STAGE_LABELS[project.stage] || project.stage}
-                        </span>
-                        {project.chain && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full font-mono"
-                            style={{ background: "rgba(255,255,255,0.04)", color: "#64748b", border: "1px solid rgba(255,255,255,0.08)" }}>
-                            {project.chain}
-                          </span>
-                        )}
-                      </div>
+                <article key={project.id}
+                  className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-10 py-8 items-start"
+                  style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                  <div className="md:col-span-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: stageColor }} />
+                      <span className="mono" style={{ fontSize: 10, color: stageColor, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500 }}>
+                        {STAGE_LABELS[project.stage || ""] || project.stage}
+                      </span>
                     </div>
+                    <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.04em" }}>
+                      {project.chain}
+                    </span>
+                  </div>
 
-                    <div>
-                      <h3 className="text-[15px] font-bold text-white tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>{project.name}</h3>
-                      <p className="text-[12px] text-slate-600 mt-0.5">by {founderName}</p>
-                    </div>
-
-                    <p className="text-[12px] text-slate-500 leading-relaxed flex-1"
-                      style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                  <div className="md:col-span-6">
+                    <h3 className="serif text-white mb-1" style={{ fontSize: 26, fontWeight: 500, letterSpacing: "-0.02em", lineHeight: 1.15 }}>
+                      {project.name}
+                    </h3>
+                    <p className="mono mb-3" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.04em" }}>
+                      by {founderName}
+                    </p>
+                    <p style={{ fontSize: 14, color: "#94a3b8", lineHeight: 1.65, maxWidth: 540 }}>
                       {project.description || "No description provided."}
                     </p>
-
-                    {project.tags?.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5">
-                        {project.tags.map((tag: string) => (
-                          <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full"
-                            style={{ background: "rgba(255,255,255,0.04)", color: "#64748b", border: "1px solid rgba(255,255,255,0.07)" }}>
-                            {tag}
-                          </span>
+                    {project.tags && project.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-4">
+                        {project.tags.map(t => (
+                          <span key={t} className="mono" style={{
+                            fontSize: 10, color: "#94a3b8", letterSpacing: "0.04em",
+                            padding: "3px 8px",
+                            background: "rgba(255,255,255,0.02)",
+                            border: "1px solid rgba(255,255,255,0.06)", borderRadius: 2,
+                          }}>{t}</span>
                         ))}
                       </div>
                     )}
+                  </div>
 
-                    {project.goal > 0 && (
+                  <div className="md:col-span-4 flex flex-col gap-4">
+                    {project.goal && project.goal > 0 && (
                       <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-[11px] text-slate-600">Raised</span>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[12px] text-white font-semibold">{formatAmount(project.raised || 0)}</span>
-                            <span className="text-[11px] text-slate-600">/ {formatAmount(project.goal)}</span>
+                        <div className="flex items-baseline justify-between mb-2">
+                          <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>Raised</span>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="serif" style={{ fontSize: 20, color: "#fff", fontWeight: 500, letterSpacing: "-0.02em" }}>
+                              {formatAmount(project.raised || 0)}
+                            </span>
+                            <span className="mono" style={{ fontSize: 10, color: "#475569" }}>/ {formatAmount(project.goal)}</span>
                           </div>
                         </div>
-                        <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
-                          <div className="h-full rounded-full"
-                            style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${stageColor}, ${stageColor}88)` }} />
+                        <div style={{ height: 2, background: "rgba(255,255,255,0.06)" }}>
+                          <div style={{ width: `${pct}%`, height: "100%", background: stageColor, transition: "width 600ms ease" }} />
                         </div>
-                        <div className="text-[10px] text-slate-700 mt-1 text-right">{pct}% funded</div>
+                        <div className="mono mt-1.5 text-right" style={{ fontSize: 10, color: "#334155", letterSpacing: "0.04em" }}>
+                          {pct}% funded
+                        </div>
                       </div>
                     )}
-
                     <button onClick={() => handleExpressInterest(project)}
                       disabled={isExpressed || !!isSubmitting}
-                      className="w-full py-2.5 rounded-xl text-[12px] font-semibold border transition-all"
+                      className="mono cursor-pointer flex items-center justify-center gap-2"
                       style={{
-                        background: isExpressed ? "rgba(16,185,129,0.08)" : `${stageColor}14`,
-                        color: isExpressed ? "#10b981" : stageColor,
-                        borderColor: isExpressed ? "rgba(16,185,129,0.2)" : `${stageColor}30`,
+                        padding: "12px 18px", fontSize: 11,
+                        letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600,
+                        color: isExpressed ? "#34d399" : "#fff",
+                        background: isExpressed ? "rgba(16,185,129,0.1)" : "#10b981",
+                        border: isExpressed ? "1px solid rgba(16,185,129,0.3)" : "0",
+                        borderRadius: 2,
                         cursor: isExpressed || isSubmitting ? "default" : "pointer",
                         opacity: isSubmitting ? 0.6 : 1,
                       }}>
-                      {isSubmitting ? "Sending..." : isExpressed ? "✓ Interest Expressed" : "Express Interest →"}
+                      {isSubmitting ? "Sending..." : isExpressed ? "✓ Interest sent" : <>Express interest <RiArrowRightLine size={12} /></>}
                     </button>
                   </div>
-                </div>
+                </article>
               )
             })
           )}
-        </div>
+        </section>
+      </div>
+    </main>
+  )
+}
 
-        {!loading && filtered.length > 0 && (
-          <p className="text-center text-xs text-slate-700 mt-10">
-            Showing {filtered.length} of {projects.length} founder{projects.length !== 1 ? "s" : ""} · More deals added weekly
-          </p>
-        )}
+function SkeletonRow() {
+  const skel: React.CSSProperties = { background: "rgba(255,255,255,0.04)", borderRadius: 2 }
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-10 py-8 animate-pulse"
+      style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+      <div className="md:col-span-2"><div style={{ ...skel, width: 80, height: 14 }} /></div>
+      <div className="md:col-span-6">
+        <div style={{ ...skel, width: 200, height: 28, marginBottom: 10 }} />
+        <div style={{ ...skel, width: 120, height: 12, marginBottom: 14 }} />
+        <div style={{ ...skel, width: "100%", height: 12, marginBottom: 6 }} />
+        <div style={{ ...skel, width: "80%", height: 12 }} />
+      </div>
+      <div className="md:col-span-4">
+        <div style={{ ...skel, width: "100%", height: 2, marginBottom: 14 }} />
+        <div style={{ ...skel, width: "100%", height: 40 }} />
       </div>
     </div>
   )

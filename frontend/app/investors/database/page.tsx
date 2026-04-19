@@ -1,22 +1,38 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import Navbar from "@/components/Navbar"
+import AppNav from "@/components/AppNav"
 import { ToastContainer, useToast } from "@/components/Toast"
-import { RiSearchLine, RiAddLine, RiExternalLinkLine, RiCheckLine, RiGlobalLine, RiFlashlightLine } from "react-icons/ri"
+import {
+  RiSearchLine, RiAddLine, RiCheckLine,
+  RiExternalLinkLine, RiFlashlightLine,
+} from "react-icons/ri"
 
-const STAGE_FILTERS = ["All", "pre-seed", "seed", "series-a", "series-b"]
-const SECTOR_FILTERS = ["All", "DeFi", "Web3", "Infrastructure", "SaaS", "AI", "NFT", "Gaming", "Protocol", "B2B"]
+type Directory = {
+  id: string
+  name: string
+  firm?: string | null
+  sector?: string[] | null
+  stage?: string[] | null
+  check_size_min?: number | null
+  check_size_max?: number | null
+  web3_focus?: boolean | null
+  location?: string | null
+  website?: string | null
+}
+
+const STAGE_FILTERS = ["All", "pre-seed", "seed", "series-a", "series-b"] as const
+const SECTOR_FILTERS = ["All", "DeFi", "Web3", "Infrastructure", "SaaS", "AI", "NFT", "Gaming", "Protocol", "B2B"] as const
 
 export default function InvestorDatabasePage() {
   const router = useRouter()
   const { toasts, addToast, removeToast } = useToast()
 
-  const [directory, setDirectory] = useState<any[]>([])
+  const [directory, setDirectory] = useState<Directory[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
-  const [stageFilter, setStageFilter] = useState("All")
-  const [sectorFilter, setSectorFilter] = useState("All")
+  const [stageFilter, setStageFilter] = useState<string>("All")
+  const [sectorFilter, setSectorFilter] = useState<string>("All")
   const [web3Only, setWeb3Only] = useState(false)
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set())
   const [addingId, setAddingId] = useState<string | null>(null)
@@ -25,6 +41,7 @@ export default function InvestorDatabasePage() {
     const token = localStorage.getItem("token")
     if (!token) { router.push("/login"); return }
     fetchDirectory()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function fetchDirectory() {
@@ -39,7 +56,7 @@ export default function InvestorDatabasePage() {
     }
   }
 
-  async function handleAddToPipeline(inv: any) {
+  async function handleAddToPipeline(inv: Directory) {
     setAddingId(inv.id)
     const token = localStorage.getItem("token")!
     try {
@@ -51,12 +68,12 @@ export default function InvestorDatabasePage() {
           company: inv.firm,
           email: "",
           status: "outreach",
-          notes: `From investor database. Focus: ${inv.sector?.join(", ")}. Check size: $${Number(inv.check_size_min).toLocaleString()} - $${Number(inv.check_size_max).toLocaleString()}`,
+          notes: `From directory. Focus: ${inv.sector?.join(", ") || "—"}. Check size: $${Number(inv.check_size_min || 0).toLocaleString()} – $${Number(inv.check_size_max || 0).toLocaleString()}.`,
         }),
       })
       if (!res.ok) throw new Error("Failed")
       setAddedIds(prev => new Set([...prev, inv.id]))
-      addToast(`${inv.name} added to your pipeline!`)
+      addToast(`${inv.name} added to your pipeline`)
     } catch {
       addToast("Failed to add to pipeline", "error")
     } finally {
@@ -64,182 +81,212 @@ export default function InvestorDatabasePage() {
     }
   }
 
-  const filtered = directory.filter(inv => {
-    const matchSearch = !search ||
-      inv.name?.toLowerCase().includes(search.toLowerCase()) ||
-      inv.firm?.toLowerCase().includes(search.toLowerCase())
+  const filtered = useMemo(() => directory.filter(inv => {
+    const q = search.toLowerCase()
+    const matchSearch = !q ||
+      inv.name?.toLowerCase().includes(q) ||
+      inv.firm?.toLowerCase().includes(q)
     const matchStage = stageFilter === "All" || inv.stage?.includes(stageFilter)
     const matchSector = sectorFilter === "All" || inv.sector?.includes(sectorFilter)
     const matchWeb3 = !web3Only || inv.web3_focus
     return matchSearch && matchStage && matchSector && matchWeb3
-  })
+  }), [directory, search, stageFilter, sectorFilter, web3Only])
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: "#050508" }}>
-      <div className="flex items-center gap-3 text-slate-500 text-sm">
-        <div className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "#10b981", borderTopColor: "transparent" }} />
-        Loading...
+    <div style={{ minHeight: "100vh", background: "#060608" }}>
+      <AppNav />
+      <div className="max-w-[1280px] mx-auto px-6 md:px-10 py-20 flex items-center gap-3">
+        <div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid #10b981", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
+        <span className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>Loading directory...</span>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     </div>
   )
 
   return (
-    <div className="min-h-screen text-slate-200" style={{ background: "#050508" }}>
+    <main style={{ minHeight: "100vh", background: "#060608", color: "#e5e7eb", fontFamily: "'DM Sans', sans-serif" }}>
+      <AppNav />
       <ToastContainer toasts={toasts} removeToast={removeToast} />
-      <Navbar />
-      <div className="px-4 md:px-12 py-8 max-w-5xl mx-auto">
 
-        <div className="mb-7 flex items-start justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>Investor Database</h1>
-            <p className="text-xs text-slate-500 mt-0.5">{directory.length} curated investors — add any to your pipeline</p>
+      <div className="max-w-[1280px] mx-auto px-6 md:px-10">
+
+        {/* ── Ticker ── */}
+        <div className="flex items-center justify-between flex-wrap gap-3 pt-8 pb-6"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="mono flex items-center gap-x-5 gap-y-2 flex-wrap" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            <span>Directory</span>
+            <span style={{ color: "#334155" }}>·</span>
+            <span><span style={{ color: "#e5e7eb" }}>{directory.length}</span> funds</span>
+            <span style={{ color: "#334155" }}>·</span>
+            <span>{filtered.length} shown</span>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col gap-3 mb-6">
-          <div className="relative">
-            <RiSearchLine size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600" />
+        {/* ── Masthead ── */}
+        <section className="pt-10 md:pt-14 pb-8">
+          <p className="mono mb-3" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            § Investor directory
+          </p>
+          <h1 className="serif text-white" style={{
+            fontSize: "clamp(40px, 5.5vw, 72px)", lineHeight: 0.95, letterSpacing: "-0.045em", fontWeight: 500,
+          }}>
+            Curated funds, <span style={{ fontStyle: "italic", fontWeight: 400 }}>tagged honestly.</span>
+          </h1>
+          <p style={{ fontSize: 16, color: "#94a3b8", marginTop: 20, maxWidth: 560, lineHeight: 1.6 }}>
+            Investors hand-picked by sector, stage, and cheque size. Tap Add to pull one
+            straight into your pipeline as Outreach.
+          </p>
+        </section>
+
+        {/* ── Filters ── */}
+        <section className="pb-5 flex flex-col gap-4"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <div style={{ position: "relative" }}>
+            <RiSearchLine size={14} style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", color: "#475569" }} />
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Search by name or firm..."
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-slate-200 border border-white/[0.08] outline-none"
-              style={{ background: "rgba(255,255,255,0.03)" }} />
-          </div>
-
-          <div className="flex flex-wrap gap-2 items-center">
-            <div className="flex flex-wrap gap-1.5">
-              {STAGE_FILTERS.map(s => (
-                <button key={s} onClick={() => setStageFilter(s)}
-                  className="px-3 py-1 rounded-full text-xs font-medium cursor-pointer border transition-all"
-                  style={{
-                    background: stageFilter === s ? "rgba(16,185,129,0.15)" : "rgba(255,255,255,0.03)",
-                    borderColor: stageFilter === s ? "rgba(16,185,129,0.4)" : "rgba(255,255,255,0.07)",
-                    color: stageFilter === s ? "#10b981" : "#64748b",
-                  }}>
-                  {s === "All" ? "All Stages" : s}
-                </button>
-              ))}
-            </div>
-            <div className="w-px h-4 bg-white/[0.08] hidden sm:block" />
-            <div className="flex flex-wrap gap-1.5">
-              {SECTOR_FILTERS.map(s => (
-                <button key={s} onClick={() => setSectorFilter(s)}
-                  className="px-3 py-1 rounded-full text-xs font-medium cursor-pointer border transition-all"
-                  style={{
-                    background: sectorFilter === s ? "rgba(167,139,250,0.15)" : "rgba(255,255,255,0.03)",
-                    borderColor: sectorFilter === s ? "rgba(167,139,250,0.4)" : "rgba(255,255,255,0.07)",
-                    color: sectorFilter === s ? "#a78bfa" : "#64748b",
-                  }}>
-                  {s === "All" ? "All Sectors" : s}
-                </button>
-              ))}
-            </div>
-            <button onClick={() => setWeb3Only(!web3Only)}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium cursor-pointer border transition-all"
               style={{
-                background: web3Only ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.03)",
-                borderColor: web3Only ? "rgba(251,191,36,0.3)" : "rgba(255,255,255,0.07)",
+                width: "100%",
+                background: "transparent", border: 0,
+                borderBottom: "1px solid rgba(255,255,255,0.12)",
+                color: "#e5e7eb", fontSize: 14, outline: "none",
+                padding: "10px 0 10px 22px", fontFamily: "inherit",
+              }} />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>Stage</span>
+            {STAGE_FILTERS.map(s => {
+              const active = stageFilter === s
+              return (
+                <button key={s} onClick={() => setStageFilter(s)}
+                  className="mono cursor-pointer"
+                  style={{
+                    padding: "5px 10px",
+                    fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500,
+                    color: active ? "#10b981" : "#64748b",
+                    background: active ? "rgba(16,185,129,0.08)" : "transparent",
+                    border: `1px solid ${active ? "rgba(16,185,129,0.3)" : "rgba(255,255,255,0.08)"}`,
+                    borderRadius: 2,
+                  }}>
+                  {s === "All" ? "All" : s}
+                </button>
+              )
+            })}
+            <span className="mono ml-4" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>Sector</span>
+            {SECTOR_FILTERS.map(s => {
+              const active = sectorFilter === s
+              return (
+                <button key={s} onClick={() => setSectorFilter(s)}
+                  className="mono cursor-pointer"
+                  style={{
+                    padding: "5px 10px",
+                    fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500,
+                    color: active ? "#a78bfa" : "#64748b",
+                    background: active ? "rgba(167,139,250,0.08)" : "transparent",
+                    border: `1px solid ${active ? "rgba(167,139,250,0.3)" : "rgba(255,255,255,0.08)"}`,
+                    borderRadius: 2,
+                  }}>
+                  {s === "All" ? "All" : s}
+                </button>
+              )
+            })}
+            <button onClick={() => setWeb3Only(!web3Only)}
+              className="mono cursor-pointer flex items-center gap-1.5"
+              style={{
+                padding: "5px 10px", marginLeft: 16,
+                fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500,
                 color: web3Only ? "#fbbf24" : "#64748b",
+                background: web3Only ? "rgba(251,191,36,0.08)" : "transparent",
+                border: `1px solid ${web3Only ? "rgba(251,191,36,0.3)" : "rgba(255,255,255,0.08)"}`,
+                borderRadius: 2,
               }}>
-              <RiFlashlightLine size={12} /> Web3 Only
+              <RiFlashlightLine size={10} /> Web3 only
             </button>
           </div>
-          <p className="text-[11px] text-slate-600">{filtered.length} investors found</p>
-        </div>
+        </section>
 
-        {/* Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {filtered.map(inv => {
+        {/* ── List ── */}
+        <section className="py-2 pb-20">
+          {filtered.length === 0 ? (
+            <div className="py-20 text-center">
+              <p className="mono" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                No investors match
+              </p>
+            </div>
+          ) : filtered.map(inv => {
             const added = addedIds.has(inv.id)
             const adding = addingId === inv.id
             return (
-              <div key={inv.id} className="rounded-2xl border p-5 transition-all"
-                style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
-                      style={{ background: inv.web3_focus ? "rgba(251,191,36,0.15)" : "rgba(16,185,129,0.15)", color: inv.web3_focus ? "#fbbf24" : "#10b981" }}>
-                      {inv.name?.[0]?.toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[13px] font-semibold text-white truncate">{inv.name}</p>
-                      <p className="text-[11px] text-slate-500 truncate">{inv.firm}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    {inv.website && (
-                      <a href={inv.website} target="_blank" rel="noopener noreferrer"
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 hover:text-slate-400 transition-colors"
-                        style={{ background: "rgba(255,255,255,0.04)" }}>
-                        <RiExternalLinkLine size={13} />
-                      </a>
-                    )}
-                    <button onClick={() => !added && handleAddToPipeline(inv)} disabled={added || adding}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer border-0 transition-all disabled:cursor-default"
-                      style={{
-                        background: added ? "rgba(16,185,129,0.1)" : "rgba(16,185,129,0.12)",
-                        color: added ? "#34d399" : "#10b981",
-                      }}>
-                      {adding ? (
-                        <div className="w-3 h-3 rounded-full border border-t-transparent animate-spin" style={{ borderColor: "#10b981", borderTopColor: "transparent" }} />
-                      ) : added ? (
-                        <><RiCheckLine size={12} /> Added</>
-                      ) : (
-                        <><RiAddLine size={12} /> Add</>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 mb-3">
-                  <span className="text-[11px] text-slate-600">Check size:</span>
-                  <span className="text-[11px] font-medium text-white">
-                    ${Number(inv.check_size_min).toLocaleString()} — ${Number(inv.check_size_max).toLocaleString()}
-                  </span>
-                  {inv.web3_focus && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full ml-auto flex items-center gap-0.5"
-                      style={{ background: "rgba(251,191,36,0.08)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.15)" }}>
-                      <RiFlashlightLine size={10} /> Web3
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {inv.sector?.slice(0, 4).map((s: string) => (
-                    <span key={s} className="text-[10px] px-2 py-0.5 rounded-full"
-                      style={{ background: "rgba(255,255,255,0.04)", color: "#64748b", border: "1px solid rgba(255,255,255,0.07)" }}>
-                      {s}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-wrap gap-1">
-                    {inv.stage?.map((s: string) => (
-                      <span key={s} className="text-[10px] px-2 py-0.5 rounded-full"
-                        style={{ background: "rgba(16,185,129,0.06)", color: "#10b981", border: "1px solid rgba(16,185,129,0.12)" }}>
-                        {s}
+              <div key={inv.id}
+                className="grid grid-cols-1 md:grid-cols-12 gap-5 md:gap-8 py-6 items-start"
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                <div className="md:col-span-4">
+                  <div className="flex items-baseline gap-3 mb-1">
+                    <h3 className="serif text-white" style={{ fontSize: 22, fontWeight: 500, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+                      {inv.name}
+                    </h3>
+                    {inv.web3_focus && (
+                      <span className="mono" style={{ fontSize: 9, color: "#fbbf24", padding: "2px 6px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.25)", letterSpacing: "0.06em", textTransform: "uppercase", borderRadius: 2 }}>
+                        Web3
                       </span>
+                    )}
+                  </div>
+                  <div className="mono flex items-center gap-2 flex-wrap" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.04em" }}>
+                    <span>{inv.firm}</span>
+                    {inv.location && <><span style={{ color: "#334155" }}>·</span><span>{inv.location}</span></>}
+                  </div>
+                </div>
+
+                <div className="md:col-span-3">
+                  <div className="mono mb-1.5" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>Check size</div>
+                  <div className="serif" style={{ fontSize: 18, color: "#fff", fontWeight: 500, letterSpacing: "-0.01em" }}>
+                    ${Number(inv.check_size_min || 0).toLocaleString()} – ${Number(inv.check_size_max || 0).toLocaleString()}
+                  </div>
+                </div>
+
+                <div className="md:col-span-3">
+                  <div className="mono mb-1.5" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                    Sector · Stage
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {[...(inv.sector?.slice(0, 3) || []), ...(inv.stage?.slice(0, 2) || [])].map(t => (
+                      <span key={t} className="mono" style={{
+                        fontSize: 10, color: "#94a3b8", letterSpacing: "0.04em",
+                        padding: "2px 6px",
+                        background: "rgba(255,255,255,0.02)",
+                        border: "1px solid rgba(255,255,255,0.06)", borderRadius: 2,
+                      }}>{t}</span>
                     ))}
                   </div>
-                  {inv.location && (
-                    <div className="flex items-center gap-1 text-[10px] text-slate-700">
-                      <RiGlobalLine size={11} />
-                      {inv.location}
-                    </div>
+                </div>
+
+                <div className="md:col-span-2 flex md:flex-col items-end md:items-end gap-2">
+                  {inv.website && (
+                    <a href={inv.website} target="_blank" rel="noopener noreferrer"
+                      className="mono no-underline flex items-center gap-1"
+                      style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                      <RiExternalLinkLine size={10} /> Site
+                    </a>
                   )}
+                  <button onClick={() => !added && handleAddToPipeline(inv)} disabled={added || adding}
+                    className="mono cursor-pointer flex items-center gap-1.5"
+                    style={{
+                      padding: "7px 12px",
+                      fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600,
+                      color: added ? "#34d399" : "#fff",
+                      background: added ? "rgba(16,185,129,0.1)" : "#10b981",
+                      border: added ? "1px solid rgba(16,185,129,0.25)" : 0, borderRadius: 2,
+                      opacity: adding ? 0.6 : 1,
+                      cursor: added || adding ? "default" : "pointer",
+                    }}>
+                    {adding ? "Adding..." : added ? <><RiCheckLine size={10} /> Added</> : <><RiAddLine size={10} /> Add</>}
+                  </button>
                 </div>
               </div>
             )
           })}
-        </div>
-
-        {filtered.length === 0 && (
-          <div className="text-center py-16">
-            <p className="text-slate-600 text-sm">No investors match your filters</p>
-          </div>
-        )}
+        </section>
       </div>
-    </div>
+    </main>
   )
 }

@@ -3,7 +3,8 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { api } from "@/lib/api"
-import { RiEyeLine, RiEyeOffLine } from "react-icons/ri"
+import { AuthShell, AuthField, AUTH_INPUT, AUTH_SUBMIT, AUTH_ERROR, PW_TOGGLE } from "@/components/AuthLayout"
+import { RiEyeLine, RiEyeOffLine, RiArrowRightLine } from "react-icons/ri"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -14,75 +15,72 @@ export default function RegisterPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
-  async function handleRegister() {
+  async function handleRegister(e?: React.FormEvent) {
+    e?.preventDefault()
     setLoading(true)
     setError("")
     try {
       await api.register(name, email, password)
       router.push("/login")
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Registration failed")
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <main style={{ minHeight: "100vh", background: "#050508", display: "flex", alignItems: "center", justifyContent: "center", color: "#e2e8f0" }}>
-      <div style={{ width: "100%", maxWidth: 400, padding: "0 24px" }}>
-        <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #10b981, #059669)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff", margin: "0 auto 16px" }}>FF</div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em", marginBottom: 8 }}>Create your account</h1>
-          <p style={{ fontSize: 14, color: "#475569" }}>Start managing your investor pipeline</p>
-        </div>
+    <AuthShell
+      kicker="§ Create account"
+      title={<>Start tracking<br /><em style={{ fontWeight: 400 }}>your round.</em></>}
+      intro="Founder sign-up — free forever up to 25 investors. No credit card needed, no onboarding calls, just a form and a dashboard."
+      side="founder">
+      <form onSubmit={handleRegister} className="flex flex-col gap-7">
+        <AuthField label="Full name">
+          <input value={name} onChange={e => setName(e.target.value)}
+            placeholder="Ada Lovelace" required autoFocus style={AUTH_INPUT} />
+        </AuthField>
 
-        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 32 }}>
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 13, color: "#94a3b8", display: "block", marginBottom: 6 }}>Name</label>
-            <input value={name} onChange={e => setName(e.target.value)}
-              placeholder="Your name"
-              style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "10px 14px", color: "#e2e8f0", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+        <AuthField label="Email">
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+            placeholder="you@example.com" required style={AUTH_INPUT} />
+        </AuthField>
+
+        <AuthField label="Password" aside={
+          <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.06em" }}>
+            min. 8 chars
+          </span>
+        }>
+          <div style={{ position: "relative" }}>
+            <input type={showPassword ? "text" : "password"} value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••" required minLength={8}
+              style={{ ...AUTH_INPUT, paddingRight: 36 }} />
+            <button type="button" onClick={() => setShowPassword(!showPassword)}
+              style={PW_TOGGLE} aria-label={showPassword ? "Hide password" : "Show password"}>
+              {showPassword ? <RiEyeOffLine size={15} /> : <RiEyeLine size={15} />}
+            </button>
           </div>
+        </AuthField>
 
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 13, color: "#94a3b8", display: "block", marginBottom: 6 }}>Email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "10px 14px", color: "#e2e8f0", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
-          </div>
+        {error && <div style={AUTH_ERROR}>{error}</div>}
 
-          <div style={{ marginBottom: 24 }}>
-            <label style={{ fontSize: 13, color: "#94a3b8", display: "block", marginBottom: 6 }}>Password</label>
-            <div style={{ position: "relative" }}>
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                onKeyDown={e => e.key === "Enter" && handleRegister()}
-                style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "10px 42px 10px 14px", color: "#e2e8f0", fontSize: 14, outline: "none", boxSizing: "border-box" }}
-              />
-              <button
-                onClick={() => setShowPassword(!showPassword)}
-                style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#475569", cursor: "pointer", display: "flex", alignItems: "center", padding: 0 }}>
-                {showPassword ? <RiEyeOffLine size={16} /> : <RiEyeLine size={16} />}
-              </button>
-            </div>
-          </div>
+        <button type="submit" disabled={loading}
+          style={{ ...AUTH_SUBMIT, opacity: loading ? 0.6 : 1, cursor: loading ? "not-allowed" : "pointer" }}>
+          {loading ? "Creating account..." : <>Create account <RiArrowRightLine size={14} /></>}
+        </button>
 
-          {error && <div style={{ fontSize: 13, color: "#f87171", marginBottom: 16, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 8, padding: "10px 14px" }}>{error}</div>}
-
-          <button onClick={handleRegister} disabled={loading}
-            style={{ width: "100%", background: "linear-gradient(135deg, #10b981, #059669)", color: "#fff", border: "none", borderRadius: 8, padding: "12px", fontWeight: 600, fontSize: 14, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
-            {loading ? "Creating account..." : "Create account →"}
-          </button>
-        </div>
-
-        <p style={{ textAlign: "center", fontSize: 13, color: "#475569", marginTop: 20 }}>
-          Already have an account?{" "}
-          <Link href="/login" style={{ color: "#10b981", textDecoration: "none" }}>Sign in</Link>
+        <p className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.06em", lineHeight: 1.7 }}>
+          By creating an account you agree to our{" "}
+          <Link href="/terms" style={{ color: "#94a3b8", textDecoration: "none" }}>Terms</Link> and{" "}
+          <Link href="/privacy" style={{ color: "#94a3b8", textDecoration: "none" }}>Privacy Policy</Link>.
         </p>
-      </div>
-    </main>
+      </form>
+
+      <p className="mono mt-10" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.06em" }}>
+        Already have one?{" "}
+        <Link href="/login" style={{ color: "#10b981", textDecoration: "none" }}>Sign in →</Link>
+      </p>
+    </AuthShell>
   )
 }

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit } from '@/lib/ratelimit'
 
 // anon client for the signUp call — lazy so the module can be loaded during
 // Next.js page-data collection without env vars blowing up.
@@ -27,6 +28,12 @@ const ALLOWED_USER_TYPES = ['founder', 'investor'] as const
 type UserType = typeof ALLOWED_USER_TYPES[number]
 
 export async function POST(req: NextRequest) {
+  // Registrations are cheap to create but scrapers use open signup endpoints
+  // to find email-enumeration and bulk-account flaws. 5 per IP per hour
+  // keeps legit signups unaffected while killing automated fuzzing.
+  const limited = await rateLimit(req, "auth-register", 5, "1 h")
+  if (limited) return limited
+
   const body = await req.json()
   const name = String(body.name || '').trim()
   const email = String(body.email || '').trim().toLowerCase()

@@ -18,10 +18,10 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
 }
 
 export const api = {
-  login: (email: string, password: string) =>
+  login: (email: string, password: string, portal: 'founder' | 'investor' = 'founder') =>
     apiRequest('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, portal }),
     }),
 
   register: (name: string, email: string, password: string) =>

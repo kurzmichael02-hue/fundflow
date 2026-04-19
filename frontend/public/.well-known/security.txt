@@ -1,0 +1,6 @@
+Contact: mailto:security@fundflow.io
+Contact: mailto:hello@fundflow.io
+Expires: 2027-04-19T00:00:00.000Z
+Preferred-Languages: en, de
+Canonical: https://fundflow-omega.vercel.app/.well-known/security.txt
+Policy: https://fundflow-omega.vercel.app/privacy
