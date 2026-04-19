@@ -1,10 +1,12 @@
 "use client"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import {
-  RiDashboardLine, RiUserLine, RiFlowChart, RiShieldLine,
-  RiGlobalLine, RiTeamLine, RiCheckLine, RiArrowRightLine,
+  RiCheckLine, RiArrowRightLine,
   RiMenuLine, RiCloseLine, RiAddLine, RiSubtractLine,
+  RiWallet3Line, RiQrCodeLine, RiPencilLine,
+  RiFlashlightLine, RiDownloadLine,
+  RiMailLine, RiRadioButtonLine,
 } from "react-icons/ri"
 
 const PIPELINE = [
@@ -243,58 +245,101 @@ export default function Home() {
         </div>
       </div>
 
-      {/* HOW IT WORKS */}
-      <section className="relative z-10 max-w-5xl mx-auto px-6 md:px-16 py-20 md:py-28">
-        <div className="text-center mb-16 bounce-reveal">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "#10b981", fontFamily: "'DM Sans', sans-serif" }}>How it works</p>
-          <h2 className="syne font-black text-white" style={{ fontSize: "clamp(28px,4vw,48px)", letterSpacing: "-0.03em" }}>
-            Three steps to close faster
+      {/* DEEP DIVES — four surfaces, one round.
+          Each section shows one feature with a real UI mockup instead of an
+          icon. Alternates sides so the rhythm breaks up the scroll. */}
+      <section id="features" className="relative z-10 max-w-6xl mx-auto px-6 md:px-16 pt-20 md:pt-28 pb-8"
+        style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+        <div className="max-w-2xl">
+          <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "#10b981" }}>What&apos;s inside</p>
+          <h2 className="syne font-black text-white" style={{ fontSize: "clamp(32px,5vw,56px)", letterSpacing: "-0.04em", lineHeight: 1.02 }}>
+            Four surfaces.<br />
+            <span style={{ background: "linear-gradient(135deg, #10b981 0%, #6ee7b7 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+              One round.
+            </span>
           </h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {[
-            { step: "01", title: "Add your investors", desc: "Import or manually add every investor. Set status, deal size, notes — everything in one place.", color: "#10b981" },
-            { step: "02", title: "Track your pipeline", desc: "Kanban board from Outreach to Closed. See your round progress update in real time.", color: "#38bdf8" },
-            { step: "03", title: "Get inbound interest", desc: "Publish your project. Let VCs discover you and express interest directly through the portal.", color: "#a78bfa" },
-          ].map((item, i) => (
-            <div key={item.step} className="bounce-reveal card-hover rounded-2xl p-7 relative overflow-hidden"
-              style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", transitionDelay: `${i * 0.12}s` }}>
-              <div className="syne font-black mb-5 leading-none select-none" style={{ fontSize: "72px", color: `${item.color}10`, letterSpacing: "-0.04em" }}>{item.step}</div>
-              <h3 className="syne font-bold text-white mb-2" style={{ fontSize: "16px" }}>{item.title}</h3>
-              <p style={{ fontSize: "13px", color: "#64748b", lineHeight: "1.7" }}>{item.desc}</p>
-              <div className="absolute top-6 right-6 w-2 h-2 rounded-full" style={{ background: item.color, boxShadow: `0 0 8px ${item.color}` }} />
-            </div>
-          ))}
+          <p className="mt-5 text-slate-500 leading-relaxed max-w-lg" style={{ fontSize: "15px" }}>
+            Not a generic CRM with a crypto sticker on it. Each of these is a distinct view with its own job — the private side for tracking, the public side for getting found.
+          </p>
         </div>
       </section>
 
-      {/* FEATURES */}
-      <section id="features" className="relative z-10 max-w-6xl mx-auto px-6 md:px-16 py-20 md:py-24" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-        <div className="text-center mb-16 bounce-reveal">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "#10b981" }}>Features</p>
-          <h2 className="syne font-black text-white" style={{ fontSize: "clamp(28px,4vw,48px)", letterSpacing: "-0.03em" }}>
-            Everything you need to<br />close your round
-          </h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[
-            { icon: <RiUserLine size={18} />, title: "Investor CRM", desc: "Track every investor, their status, notes, and next steps in one clean view." },
-            { icon: <RiFlowChart size={18} />, title: "Kanban Pipeline", desc: "Visualize your entire deal flow. Move investors from Outreach to Closed in one click." },
-            { icon: <RiDashboardLine size={18} />, title: "Live Dashboard", desc: "Real-time metrics on your fundraise. Know exactly where your round stands." },
-            { icon: <RiGlobalLine size={18} />, title: "Web3 Native", desc: "Built for crypto founders. Token rounds, SAFTs, and wallet login — all supported." },
-            { icon: <RiTeamLine size={18} />, title: "Investor Network", desc: "Discover investors actively deploying capital into Web3 projects like yours." },
-            { icon: <RiShieldLine size={18} />, title: "Enterprise Security", desc: "Your deal flow is your moat. Bank-grade encryption keeps it locked down." },
-          ].map((f, i) => (
-            <div key={f.title} className="bounce-reveal card-hover group rounded-2xl p-6"
-              style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", transitionDelay: `${i * 0.07}s` }}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
-                style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.15)", color: "#34d399" }}>
-                {f.icon}
-              </div>
-              <h3 className="syne font-bold text-white mb-2" style={{ fontSize: "15px" }}>{f.title}</h3>
-              <p style={{ fontSize: "13px", color: "#64748b", lineHeight: "1.7" }}>{f.desc}</p>
-            </div>
-          ))}
+      {/* 01 — PIPELINE */}
+      <DeepDive
+        kicker="01 · Pipeline"
+        accent="#10b981"
+        headline={<>Drag a deal<br />through every stage.</>}
+        body="The Kanban view of every investor you've talked to, grouped by status. Optimistic drag-and-drop, notes stay attached, nothing gets lost in a spreadsheet named final_v3_FINAL.xlsx."
+        bullets={[
+          "Outreach → Closed in five moves",
+          "Per-card status, deal size, email, notes",
+          "Mobile-native — tabs on phone, columns on desktop",
+        ]}
+        visual={<KanbanMock />}
+      />
+
+      {/* 02 — DEAL ROOM */}
+      <DeepDive
+        kicker="02 · Deal room"
+        accent="#34d399"
+        reverse
+        headline={<>A public page<br />investors can find you on.</>}
+        body="Publish your project once. It shows up on the investor side of FundFlow where VCs filter by stage, chain, and sector. When someone taps Express Interest you get an email, a realtime badge on the dashboard, and a row in the interests table."
+        bullets={[
+          "Stage · chain · tags · goal · raised",
+          "One-click Express Interest — dedup'd per email",
+          "Resend email to the founder on every signal",
+        ]}
+        visual={<DealRoomMock />}
+      />
+
+      {/* 03 — SIGNAL */}
+      <DeepDive
+        kicker="03 · Signal"
+        accent="#a78bfa"
+        headline={<>Know where<br />the round actually stands.</>}
+        body="The analytics page turns your pipeline into a funnel with real percentages — not vanity metrics. Conversion from outreach to close, response rate, total committed, and the top cheques ranked by size."
+        bullets={[
+          "Outreach → Closed conversion funnel",
+          "Scale-aware $k/$M/$B parsing — $5M is five million, not five",
+          "Weekly interest signal chart from the deal room",
+        ]}
+        visual={<SignalMock />}
+      />
+
+      {/* 04 — IDENTITY */}
+      <DeepDive
+        kicker="04 · Identity"
+        accent="#38bdf8"
+        reverse
+        headline={<>Web3-native<br />from day one.</>}
+        body="Wallet connect is a first-class login method, not a retrofit. Pair your address to your profile via MetaMask, WalletConnect, or paste. Then browse the curated investor directory — 30+ funds tagged by sector, stage, check size, and Web3 focus."
+        bullets={[
+          "MetaMask + WalletConnect v2 + manual paste",
+          "Curated directory — check size, sector, location",
+          "Add any fund to your pipeline in one tap",
+        ]}
+        visual={<IdentityMock />}
+      />
+
+      {/* Also included — the boring stuff still worth mentioning. */}
+      <section className="relative z-10 max-w-6xl mx-auto px-6 md:px-16 pt-10 pb-20 md:pb-28">
+        <div className="rounded-2xl border px-6 py-5 md:px-8 md:py-6 flex flex-col md:flex-row items-start md:items-center gap-5 md:gap-8 flex-wrap"
+          style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
+          <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "#64748b" }}>Also included</span>
+          <div className="flex flex-wrap gap-x-6 gap-y-3">
+            {[
+              { icon: <RiRadioButtonLine size={13} />, label: "Realtime sync" },
+              { icon: <RiDownloadLine size={13} />, label: "CSV export (RFC 4180)" },
+              { icon: <RiMailLine size={13} />, label: "Email notifications" },
+              { icon: <RiFlashlightLine size={13} />, label: "25 investors free, no card" },
+            ].map(item => (
+              <span key={item.label} className="flex items-center gap-2 text-[13px]" style={{ color: "#94a3b8" }}>
+                <span style={{ color: "#10b981" }}>{item.icon}</span>
+                {item.label}
+              </span>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -470,5 +515,316 @@ export default function Home() {
       </footer>
 
     </main>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEEP-DIVE section layout. One feature per section; alternates sides based
+// on `reverse`. Keeping this local to the landing page — it's bespoke to this
+// file and wouldn't be used anywhere else.
+// ─────────────────────────────────────────────────────────────────────────────
+function DeepDive({
+  kicker, accent, headline, body, bullets, visual, reverse,
+}: {
+  kicker: string
+  accent: string
+  headline: React.ReactNode
+  body: string
+  bullets: string[]
+  visual: React.ReactNode
+  reverse?: boolean
+}) {
+  return (
+    <section className="relative z-10 max-w-6xl mx-auto px-6 md:px-16 py-14 md:py-20">
+      <div className={`grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center ${reverse ? "md:[&>div:first-child]:order-2" : ""}`}>
+        {/* Copy */}
+        <div className="bounce-reveal">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-widest mb-5"
+            style={{ background: `${accent}12`, border: `1px solid ${accent}25`, color: accent }}>
+            <span className="w-1 h-1 rounded-full" style={{ background: accent }} />
+            {kicker}
+          </div>
+          <h3 className="syne font-black text-white leading-[1.02] mb-5"
+            style={{ fontSize: "clamp(28px,3.6vw,44px)", letterSpacing: "-0.035em" }}>
+            {headline}
+          </h3>
+          <p className="text-slate-500 leading-relaxed mb-6" style={{ fontSize: "15px" }}>
+            {body}
+          </p>
+          <ul className="flex flex-col gap-2.5">
+            {bullets.map(b => (
+              <li key={b} className="flex items-start gap-2.5 text-[14px]" style={{ color: "#94a3b8" }}>
+                <RiCheckLine size={14} style={{ color: accent, marginTop: 4, flexShrink: 0 }} />
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Product UI mock */}
+        <div className="bounce-reveal" style={{ transitionDelay: "0.15s" }}>
+          {visual}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// Frame that wraps every mock in a subtle browser-chrome — keeps the
+// landing feeling consistent with the hero pipeline visual.
+function MockFrame({ subtitle, children }: { subtitle: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl overflow-hidden"
+      style={{
+        background: "rgba(255,255,255,0.02)",
+        border: "1px solid rgba(255,255,255,0.06)",
+        boxShadow: "0 30px 80px rgba(0,0,0,0.5)",
+      }}>
+      <div className="flex items-center gap-2 px-4 py-3"
+        style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+        {["#ff5f57", "#ffbd2e", "#28ca41"].map((c, i) => (
+          <div key={i} className="w-2.5 h-2.5 rounded-full opacity-70" style={{ background: c }} />
+        ))}
+        <p className="flex-1 text-center text-[11px] font-mono" style={{ color: "#334155" }}>{subtitle}</p>
+      </div>
+      <div className="p-4 md:p-5">{children}</div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 01 — Pipeline mock. Five columns, a handful of realistic cards, one card
+// visually lifted to imply drag-and-drop.
+// ─────────────────────────────────────────────────────────────────────────────
+function KanbanMock() {
+  const cols: Array<{ label: string; color: string; cards: Array<{ name: string; deal: string; dragging?: boolean }> }> = [
+    { label: "Outreach",   color: "#9ca3af", cards: [{ name: "Paradigm", deal: "$5M" }, { name: "Multicoin", deal: "$2M" }] },
+    { label: "Interested", color: "#a78bfa", cards: [{ name: "Variant", deal: "$1M" }] },
+    { label: "Meeting",    color: "#fbbf24", cards: [{ name: "a16z Crypto", deal: "$10M", dragging: true }] },
+    { label: "Term Sheet", color: "#38bdf8", cards: [{ name: "Coinbase V.", deal: "$3M" }] },
+    { label: "Closed",     color: "#34d399", cards: [{ name: "Dragonfly", deal: "$2.5M" }] },
+  ]
+  return (
+    <MockFrame subtitle="app.fundflow.io/pipeline">
+      <div className="flex items-center justify-between mb-4">
+        <p className="syne font-bold text-white text-[13px]">Deal pipeline</p>
+        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full"
+          style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.15)" }}>
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-[10px] font-medium" style={{ color: "#34d399" }}>Live</span>
+        </div>
+      </div>
+      <div className="grid grid-cols-5 gap-2">
+        {cols.map(col => (
+          <div key={col.label} className="rounded-xl p-2"
+            style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderTop: `2px solid ${col.color}` }}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[9px] font-semibold truncate syne" style={{ color: col.color }}>{col.label}</span>
+              <span className="text-[9px] px-1 rounded" style={{ background: `${col.color}15`, color: col.color }}>{col.cards.length}</span>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {col.cards.map(card => (
+                <div key={card.name} className="rounded-md p-1.5 transition-transform"
+                  style={{
+                    background: card.dragging ? `${col.color}18` : "rgba(255,255,255,0.03)",
+                    border: card.dragging ? `1px solid ${col.color}60` : "1px solid rgba(255,255,255,0.06)",
+                    boxShadow: card.dragging ? `0 8px 24px ${col.color}25, 0 0 0 1px ${col.color}35` : "none",
+                    transform: card.dragging ? "translate(2px, -4px) rotate(-1.5deg)" : "none",
+                  }}>
+                  <div className="text-[9px] font-medium truncate" style={{ color: "#cbd5e1" }}>{card.name}</div>
+                  <div className="text-[8px] mt-0.5" style={{ color: col.color }}>{card.deal}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      {/* Optimistic-move hint */}
+      <div className="mt-3 flex items-center gap-2 text-[10px]" style={{ color: "#475569" }}>
+        <span className="inline-block w-1 h-1 rounded-full bg-amber-400" />
+        a16z Crypto · moving to Term Sheet
+      </div>
+    </MockFrame>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 02 — Deal Room mock. One published project card as an investor sees it.
+// ─────────────────────────────────────────────────────────────────────────────
+function DealRoomMock() {
+  const goal = 2_500_000
+  const raised = 1_600_000
+  const pct = Math.round((raised / goal) * 100)
+  return (
+    <MockFrame subtitle="app.fundflow.io/investor/discover">
+      <div className="flex items-center justify-between mb-4">
+        <p className="syne font-bold text-white text-[13px]">Deal flow</p>
+        <span className="text-[10px]" style={{ color: "#475569" }}>30 founders raising</span>
+      </div>
+      <div className="rounded-xl overflow-hidden"
+        style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="h-[2px] w-full" style={{ background: "linear-gradient(90deg, #10b981, transparent)" }} />
+        <div className="p-4 flex flex-col gap-3">
+          <div className="flex items-start justify-between">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center text-[12px] font-bold"
+              style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.25)", color: "#34d399" }}>
+              N
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                style={{ background: "rgba(56,189,248,0.1)", color: "#38bdf8", border: "1px solid rgba(56,189,248,0.2)" }}>Seed</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-mono"
+                style={{ background: "rgba(255,255,255,0.04)", color: "#64748b", border: "1px solid rgba(255,255,255,0.08)" }}>Base</span>
+            </div>
+          </div>
+          <div>
+            <h4 className="syne font-bold text-white text-[14px] tracking-tight">NovaPay</h4>
+            <p className="text-[11px] mt-0.5" style={{ color: "#64748b" }}>by Elena K. · Stealth fintech</p>
+          </div>
+          <p className="text-[11px] leading-relaxed" style={{ color: "#94a3b8" }}>
+            Stablecoin payroll rails for remote-first teams — send USDC to 40+ countries, recipients never see a wallet.
+          </p>
+          <div className="flex flex-wrap gap-1">
+            {["DeFi", "Payments", "B2B"].map(t => (
+              <span key={t} className="text-[9px] px-1.5 py-0.5 rounded-full"
+                style={{ background: "rgba(255,255,255,0.04)", color: "#64748b", border: "1px solid rgba(255,255,255,0.07)" }}>{t}</span>
+            ))}
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px]" style={{ color: "#475569" }}>Raised</span>
+              <div className="flex items-center gap-1">
+                <span className="text-[11px] font-semibold text-white">$1.6M</span>
+                <span className="text-[10px]" style={{ color: "#475569" }}>/ $2.5M</span>
+              </div>
+            </div>
+            <div className="h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+              <div className="h-full rounded-full"
+                style={{ width: `${pct}%`, background: "linear-gradient(90deg, #10b981, #34d399)" }} />
+            </div>
+            <div className="text-[9px] mt-1 text-right" style={{ color: "#334155" }}>{pct}% funded</div>
+          </div>
+          <button className="w-full py-2 rounded-lg text-[11px] font-semibold mt-1 border-0 cursor-default flex items-center justify-center gap-1.5"
+            style={{ background: "rgba(16,185,129,0.12)", color: "#10b981" }}>
+            Express interest <RiArrowRightLine size={11} />
+          </button>
+        </div>
+      </div>
+      <div className="mt-3 flex items-center gap-2 text-[10px]" style={{ color: "#475569" }}>
+        <span className="inline-block w-1 h-1 rounded-full bg-emerald-400" />
+        Elena will get an email the moment you tap
+      </div>
+    </MockFrame>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 03 — Signal mock. Funnel bars + a small "top deals" list.
+// ─────────────────────────────────────────────────────────────────────────────
+function SignalMock() {
+  const funnel = [
+    { label: "Outreach",   count: 47, color: "#9ca3af", pct: 100 },
+    { label: "Interested", count: 23, color: "#a78bfa", pct: 49 },
+    { label: "Meeting",    count: 12, color: "#fbbf24", pct: 26 },
+    { label: "Term Sheet", count:  6, color: "#38bdf8", pct: 13 },
+    { label: "Closed",     count:  4, color: "#34d399", pct:  9 },
+  ]
+  return (
+    <MockFrame subtitle="app.fundflow.io/analytics">
+      <div className="flex items-center justify-between mb-4">
+        <p className="syne font-bold text-white text-[13px]">Pipeline funnel</p>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px]" style={{ color: "#475569" }}>Conversion</span>
+          <span className="text-[11px] font-bold" style={{ color: "#34d399" }}>8.5%</span>
+        </div>
+      </div>
+      <div className="flex flex-col gap-2.5 mb-4">
+        {funnel.map((s, i) => (
+          <div key={s.label}>
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] font-mono" style={{ color: "#334155" }}>{String(i + 1).padStart(2, "0")}</span>
+                <span className="text-[10px] font-medium" style={{ color: "#cbd5e1" }}>{s.label}</span>
+              </div>
+              <span className="text-[10px] font-bold" style={{ color: s.color }}>{s.count}</span>
+            </div>
+            <div className="h-1 rounded-full" style={{ background: "rgba(255,255,255,0.04)" }}>
+              <div className="h-full rounded-full"
+                style={{ width: `${s.pct}%`, background: s.color, opacity: 0.8 }} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="rounded-lg p-2.5"
+        style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+        <p className="text-[9px] font-semibold uppercase tracking-widest mb-2" style={{ color: "#475569" }}>Total committed</p>
+        <div className="flex items-baseline gap-1.5">
+          <span className="syne font-black text-white" style={{ fontSize: "22px", letterSpacing: "-0.02em" }}>$12.5M</span>
+          <span className="text-[10px]" style={{ color: "#34d399" }}>+ $4.2M this month</span>
+        </div>
+      </div>
+    </MockFrame>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 04 — Identity mock. Wallet connect options stacked over one directory row.
+// ─────────────────────────────────────────────────────────────────────────────
+function IdentityMock() {
+  return (
+    <MockFrame subtitle="app.fundflow.io/profile">
+      <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#475569" }}>Connect wallet</p>
+      <div className="flex flex-col gap-1.5 mb-5">
+        {[
+          { icon: <RiWallet3Line size={14} />, label: "MetaMask",       hint: "Browser extension", color: "#fbbf24" },
+          { icon: <RiQrCodeLine size={14} />,  label: "WalletConnect",  hint: "QR · any wallet",   color: "#38bdf8" },
+          { icon: <RiPencilLine size={14} />,  label: "Paste address",  hint: "Any 0x…",           color: "#94a3b8" },
+        ].map(w => (
+          <div key={w.label} className="flex items-center gap-2.5 px-3 py-2 rounded-lg"
+            style={{ background: `${w.color}08`, border: `1px solid ${w.color}20`, color: w.color }}>
+            {w.icon}
+            <span className="text-[11px] font-medium">{w.label}</span>
+            <span className="ml-auto text-[9px]" style={{ color: "#475569" }}>{w.hint}</span>
+          </div>
+        ))}
+      </div>
+
+      <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "#475569" }}>From the directory</p>
+      <div className="rounded-lg p-3"
+        style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold flex-shrink-0"
+              style={{ background: "rgba(251,191,36,0.15)", color: "#fbbf24" }}>
+              D
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold text-white truncate">Dragonfly Capital</p>
+              <p className="text-[9px] truncate" style={{ color: "#64748b" }}>Haseeb Qureshi · San Francisco</p>
+            </div>
+          </div>
+          <span className="text-[9px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 flex-shrink-0"
+            style={{ background: "rgba(251,191,36,0.08)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.15)" }}>
+            <RiFlashlightLine size={9} /> Web3
+          </span>
+        </div>
+        <div className="flex items-center gap-1 mb-2">
+          <span className="text-[9px]" style={{ color: "#475569" }}>Check:</span>
+          <span className="text-[10px] font-medium text-white">$250k — $5M</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="flex gap-1">
+            {["DeFi", "Infra"].map(s => (
+              <span key={s} className="text-[9px] px-1.5 py-0.5 rounded-full"
+                style={{ background: "rgba(16,185,129,0.06)", color: "#10b981", border: "1px solid rgba(16,185,129,0.12)" }}>{s}</span>
+            ))}
+          </div>
+          <button className="flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-semibold border-0 cursor-default"
+            style={{ background: "rgba(16,185,129,0.12)", color: "#10b981" }}>
+            <RiAddLine size={9} /> Add
+          </button>
+        </div>
+      </div>
+    </MockFrame>
   )
 }
