@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { Resend } from "resend"
 import { escapeHtml } from "@/lib/escapeHtml"
+import { rateLimit } from "@/lib/ratelimit"
 
 // Lazy client — see other API routes for the why (build-time module eval).
 function getClient() {
@@ -29,6 +30,11 @@ const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const LIMITS = { name: 80, email: 120, category: 60, message: 4000 }
 
 export async function POST(req: NextRequest) {
+  // Public form — 5 submissions per IP per hour is plenty for a legit
+  // sender and instantly cuts off spam bots hitting in bulk.
+  const limited = await rateLimit(req, "contact", 5, "1 h")
+  if (limited) return limited
+
   try {
     const body = await req.json()
     const first_name = String(body.first_name || "").trim()

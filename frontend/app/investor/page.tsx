@@ -20,12 +20,12 @@ export default function InvestorLoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, portal: "investor" }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Login failed")
       localStorage.setItem("token", data.token)
-      localStorage.setItem("user_type", "investor")
+      localStorage.setItem("user_type", data.user_type || "investor")
       router.push("/investor/discover")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed")

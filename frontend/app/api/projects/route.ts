@@ -1,23 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { requireUser } from "@/lib/auth"
 
 function getClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
+    { auth: { autoRefreshToken: false, persistSession: false } },
   )
 }
 
-function getUserIdFromToken(token: string): string | null {
-  try {
-    const payload = token.split('.')[1]
-    const decoded = JSON.parse(Buffer.from(payload, 'base64').toString('utf8'))
-    return decoded.sub || null
-  } catch { return null }
-}
-
-// GET — public, returns all published projects
+// GET — public. Returns every published project for the investor deal flow.
 export async function GET() {
   const supabase = getClient()
   const { data, error } = await supabase
@@ -46,13 +39,11 @@ function pickProjectFields(body: Record<string, unknown>) {
   return out
 }
 
-// POST — create or update project (founder only)
+// POST — create or update the caller's own project.
 export async function POST(req: NextRequest) {
-  const auth = req.headers.get("authorization")
-  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  const token = auth.replace("Bearer ", "")
-  const userId = getUserIdFromToken(token)
-  if (!userId) return NextResponse.json({ error: "Invalid token" }, { status: 401 })
+  const guard = await requireUser(req)
+  if ("error" in guard) return guard.error
+  const { user } = guard
 
   const body = await req.json()
   const payload = pickProjectFields(body)
@@ -63,48 +54,45 @@ export async function POST(req: NextRequest) {
 
   const supabase = getClient()
 
-  // Check if project already exists for this user
   const { data: existing } = await supabase
     .from("projects")
     .select("id")
-    .eq("user_id", userId)
-    .single()
+    .eq("user_id", user.id)
+    .maybeSingle()
 
   if (existing) {
-    // Update — user_id pinned via WHERE, not spread in from the body
     const { data, error } = await supabase
       .from("projects")
       .update(payload)
-      .eq("user_id", userId)
-      .select()
-      .single()
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json(data)
-  } else {
-    const { data, error } = await supabase
-      .from("projects")
-      .insert({ ...payload, user_id: userId })
+      .eq("user_id", user.id)
       .select()
       .single()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json(data)
   }
+
+  const { data, error } = await supabase
+    .from("projects")
+    .insert({ ...payload, user_id: user.id })
+    .select()
+    .single()
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json(data)
 }
 
-// GET single project for current founder
+// PATCH — returns the caller's own project. Keeping the verb to avoid
+// breaking the frontend; semantically it's a scoped GET.
 export async function PATCH(req: NextRequest) {
-  const auth = req.headers.get("authorization")
-  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  const token = auth.replace("Bearer ", "")
-  const userId = getUserIdFromToken(token)
-  if (!userId) return NextResponse.json({ error: "Invalid token" }, { status: 401 })
+  const guard = await requireUser(req)
+  if ("error" in guard) return guard.error
+  const { user } = guard
 
   const supabase = getClient()
   const { data, error } = await supabase
     .from("projects")
     .select("*")
-    .eq("user_id", userId)
-    .single()
+    .eq("user_id", user.id)
+    .maybeSingle()
 
   if (error) return NextResponse.json(null)
   return NextResponse.json(data)

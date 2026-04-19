@@ -380,11 +380,16 @@ npm run dev
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY
+# Used by every authed API route to verify the JWT signature. Grab it from
+# Supabase → Settings → API → JWT Settings. Routes refuse to boot without it.
+SUPABASE_JWT_SECRET
 
 # Stripe
 STRIPE_SECRET_KEY
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 STRIPE_WEBHOOK_SECRET
+# Price ID for the Pro plan — optional, has a hardcoded fallback.
+STRIPE_PRO_PRICE_ID
 
 # Email
 RESEND_API_KEY
@@ -392,6 +397,14 @@ RESEND_API_KEY
 # Public base URL — used for metadataBase, sitemap, OAuth redirects,
 # password-reset redirects. Defaults to the Vercel preview URL if unset.
 NEXT_PUBLIC_SITE_URL
+
+# Rate limiting (Upstash Redis). If not set, limiters degrade to no-op
+# which is fine for local dev. Set UPSTASH_REQUIRED=true on production
+# environments to make the request 503 instead of silently letting
+# traffic through when the limiter is missing.
+UPSTASH_REDIS_REST_URL
+UPSTASH_REDIS_REST_TOKEN
+UPSTASH_REQUIRED
 
 # Optional
 NEXT_PUBLIC_POSTHOG_KEY
@@ -433,16 +446,39 @@ don't get lost:
 
 **Enforced**
 
-- `PATCH /api/profile` and `POST /api/projects` use server-side whitelists.
-  A client can't upgrade its own plan, write a foreign `user_id`, or set
-  `created_at`.
+- Every authed API route calls `requireUser(req)` from `lib/auth.ts`, which
+  verifies the JWT signature against `SUPABASE_JWT_SECRET` using `jose`
+  (HS256). Forged tokens are rejected with 401 before the handler runs —
+  we never again trust a `sub` claim that wasn't signed by Supabase.
+- `POST /api/investors`, `PATCH /api/investors`, `PATCH /api/profile` and
+  `POST /api/projects` use server-side whitelists. A client can't upgrade
+  its own plan, write a foreign `user_id`, or set `created_at` through the
+  API.
+- `POST /api/auth/login` accepts a `portal: "founder" | "investor"` hint
+  and 403s if the account's `user_type` doesn't match — so a founder
+  can't sign in through `/investor` even with valid credentials (and
+  vice versa).
+- Rate limiting on every abuseable public endpoint via Upstash
+  (`lib/ratelimit.ts`): 10/min per IP + 5/5min per email on
+  `/api/auth/login`, 5/hour on `/api/auth/register` and `/api/contact`,
+  20/hour on `/api/interests`. Graceful no-op when Upstash env vars
+  aren't set; set `UPSTASH_REQUIRED=true` in production to fail closed.
+- `POST /api/interests` validates the email, caps field length, and
+  dedups on `(project_id, investor_email)` using `maybeSingle()` —
+  the old `.single()` call silently let duplicates through when zero or
+  two-plus rows matched.
+- `POST /api/stripe/checkout` blocks a second checkout if the user is
+  already on Pro (prevents double-subscription) and reuses the existing
+  `stripe_customer_id` instead of creating a duplicate Stripe customer
+  on every click.
 - All user-supplied text in email templates is HTML-escaped
-  (`lib/escapeHtml.ts`); subject lines strip CR/LF to block header injection.
+  (`lib/escapeHtml.ts`); subject lines strip CR/LF to block header
+  injection.
 - Contact form has field-length caps, email-regex validation, and sends
   with `replyTo` set so the team inbox can reply without forwarding.
 - Register uses the service-role client for the profile insert and rolls
-  back the auth user (`admin.deleteUser`) if that insert fails — no orphan
-  auth rows.
+  back the auth user (`admin.deleteUser`) if that insert fails — no
+  orphan auth rows.
 - Password recovery UI is response-identical whether or not the email is
   registered, so the endpoint can't be used for enumeration.
 - CSV export in the CRM is RFC 4180-compliant (quotes doubled, UTF-8 BOM
@@ -454,15 +490,11 @@ don't get lost:
 
 **Known gaps (tracked):**
 
-- API routes decode the JWT `sub` claim without verifying the signature.
-  Supabase validates on its own API, but our route handlers take the
-  claim on trust. The right fix is to verify against `SUPABASE_JWT_SECRET`
-  using `jose` in every route.
-- No rate-limiting on `/api/auth/*` or `/api/contact`. Upstash-Ratelimit
-  or Supabase's built-in limits are the likely path.
-- Investor-login (`/investor`) doesn't check `user_type=investor` after
-  authenticating, so a founder can technically land in the investor
-  portal. Harmless today; should be enforced for clarity.
+- No audit log on `profiles.plan` or billing state changes. Useful for
+  disputes; low priority today.
+- Stripe webhook idempotency: we don't store `event.id` to guarantee each
+  event is processed exactly once. Stripe retries are rare but do happen;
+  at worst it re-applies the same `plan = "pro"` update.
 
 ---
 
