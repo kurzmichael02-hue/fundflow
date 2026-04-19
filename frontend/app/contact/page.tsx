@@ -1,15 +1,28 @@
 "use client"
 import { useState } from "react"
 import Link from "next/link"
-import { RiMenuLine, RiCloseLine, RiArrowRightLine, RiCheckLine, RiSendPlaneLine } from "react-icons/ri"
+import PublicNav from "@/components/PublicNav"
+import PublicFooter from "@/components/PublicFooter"
+import { RiArrowRightLine, RiCheckLine } from "react-icons/ri"
 
-const CATEGORIES = ["General Inquiry", "Business / Partnership", "Support", "Investor Relations", "Other"]
+const CATEGORIES = [
+  "General Inquiry",
+  "Business / Partnership",
+  "Support",
+  "Investor Relations",
+  "Other",
+]
+
+// Contact page, editorial rewrite.
+// Old version had a gradient hero, a bullet-list of "things we care about",
+// and a form wrapped in a rounded-2xl card. This one drops all of that:
+// masthead, left column is a letter-style intro + direct email, right column
+// is the form on a hairline-border panel.
 
 export default function ContactPage() {
-  const [menuOpen, setMenuOpen] = useState(false)
   const [form, setForm] = useState({
     first_name: "", last_name: "", email: "",
-    category: "", custom_category: "", message: ""
+    category: "", custom_category: "", message: "",
   })
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -31,219 +44,214 @@ export default function ContactPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Something went wrong")
       setSuccess(true)
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Something went wrong"
+      setError(msg)
     } finally {
       setLoading(false)
     }
   }
 
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    background: "transparent",
+    border: 0,
+    borderBottom: "1px solid rgba(255,255,255,0.14)",
+    color: "#e5e7eb",
+    fontSize: 15,
+    outline: "none",
+    padding: "10px 0",
+    boxSizing: "border-box",
+    fontFamily: "inherit",
+  }
+  const labelStyle: React.CSSProperties = {
+    fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase",
+    display: "block", marginBottom: 10,
+  }
+
   return (
-    <main className="min-h-screen text-slate-200 overflow-x-hidden" style={{ background: "#050508" }}>
-      {/* Syne + DM Sans are loaded globally via globals.css. */}
+    <main style={{ background: "#060608", color: "#e5e7eb", fontFamily: "'DM Sans', sans-serif" }}>
+      <PublicNav />
 
-      {/* Ambient */}
-      <div className="fixed top-[5%] left-[20%] w-[600px] h-[600px] rounded-full pointer-events-none z-0 blur-[60px]"
-        style={{ background: "radial-gradient(circle, rgba(16,185,129,0.05) 0%, transparent 70%)" }} />
-
-      {/* NAV */}
-      <nav className="fixed top-0 left-0 right-0 z-50 h-16 flex items-center px-5 md:px-16"
-        style={{ background: "rgba(5,5,8,0.92)", backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-        <div className="w-full flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 no-underline">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-black text-white"
-              style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>FF</div>
-            <span className="text-[17px] font-bold text-white tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>FundFlow</span>
-          </Link>
-          <div className="hidden md:flex items-center gap-8">
-            {[{ label: "Pricing", href: "/#pricing" }, { label: "FAQ", href: "/#faq" }, { label: "About", href: "/about" }].map(l => (
-              <Link key={l.label} href={l.href} className="text-sm font-medium transition-colors no-underline" style={{ color: "#64748b" }}>{l.label}</Link>
-            ))}
-          </div>
-          <div className="hidden md:flex items-center gap-2.5">
-            <Link href="/login" className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 border border-white/[0.07] hover:text-slate-200 hover:bg-white/5 transition-all no-underline">Login</Link>
-            <Link href="/register" className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white no-underline"
-              style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>Get started <RiArrowRightLine /></Link>
-          </div>
-          <button onClick={() => setMenuOpen(!menuOpen)}
-            className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg border border-white/[0.08] text-slate-400 bg-transparent cursor-pointer">
-            {menuOpen ? <RiCloseLine size={20} /> : <RiMenuLine size={20} />}
-          </button>
-        </div>
-      </nav>
-
-      {/* Mobile menu */}
-      {menuOpen && (
-        <div className="fixed top-16 left-0 right-0 z-40 border-b border-white/[0.06] md:hidden"
-          style={{ background: "rgba(5,5,8,0.98)", backdropFilter: "blur(24px)" }}>
-          <div className="flex flex-col px-6 py-4 gap-1">
-            {[{ label: "Pricing", href: "/#pricing" }, { label: "FAQ", href: "/#faq" }, { label: "About", href: "/about" }].map(l => (
-              <Link key={l.label} href={l.href} onClick={() => setMenuOpen(false)}
-                className="text-slate-400 text-base font-medium py-3 border-b border-white/[0.04] no-underline">{l.label}</Link>
-            ))}
-            <div className="flex gap-2.5 mt-3">
-              <Link href="/login" onClick={() => setMenuOpen(false)}
-                className="flex-1 text-center py-3 rounded-lg text-sm font-medium text-slate-400 border border-white/[0.08] no-underline">Login</Link>
-              <Link href="/register" onClick={() => setMenuOpen(false)}
-                className="flex-1 text-center py-3 rounded-lg text-sm font-semibold text-white no-underline"
-                style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>Get started</Link>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* CONTENT */}
-      <div className="relative z-10 max-w-5xl mx-auto px-5 md:px-16 pt-28 md:pt-36 pb-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-start">
-
-          {/* Left */}
-          <div>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium border mb-6"
-              style={{ background: "rgba(16,185,129,0.08)", borderColor: "rgba(16,185,129,0.2)", color: "#34d399" }}>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              Get in touch
-            </div>
-            <h1 className="font-black text-white mb-5 leading-[1.05]"
-              style={{ fontSize: "clamp(32px,5vw,56px)", letterSpacing: "-0.04em", fontFamily: "'Syne', sans-serif" }}>
-              Let's talk.<br />
-              <span style={{ background: "linear-gradient(135deg, #fff 0%, #10b981 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                We're listening.
-              </span>
-            </h1>
-            <p className="text-slate-500 leading-relaxed mb-10" style={{ fontSize: "15px" }}>
-              Whether you have a question about the product, want to partner with us, or just want to say hi — we'll get back to you as soon as possible.
-            </p>
-
-            <div className="flex flex-col gap-4">
-              {[
-                { label: "General Inquiry", desc: "Questions about FundFlow" },
-                { label: "Business / Partnership", desc: "Work with us" },
-                { label: "Support", desc: "Technical help" },
-                { label: "Investor Relations", desc: "Investment inquiries" },
-              ].map(item => (
-                <div key={item.label} className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.15)", color: "#10b981" }}>
-                    <RiCheckLine size={14} />
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-medium text-white">{item.label}</p>
-                    <p className="text-[11px] text-slate-600">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-10 pt-8 border-t border-white/[0.05]">
-              <p className="text-[12px] text-slate-600 mb-1">Or email us directly</p>
-              <a href="mailto:hello@fundflow.io" className="text-[14px] font-medium no-underline transition-colors"
-                style={{ color: "#10b981" }}>hello@fundflow.io</a>
-            </div>
+      <section>
+        <div className="max-w-[1180px] mx-auto px-6 md:px-10">
+          <div className="flex items-center justify-between pt-10 md:pt-14 pb-8 md:pb-12"
+            style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <span className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+              Contact · Hello, good morning
+            </span>
+            <span className="mono flex items-center gap-1.5" style={{ fontSize: 11, color: "#34d399", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981" }} />
+              Usually reply within a day
+            </span>
           </div>
 
-          {/* Right — Form */}
-          <div className="rounded-2xl border p-7 md:p-8" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.06)" }}>
-            {success ? (
-              <div className="text-center py-8">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5"
-                  style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)" }}>
-                  <RiCheckLine size={24} style={{ color: "#34d399" }} />
-                </div>
-                <h2 className="text-xl font-bold text-white mb-2" style={{ fontFamily: "'Syne', sans-serif" }}>Message sent!</h2>
-                <p className="text-slate-500 text-sm mb-6">We'll get back to you as soon as possible.</p>
-                <Link href="/" className="text-sm no-underline transition-colors" style={{ color: "#10b981" }}>
-                  Back to home →
-                </Link>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 pt-16 md:pt-24 pb-20 md:pb-28">
+            {/* ─── Left column — editorial letter ─── */}
+            <div className="md:col-span-5">
+              <p className="mono mb-6" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                § Get in touch
+              </p>
+              <h1 className="serif text-white" style={{
+                fontSize: "clamp(44px, 6.5vw, 88px)",
+                lineHeight: 0.95,
+                letterSpacing: "-0.045em",
+                fontWeight: 500,
+              }}>
+                Say hello.<br />
+                <span style={{ fontStyle: "italic", fontWeight: 400 }}>We're listening.</span>
+              </h1>
+              <p style={{ fontSize: 17, color: "#94a3b8", lineHeight: 1.7, marginTop: 28, maxWidth: 420, fontWeight: 300 }}>
+                Whether you have a question about the product, want to partner, are writing about us,
+                or just want to say hi — drop a note. One of us reads every message.
+              </p>
+
+              <div className="mt-10 pt-8" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                <p className="mono mb-3" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                  Or email us directly
+                </p>
+                <a href="mailto:hello@fundflow.io" className="no-underline"
+                  style={{ fontSize: 22, color: "#10b981", fontWeight: 500, letterSpacing: "-0.01em" }}>
+                  hello@fundflow.io
+                </a>
               </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">First Name</label>
-                    <input value={form.first_name} onChange={e => setForm({ ...form, first_name: e.target.value })}
-                      placeholder="John" required
-                      className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
-                      style={{ background: "rgba(255,255,255,0.03)" }} />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Last Name</label>
-                    <input value={form.last_name} onChange={e => setForm({ ...form, last_name: e.target.value })}
-                      placeholder="Doe" required
-                      className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
-                      style={{ background: "rgba(255,255,255,0.03)" }} />
-                  </div>
-                </div>
 
-                <div>
-                  <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Email</label>
-                  <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
-                    placeholder="you@example.com" required
-                    className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
-                    style={{ background: "rgba(255,255,255,0.03)" }} />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Category</label>
-                  <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value, custom_category: "" })}
-                    required
-                    className="w-full rounded-xl px-3.5 py-2.5 text-sm border border-white/[0.08] outline-none cursor-pointer"
-                    style={{ background: "rgba(255,255,255,0.03)", color: form.category ? "#e2e8f0" : "#64748b" }}>
-                    <option value="" disabled style={{ background: "#0a0d14" }}>Select a category</option>
-                    {CATEGORIES.map(c => <option key={c} value={c} style={{ background: "#0a0d14" }}>{c}</option>)}
-                  </select>
-                </div>
-
-                {form.category === "Other" && (
-                  <div>
-                    <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Please specify</label>
-                    <input value={form.custom_category} onChange={e => setForm({ ...form, custom_category: e.target.value })}
-                      placeholder="Tell us what it's about..."
-                      className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
-                      style={{ background: "rgba(255,255,255,0.03)" }} />
+              <div className="mt-10 pt-8 flex flex-col gap-2" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                <p className="mono mb-2" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                  What you can write about
+                </p>
+                {[
+                  "Partnership or integration ideas",
+                  "Feature requests and bug reports",
+                  "Press, podcast, or interview requests",
+                  "Anything else that doesn't fit the inbox",
+                ].map(t => (
+                  <div key={t} className="flex items-start gap-3" style={{ fontSize: 14, color: "#cbd5e1", padding: "4px 0" }}>
+                    <span className="mono" style={{ fontSize: 10, color: "#475569", marginTop: 4 }}>—</span>
+                    <span>{t}</span>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ─── Right column — form ─── */}
+            <div className="md:col-span-7">
+              <div style={{ borderTop: "1px solid rgba(255,255,255,0.12)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "40px 0" }}>
+                {success ? (
+                  <div style={{ padding: "40px 0", textAlign: "center" }}>
+                    <div style={{
+                      width: 56, height: 56,
+                      border: "1px solid rgba(16,185,129,0.3)",
+                      color: "#34d399",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      borderRadius: 2, margin: "0 auto 20px",
+                    }}>
+                      <RiCheckLine size={26} />
+                    </div>
+                    <h2 className="serif text-white" style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-0.02em", marginBottom: 12 }}>
+                      Message sent.
+                    </h2>
+                    <p style={{ fontSize: 15, color: "#94a3b8", marginBottom: 24 }}>
+                      Thanks — one of us will read this and reply as soon as we can.
+                    </p>
+                    <Link href="/" className="no-underline mono"
+                      style={{ fontSize: 12, color: "#10b981", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                      ← Back to home
+                    </Link>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubmit} className="flex flex-col gap-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                      <div>
+                        <label style={labelStyle}>First name</label>
+                        <input value={form.first_name} onChange={e => setForm({ ...form, first_name: e.target.value })}
+                          required placeholder="Ada" style={inputStyle} />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Last name</label>
+                        <input value={form.last_name} onChange={e => setForm({ ...form, last_name: e.target.value })}
+                          required placeholder="Lovelace" style={inputStyle} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>Email</label>
+                      <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
+                        required placeholder="you@example.com" style={inputStyle} />
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>Category</label>
+                      <select value={form.category}
+                        onChange={e => setForm({ ...form, category: e.target.value, custom_category: "" })}
+                        required
+                        style={{
+                          ...inputStyle,
+                          background: "#060608",
+                          color: form.category ? "#e5e7eb" : "#475569",
+                          cursor: "pointer",
+                          appearance: "none",
+                          WebkitAppearance: "none",
+                          backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>")`,
+                          backgroundRepeat: "no-repeat",
+                          backgroundPosition: "right 0px center",
+                          paddingRight: 24,
+                        }}>
+                        <option value="" disabled style={{ background: "#0a0a0d" }}>Choose one</option>
+                        {CATEGORIES.map(c => (
+                          <option key={c} value={c} style={{ background: "#0a0a0d" }}>{c}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {form.category === "Other" && (
+                      <div>
+                        <label style={labelStyle}>Please specify</label>
+                        <input value={form.custom_category} onChange={e => setForm({ ...form, custom_category: e.target.value })}
+                          placeholder="What's it about?" style={inputStyle} />
+                      </div>
+                    )}
+
+                    <div>
+                      <label style={labelStyle}>Message</label>
+                      <textarea value={form.message} onChange={e => setForm({ ...form, message: e.target.value })}
+                        required rows={5} placeholder="Write whatever you want to write."
+                        style={{ ...inputStyle, resize: "vertical", lineHeight: 1.6 }} />
+                    </div>
+
+                    {error && (
+                      <div style={{
+                        fontSize: 13, color: "#f87171",
+                        padding: "12px 14px",
+                        background: "rgba(248,113,113,0.06)",
+                        border: "1px solid rgba(248,113,113,0.2)",
+                        borderRadius: 2,
+                      }}>
+                        {error}
+                      </div>
+                    )}
+
+                    <button type="submit" disabled={loading}
+                      style={{
+                        background: "#10b981", color: "#fff",
+                        padding: "14px 24px", borderRadius: 2,
+                        fontSize: 14, fontWeight: 600, border: 0,
+                        cursor: loading ? "not-allowed" : "pointer",
+                        opacity: loading ? 0.6 : 1,
+                        alignSelf: "flex-start",
+                        display: "flex", alignItems: "center", gap: 8,
+                      }}>
+                      {loading ? "Sending..." : <>Send message <RiArrowRightLine size={14} /></>}
+                    </button>
+                  </form>
                 )}
-
-                <div>
-                  <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Message</label>
-                  <textarea value={form.message} onChange={e => setForm({ ...form, message: e.target.value })}
-                    placeholder="How can we help you?" required rows={5}
-                    className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none resize-none"
-                    style={{ background: "rgba(255,255,255,0.03)" }} />
-                </div>
-
-                {error && (
-                  <div className="rounded-xl px-4 py-3 text-sm text-red-400 border"
-                    style={{ background: "rgba(239,68,68,0.06)", borderColor: "rgba(239,68,68,0.2)" }}>
-                    {error}
-                  </div>
-                )}
-
-                <button type="submit" disabled={loading}
-                  className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-semibold text-white cursor-pointer border-0 disabled:opacity-60 mt-1"
-                  style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
-                  {loading ? "Sending..." : <><RiSendPlaneLine size={15} /> Send message</>}
-                </button>
-              </form>
-            )}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Footer */}
-      <footer className="relative z-10 px-5 md:px-16 py-6" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md flex items-center justify-center text-[9px] font-black text-white"
-              style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>FF</div>
-            <span className="text-sm font-semibold text-slate-700" style={{ fontFamily: "'Syne', sans-serif" }}>FundFlow</span>
-          </div>
-          <span className="text-xs text-slate-700">© 2026 FundFlow. Built for Web3 founders.</span>
-          <div className="flex items-center gap-1.5 text-xs" style={{ color: "#10b981" }}>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            All systems operational
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </main>
   )
 }

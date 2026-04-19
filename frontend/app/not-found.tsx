@@ -2,23 +2,47 @@ import Link from "next/link"
 
 export default function NotFound() {
   return (
-    <main className="min-h-screen flex items-center justify-center text-slate-200" style={{ background: "#050508" }}>
-      {/* Syne is loaded globally via globals.css. */}
-      <div className="fixed top-[10%] left-[20%] w-[600px] h-[600px] rounded-full pointer-events-none blur-[60px]"
-        style={{ background: "radial-gradient(circle, rgba(16,185,129,0.05) 0%, transparent 70%)" }} />
-      <div className="text-center relative z-10 px-6">
-        <p className="font-black mb-4" style={{ fontSize: "120px", lineHeight: "1", fontFamily: "'Syne', sans-serif", background: "linear-gradient(135deg, #10b981, #34d399)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>404</p>
-        <h1 className="text-2xl font-bold text-white mb-3" style={{ fontFamily: "'Syne', sans-serif" }}>Page not found</h1>
-        <p className="text-slate-500 mb-8 max-w-sm mx-auto">The page you're looking for doesn't exist or has been moved.</p>
-        <div className="flex items-center justify-center gap-3">
-          <Link href="/"
-            className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white no-underline"
-            style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
-            Back to home
+    <main style={{
+      minHeight: "100vh",
+      background: "#060608",
+      color: "#e5e7eb",
+      fontFamily: "'DM Sans', sans-serif",
+      display: "flex", alignItems: "center", justifyContent: "center",
+    }}>
+      <div style={{ maxWidth: 560, padding: "0 24px", textAlign: "left" }}>
+        <div className="mono" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 24 }}>
+          Error · 404 · Not found
+        </div>
+        <h1 className="serif" style={{
+          color: "#fff",
+          fontSize: "clamp(72px, 10vw, 140px)",
+          lineHeight: 0.9,
+          letterSpacing: "-0.05em",
+          fontWeight: 500,
+          marginBottom: 24,
+        }}>
+          Nothing<br />
+          <span style={{ fontStyle: "italic", fontWeight: 400 }}>here.</span>
+        </h1>
+        <p style={{ fontSize: 17, color: "#94a3b8", lineHeight: 1.7, maxWidth: 440, marginBottom: 40 }}>
+          The page you&apos;re looking for doesn&apos;t exist, or has moved. Head back to the home
+          page, or straight to your dashboard if you&apos;re already a founder.
+        </p>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <Link href="/" className="no-underline"
+            style={{
+              background: "#10b981", color: "#fff",
+              padding: "14px 22px", borderRadius: 2,
+              fontSize: 14, fontWeight: 600,
+            }}>
+            Back to home →
           </Link>
-          <Link href="/dashboard"
-            className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-slate-400 no-underline border"
-            style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+          <Link href="/dashboard" className="no-underline"
+            style={{
+              color: "#cbd5e1", padding: "14px 22px",
+              border: "1px solid rgba(255,255,255,0.12)", borderRadius: 2,
+              fontSize: 14, fontWeight: 500,
+            }}>
             Dashboard
           </Link>
         </div>
