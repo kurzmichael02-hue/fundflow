@@ -1,41 +1,67 @@
 "use client"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import Navbar from "@/components/Navbar"
+import AppNav from "@/components/AppNav"
 import { ToastContainer, useToast } from "@/components/Toast"
-import { RiCheckLine, RiEditLine, RiCloseLine, RiRocketLine, RiEyeLine, RiEyeOffLine, RiWallet3Line, RiQrCodeLine, RiPencilLine } from "react-icons/ri"
+import {
+  RiCheckLine, RiEditLine, RiCloseLine, RiRocketLine,
+  RiEyeLine, RiEyeOffLine, RiWallet3Line, RiQrCodeLine, RiPencilLine,
+  RiArrowRightLine,
+} from "react-icons/ri"
 
-const STAGE_OPTIONS = ["pre-seed", "seed", "series-a", "series-b", "web3"]
+type Profile = {
+  name?: string | null
+  email?: string | null
+  company?: string | null
+  bio?: string | null
+  wallet_address?: string | null
+}
+type Project = {
+  name?: string
+  description?: string
+  stage?: string
+  chain?: string
+  goal?: number | string
+  raised?: number | string
+  tags?: string[]
+  published?: boolean
+}
+
+const STAGE_OPTIONS = ["pre-seed", "seed", "series-a", "series-b", "web3"] as const
 const STAGE_LABELS: Record<string, string> = {
   "pre-seed": "Pre-Seed", "seed": "Seed", "series-a": "Series A",
-  "series-b": "Series B", "web3": "Web3 / Token"
+  "series-b": "Series B", "web3": "Web3 / Token",
 }
 const CHAIN_OPTIONS = ["ETH", "SOL", "ARB", "BASE", "BNB", "MATIC", "Other"]
 
 declare global {
-  interface Window { ethereum?: any }
+  interface Window { ethereum?: { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> } }
 }
 
 const WC_PROJECT_ID = "1a895e994a423c409a9ce755f220cb71"
+
+// Profile — editorial redesign split into two sections: Identity (profile +
+// wallet) and Deal room (published project). Underline-form inputs, hairline
+// borders, mono labels. Wallet flow unchanged; UI rewritten.
 
 export default function ProfilePage() {
   const router = useRouter()
   const { toasts, addToast, removeToast } = useToast()
 
-  const [profile, setProfile] = useState({ name: "", email: "", company: "", bio: "", wallet_address: "" })
+  const [profile, setProfile] = useState<Profile>({ name: "", email: "", company: "", bio: "", wallet_address: "" })
   const [editProfile, setEditProfile] = useState(false)
-  const [profileForm, setProfileForm] = useState(profile)
+  const [profileForm, setProfileForm] = useState<Profile>(profile)
   const [savingProfile, setSavingProfile] = useState(false)
 
   const [walletMode, setWalletMode] = useState<"idle" | "manual" | "connecting">("idle")
   const [manualAddress, setManualAddress] = useState("")
   const [connectingWallet, setConnectingWallet] = useState(false)
 
-  const [project, setProject] = useState<any>(null)
+  const [project, setProject] = useState<Project | null>(null)
   const [editProject, setEditProject] = useState(false)
   const [projectForm, setProjectForm] = useState({
     name: "", description: "", stage: "pre-seed", goal: "",
-    raised: "", chain: "ETH", tags: "", published: false
+    raised: "", chain: "ETH", tags: "", published: false,
   })
   const [savingProject, setSavingProject] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -44,24 +70,28 @@ export default function ProfilePage() {
     const token = localStorage.getItem("token")
     if (!token) { router.push("/login"); return }
     fetchAll(token)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function fetchAll(token: string) {
     try {
       const [pRes, projRes] = await Promise.all([
-        fetch("/api/profile", { headers: { Authorization: `Bearer ${token}` } }),
-        fetch("/api/projects", { method: "PATCH", headers: { Authorization: `Bearer ${token}` } })
+        fetch("/api/profile",  { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/projects", { method: "PATCH", headers: { Authorization: `Bearer ${token}` } }),
       ])
-      const pData = await pRes.json()
+      const pData: Profile = await pRes.json()
       setProfile(pData)
       setProfileForm(pData)
-      const projData = await projRes.json()
+      const projData: Project | null = await projRes.json()
       if (projData) {
         setProject(projData)
         setProjectForm({
-          name: projData.name || "", description: projData.description || "",
-          stage: projData.stage || "pre-seed", goal: projData.goal || "",
-          raised: projData.raised || "", chain: projData.chain || "ETH",
+          name: projData.name || "",
+          description: projData.description || "",
+          stage: projData.stage || "pre-seed",
+          goal: projData.goal?.toString() || "",
+          raised: projData.raised?.toString() || "",
+          chain: projData.chain || "ETH",
           tags: Array.isArray(projData.tags) ? projData.tags.join(", ") : "",
           published: projData.published || false,
         })
@@ -72,8 +102,6 @@ export default function ProfilePage() {
 
   async function saveWalletAddress(address: string) {
     const token = localStorage.getItem("token")!
-    // Send only the wallet field — anything else in profileForm might be
-    // mid-edit, and sending it here would silently commit those drafts.
     const res = await fetch("/api/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -82,25 +110,25 @@ export default function ProfilePage() {
     const data = await res.json()
     if (!res.ok) throw new Error(data.error)
     setProfile(data)
-    // Keep any in-progress edits on other fields intact.
     setProfileForm(prev => ({ ...prev, wallet_address: data.wallet_address }))
   }
 
   async function handleConnectMetaMask() {
     if (!window.ethereum) {
-      addToast("MetaMask not installed. Use WalletConnect or paste manually.", "info")
+      addToast("MetaMask not installed — use WalletConnect or paste manually", "info")
       return
     }
     setConnectingWallet(true)
     try {
-      const accounts: string[] = await window.ethereum.request({ method: "eth_requestAccounts" })
+      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" }) as string[]
       if (!accounts.length) throw new Error("No accounts found")
       await saveWalletAddress(accounts[0])
-      addToast("MetaMask connected!")
+      addToast("MetaMask connected")
       setWalletMode("idle")
-    } catch (err: any) {
-      if (err.code === 4001) addToast("Connection rejected.", "error")
-      else addToast(err.message || "Failed to connect", "error")
+    } catch (err) {
+      const e = err as { code?: number; message?: string }
+      if (e.code === 4001) addToast("Connection rejected", "error")
+      else addToast(e.message || "Failed to connect", "error")
     } finally { setConnectingWallet(false) }
   }
 
@@ -123,11 +151,12 @@ export default function ProfilePage() {
       const accounts = provider.accounts
       if (!accounts.length) throw new Error("No accounts")
       await saveWalletAddress(accounts[0])
-      addToast("Wallet connected via WalletConnect!")
+      addToast("Wallet connected via WalletConnect")
       setWalletMode("idle")
-    } catch (err: any) {
-      if (err.message?.includes("User rejected")) addToast("Connection rejected.", "error")
-      else addToast(err.message || "WalletConnect failed", "error")
+    } catch (err) {
+      const e = err as { message?: string }
+      if (e.message?.includes("User rejected")) addToast("Connection rejected", "error")
+      else addToast(e.message || "WalletConnect failed", "error")
     } finally { setConnectingWallet(false) }
   }
 
@@ -136,11 +165,11 @@ export default function ProfilePage() {
     setConnectingWallet(true)
     try {
       await saveWalletAddress(manualAddress.trim())
-      addToast("Wallet address saved!")
+      addToast("Wallet address saved")
       setWalletMode("idle")
       setManualAddress("")
-    } catch (err: any) {
-      addToast(err.message, "error")
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : "Failed", "error")
     } finally { setConnectingWallet(false) }
   }
 
@@ -151,14 +180,20 @@ export default function ProfilePage() {
       const res = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(profileForm),
+        body: JSON.stringify({
+          name: profileForm.name,
+          company: profileForm.company,
+          bio: profileForm.bio,
+        }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setProfile(data)
       setEditProfile(false)
-      addToast("Profile updated!")
-    } catch (err: any) { addToast(err.message, "error") }
+      addToast("Profile updated")
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : "Failed", "error")
+    }
     finally { setSavingProfile(false) }
   }
 
@@ -170,338 +205,427 @@ export default function ProfilePage() {
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ...projectForm, goal: Number(projectForm.goal), raised: Number(projectForm.raised), tags: tagsArray }),
+        body: JSON.stringify({
+          ...projectForm,
+          goal: Number(projectForm.goal) || 0,
+          raised: Number(projectForm.raised) || 0,
+          tags: tagsArray,
+        }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setProject(data)
       setEditProject(false)
-      addToast(data.published ? "Project published!" : "Project saved as draft.")
-    } catch (err: any) { addToast(err.message, "error") }
+      addToast(data.published ? "Project published" : "Project saved as draft")
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : "Failed", "error")
+    }
     finally { setSavingProject(false) }
   }
 
   function truncateAddress(addr: string) {
     if (!addr) return ""
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`
+    return `${addr.slice(0, 6)}…${addr.slice(-4)}`
   }
 
   if (loading) return (
-    <div className="min-h-screen bg-[#050508] flex items-center justify-center">
-      <div className="flex items-center gap-3 text-slate-500 text-sm">
-        <div className="w-4 h-4 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
-        Loading...
+    <div style={{ minHeight: "100vh", background: "#060608" }}>
+      <AppNav />
+      <div className="max-w-[1280px] mx-auto px-6 md:px-10 py-20 flex items-center gap-3">
+        <div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid #10b981", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
+        <span className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>Loading profile...</span>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-[#050508] text-slate-200">
+    <main style={{ minHeight: "100vh", background: "#060608", color: "#e5e7eb", fontFamily: "'DM Sans', sans-serif" }}>
+      <AppNav />
       <ToastContainer toasts={toasts} removeToast={removeToast} />
-      <Navbar />
-      <div className="px-4 md:px-12 py-8 max-w-2xl mx-auto flex flex-col gap-6">
 
-        {/* Profile Card */}
-        <div className="rounded-2xl border border-white/[0.06] overflow-hidden" style={{ background: "rgba(255,255,255,0.02)" }}>
-          <div className="px-6 py-5 border-b border-white/[0.05] flex items-center justify-between"
-            style={{ background: "rgba(255,255,255,0.02)" }}>
-            <div>
-              <h2 className="text-[15px] font-semibold text-white tracking-tight">Profile</h2>
-              <p className="text-xs text-slate-600 mt-0.5">Your founder information</p>
-            </div>
-            {!editProfile ? (
-              <button onClick={() => setEditProfile(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-slate-400 border border-white/[0.08] cursor-pointer"
-                style={{ background: "transparent" }}>
-                <RiEditLine size={13} /> Edit
-              </button>
-            ) : (
-              <div className="flex gap-2">
-                <button onClick={handleSaveProfile} disabled={savingProfile}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white border-0 cursor-pointer disabled:opacity-50"
-                  style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
-                  <RiCheckLine size={13} /> {savingProfile ? "Saving..." : "Save"}
-                </button>
-                <button onClick={() => { setEditProfile(false); setProfileForm(profile) }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-slate-400 border border-white/[0.08] cursor-pointer"
-                  style={{ background: "transparent" }}>
-                  <RiCloseLine size={13} /> Cancel
-                </button>
-              </div>
-            )}
-          </div>
+      <div className="max-w-[900px] mx-auto px-6 md:px-10">
 
-          <div className="p-6 flex flex-col gap-4">
-            <div className="flex items-center gap-4 mb-2">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold text-white flex-shrink-0"
-                style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
-                {profile.name?.[0]?.toUpperCase() || "?"}
-              </div>
-              <div>
-                <p className="text-white font-semibold">{profile.name || "—"}</p>
-                <p className="text-slate-600 text-xs mt-0.5">{profile.email}</p>
-              </div>
-            </div>
-
-            {[
-              { label: "Full Name", key: "name", placeholder: "Your name" },
-              { label: "Company", key: "company", placeholder: "Your company or project" },
-              { label: "Bio", key: "bio", placeholder: "Short bio..." },
-            ].map(f => (
-              <div key={f.key}>
-                <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">{f.label}</label>
-                {editProfile ? (
-                  <input value={(profileForm as any)[f.key] || ""} onChange={e => setProfileForm({ ...profileForm, [f.key]: e.target.value })}
-                    placeholder={f.placeholder}
-                    className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
-                    style={{ background: "rgba(255,255,255,0.04)" }} />
-                ) : (
-                  <p className="text-sm text-slate-300">{(profile as any)[f.key] || <span className="text-slate-700">Not set</span>}</p>
-                )}
-              </div>
-            ))}
-
-            {/* Wallet Section */}
-            <div>
-              <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Wallet Address</label>
-
-              {profile.wallet_address && walletMode === "idle" ? (
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-white/[0.08] flex-1 min-w-0"
-                    style={{ background: "rgba(255,255,255,0.02)" }}>
-                    <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
-                    <span className="text-sm text-slate-300 font-mono truncate">{truncateAddress(profile.wallet_address)}</span>
-                    <span className="text-[11px] text-slate-600 truncate hidden sm:block">{profile.wallet_address}</span>
-                  </div>
-                  <button onClick={() => setWalletMode("connecting")}
-                    className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs text-slate-400 border border-white/[0.08] cursor-pointer whitespace-nowrap flex-shrink-0"
-                    style={{ background: "transparent" }}>
-                    <RiWallet3Line size={13} /> Change
-                  </button>
-                </div>
-              ) : walletMode === "manual" ? (
-                <div className="flex flex-col gap-2">
-                  <input value={manualAddress} onChange={e => setManualAddress(e.target.value)}
-                    placeholder="Paste your wallet address (0x...)"
-                    className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none font-mono"
-                    style={{ background: "rgba(255,255,255,0.04)" }} />
-                  <div className="flex gap-2">
-                    <button onClick={handleSaveManual} disabled={connectingWallet || !manualAddress.trim()}
-                      className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white border-0 cursor-pointer disabled:opacity-50"
-                      style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
-                      {connectingWallet ? "Saving..." : "Save Address"}
-                    </button>
-                    <button onClick={() => { setWalletMode("idle"); setManualAddress("") }}
-                      className="px-4 py-2.5 rounded-xl text-xs text-slate-400 border border-white/[0.08] cursor-pointer"
-                      style={{ background: "transparent" }}>
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                // Connect options
-                <div className="flex flex-col gap-2">
-                  <button onClick={handleConnectMetaMask} disabled={connectingWallet}
-                    className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium border cursor-pointer transition-all disabled:opacity-50"
-                    style={{ background: "rgba(251,191,36,0.06)", borderColor: "rgba(251,191,36,0.2)", color: "#fbbf24" }}>
-                    <RiWallet3Line size={18} />
-                    {connectingWallet ? "Connecting..." : "Connect MetaMask"}
-                    <span className="ml-auto text-[11px] text-slate-600">Browser extension</span>
-                  </button>
-                  <button onClick={handleConnectWalletConnect} disabled={connectingWallet}
-                    className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium border cursor-pointer transition-all disabled:opacity-50"
-                    style={{ background: "rgba(14,165,233,0.06)", borderColor: "rgba(14,165,233,0.2)", color: "#38bdf8" }}>
-                    <RiQrCodeLine size={18} />
-                    {connectingWallet ? "Connecting..." : "WalletConnect"}
-                    <span className="ml-auto text-[11px] text-slate-600">QR code · any wallet</span>
-                  </button>
-                  <button onClick={() => setWalletMode("manual")}
-                    className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium border cursor-pointer transition-all"
-                    style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.08)", color: "#94a3b8" }}>
-                    <RiPencilLine size={18} />
-                    Paste address manually
-                    <span className="ml-auto text-[11px] text-slate-600">Any wallet</span>
-                  </button>
-                  {profile.wallet_address && (
-                    <button onClick={() => setWalletMode("idle")}
-                      className="text-xs text-slate-600 cursor-pointer bg-transparent border-0 text-center">
-                      Cancel
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Email</label>
-              <p className="text-sm text-slate-500">{profile.email}</p>
-            </div>
-          </div>
+        {/* ── Ticker ── */}
+        <div className="flex items-center justify-between pt-8 pb-6"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <span className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            Profile · Identity · Deal room
+          </span>
+          {project?.published && (
+            <span className="mono flex items-center gap-1.5" style={{ fontSize: 11, color: "#34d399", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981" }} />
+              Project live
+            </span>
+          )}
         </div>
 
-        {/* Project Card */}
-        <div className="rounded-2xl border border-white/[0.06] overflow-hidden" style={{ background: "rgba(255,255,255,0.02)" }}>
-          <div className="px-6 py-5 border-b border-white/[0.05] flex items-center justify-between"
-            style={{ background: "rgba(255,255,255,0.02)" }}>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-[15px] font-semibold text-white tracking-tight">Your Project</h2>
-                {project?.published && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                    style={{ background: "rgba(16,185,129,0.1)", color: "#34d399", border: "1px solid rgba(16,185,129,0.2)" }}>
-                    Live
-                  </span>
-                )}
-                {project && !project.published && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                    style={{ background: "rgba(255,255,255,0.04)", color: "#64748b", border: "1px solid rgba(255,255,255,0.08)" }}>
-                    Draft
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-slate-600 mt-0.5">Visible to investors on Deal Flow</p>
-            </div>
-            {!editProject ? (
-              <button onClick={() => setEditProject(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-slate-400 border border-white/[0.08] cursor-pointer"
-                style={{ background: "transparent" }}>
-                {project ? <><RiEditLine size={13} /> Edit</> : <><RiRocketLine size={13} /> Create</>}
-              </button>
-            ) : (
-              <div className="flex gap-2">
-                <button onClick={handleSaveProject} disabled={savingProject}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white border-0 cursor-pointer disabled:opacity-50"
-                  style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
-                  <RiCheckLine size={13} /> {savingProject ? "Saving..." : "Save"}
-                </button>
-                <button onClick={() => setEditProject(false)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-slate-400 border border-white/[0.08] cursor-pointer"
-                  style={{ background: "transparent" }}>
-                  <RiCloseLine size={13} /> Cancel
-                </button>
-              </div>
-            )}
-          </div>
+        {/* ── Masthead ── */}
+        <section className="pt-10 md:pt-14 pb-10">
+          <p className="mono mb-3" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            § Account
+          </p>
+          <h1 className="serif text-white" style={{
+            fontSize: "clamp(40px, 5.5vw, 64px)", lineHeight: 0.95, letterSpacing: "-0.045em", fontWeight: 500,
+          }}>
+            You & <span style={{ fontStyle: "italic", fontWeight: 400 }}>your project.</span>
+          </h1>
+        </section>
 
-          <div className="p-6">
-            {!project && !editProject ? (
-              <div className="text-center py-8">
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-slate-700 border border-white/[0.06] mx-auto mb-3"
-                  style={{ background: "rgba(255,255,255,0.02)" }}>
-                  <RiRocketLine size={22} />
-                </div>
-                <p className="text-sm text-slate-600 mb-4">No project yet. Create one to appear on the investor Deal Flow.</p>
-                <button onClick={() => setEditProject(true)}
-                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white border-0 cursor-pointer"
-                  style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
-                  Create Project
+        {/* ── Section: Profile ── */}
+        <Section
+          kicker="§ Identity"
+          title="Who you are."
+          action={!editProfile && (
+            <button onClick={() => setEditProfile(true)} className="mono cursor-pointer flex items-center gap-1.5"
+              style={editActionStyle}>
+              <RiEditLine size={12} /> Edit
+            </button>
+          )}
+          rightOfAction={editProfile && (
+            <div className="flex items-center gap-2">
+              <button onClick={() => { setEditProfile(false); setProfileForm(profile) }}
+                className="mono cursor-pointer" style={editActionStyle}>
+                <RiCloseLine size={12} /> Cancel
+              </button>
+              <button onClick={handleSaveProfile} disabled={savingProfile}
+                className="mono cursor-pointer flex items-center gap-1.5"
+                style={{ ...primaryActionStyle, opacity: savingProfile ? 0.6 : 1 }}>
+                <RiCheckLine size={12} /> {savingProfile ? "Saving..." : "Save"}
+              </button>
+            </div>
+          )}>
+          <FieldRow label="Name">
+            {editProfile
+              ? <input value={profileForm.name || ""} onChange={e => setProfileForm({ ...profileForm, name: e.target.value })}
+                  placeholder="Your name" style={underlineInput} />
+              : <span style={valueStyle}>{profile.name || <span style={{ color: "#475569" }}>—</span>}</span>
+            }
+          </FieldRow>
+          <FieldRow label="Email">
+            <span style={{ ...valueStyle, color: "#94a3b8" }}>{profile.email || "—"}</span>
+          </FieldRow>
+          <FieldRow label="Company">
+            {editProfile
+              ? <input value={profileForm.company || ""} onChange={e => setProfileForm({ ...profileForm, company: e.target.value })}
+                  placeholder="Your company or project" style={underlineInput} />
+              : <span style={valueStyle}>{profile.company || <span style={{ color: "#475569" }}>—</span>}</span>
+            }
+          </FieldRow>
+          <FieldRow label="Bio">
+            {editProfile
+              ? <input value={profileForm.bio || ""} onChange={e => setProfileForm({ ...profileForm, bio: e.target.value })}
+                  placeholder="Short bio..." style={underlineInput} />
+              : <span style={valueStyle}>{profile.bio || <span style={{ color: "#475569" }}>—</span>}</span>
+            }
+          </FieldRow>
+        </Section>
+
+        {/* ── Section: Wallet ── */}
+        <Section kicker="§ Wallet" title="Connect an address.">
+          {profile.wallet_address && walletMode === "idle" ? (
+            <div className="grid grid-cols-[1fr_auto] items-center gap-4 py-4"
+              style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="flex items-center gap-3">
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981" }} />
+                <span className="mono" style={{ fontSize: 13, color: "#e5e7eb", letterSpacing: "0.02em" }}>
+                  {truncateAddress(profile.wallet_address)}
+                </span>
+                <span className="mono hidden sm:inline" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.02em" }}>
+                  {profile.wallet_address}
+                </span>
+              </div>
+              <button onClick={() => setWalletMode("connecting")}
+                className="mono cursor-pointer flex items-center gap-1.5"
+                style={editActionStyle}>
+                <RiWallet3Line size={12} /> Change
+              </button>
+            </div>
+          ) : walletMode === "manual" ? (
+            <div className="py-6" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="mono mb-2" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                Paste address
+              </div>
+              <input value={manualAddress} onChange={e => setManualAddress(e.target.value)}
+                placeholder="0x..." style={{ ...underlineInput, fontFamily: "'JetBrains Mono', ui-monospace, monospace" }} />
+              <div className="flex gap-2 mt-5">
+                <button onClick={() => { setWalletMode("idle"); setManualAddress("") }}
+                  className="mono cursor-pointer" style={editActionStyle}>
+                  Cancel
+                </button>
+                <button onClick={handleSaveManual} disabled={connectingWallet || !manualAddress.trim()}
+                  className="mono cursor-pointer"
+                  style={{ ...primaryActionStyle, opacity: (connectingWallet || !manualAddress.trim()) ? 0.5 : 1 }}>
+                  {connectingWallet ? "Saving..." : "Save address"}
                 </button>
               </div>
-            ) : editProject ? (
-              <div className="flex flex-col gap-3.5">
-                {[
-                  { key: "name", label: "Project Name", placeholder: "e.g. NovaPay" },
-                  { key: "description", label: "Description", placeholder: "What does your project do?" },
-                ].map(f => (
-                  <div key={f.key}>
-                    <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">{f.label}</label>
-                    <input value={(projectForm as any)[f.key]} onChange={e => setProjectForm({ ...projectForm, [f.key]: e.target.value })}
-                      placeholder={f.placeholder}
-                      className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
-                      style={{ background: "rgba(255,255,255,0.04)" }} />
-                  </div>
-                ))}
-                <div className="grid grid-cols-2 gap-3">
+            </div>
+          ) : (
+            <div className="py-4">
+              {[
+                { icon: <RiWallet3Line size={14} />, label: "MetaMask",      hint: "Browser extension",  color: "#fbbf24", onClick: handleConnectMetaMask },
+                { icon: <RiQrCodeLine size={14} />,  label: "WalletConnect", hint: "QR · any wallet",    color: "#38bdf8", onClick: handleConnectWalletConnect },
+                { icon: <RiPencilLine size={14} />,  label: "Paste address", hint: "Any 0x…",            color: "#94a3b8", onClick: () => setWalletMode("manual") },
+              ].map(w => (
+                <button key={w.label} onClick={w.onClick} disabled={connectingWallet}
+                  className="w-full grid grid-cols-[auto_1fr_auto] gap-4 items-center py-4 cursor-pointer text-left"
+                  style={{
+                    background: "transparent", border: 0,
+                    borderBottom: "1px solid rgba(255,255,255,0.06)",
+                    opacity: connectingWallet ? 0.5 : 1,
+                  }}>
+                  <span style={{ color: w.color }}>{w.icon}</span>
                   <div>
-                    <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Stage</label>
-                    <select value={projectForm.stage} onChange={e => setProjectForm({ ...projectForm, stage: e.target.value })}
-                      className="w-full rounded-xl px-3.5 py-2.5 text-sm border border-white/[0.08] outline-none"
-                      style={{ background: "rgba(14,7,15,0.9)", color: "#e2e8f0" }}>
-                      {STAGE_OPTIONS.map(s => <option key={s} value={s}>{STAGE_LABELS[s]}</option>)}
-                    </select>
+                    <div style={{ fontSize: 14, color: "#e5e7eb", fontWeight: 500 }}>{w.label}</div>
+                    <div className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.04em", marginTop: 2 }}>{w.hint}</div>
                   </div>
-                  <div>
-                    <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Chain</label>
-                    <select value={projectForm.chain} onChange={e => setProjectForm({ ...projectForm, chain: e.target.value })}
-                      className="w-full rounded-xl px-3.5 py-2.5 text-sm border border-white/[0.08] outline-none"
-                      style={{ background: "rgba(14,7,15,0.9)", color: "#e2e8f0" }}>
-                      {CHAIN_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                  <RiArrowRightLine size={12} style={{ color: "#475569" }} />
+                </button>
+              ))}
+              {profile.wallet_address && (
+                <button onClick={() => setWalletMode("idle")}
+                  className="mono w-full mt-4" style={{ ...editActionStyle, justifyContent: "center" }}>
+                  Cancel
+                </button>
+              )}
+            </div>
+          )}
+        </Section>
+
+        {/* ── Section: Project ── */}
+        <Section
+          kicker="§ Deal room"
+          title={project?.published ? "Live on the deal flow." : project ? "Draft." : "Publish a project."}
+          badge={project && (
+            <span className="mono" style={{
+              fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 500,
+              padding: "3px 8px",
+              color: project.published ? "#34d399" : "#64748b",
+              background: project.published ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.02)",
+              border: `1px solid ${project.published ? "rgba(16,185,129,0.2)" : "rgba(255,255,255,0.08)"}`,
+              borderRadius: 2,
+            }}>
+              {project.published ? "Live" : "Draft"}
+            </span>
+          )}
+          action={!editProject && (
+            <button onClick={() => setEditProject(true)}
+              className="mono cursor-pointer flex items-center gap-1.5"
+              style={editActionStyle}>
+              {project ? <><RiEditLine size={12} /> Edit</> : <><RiRocketLine size={12} /> Create</>}
+            </button>
+          )}
+          rightOfAction={editProject && (
+            <div className="flex items-center gap-2">
+              <button onClick={() => setEditProject(false)}
+                className="mono cursor-pointer" style={editActionStyle}>
+                <RiCloseLine size={12} /> Cancel
+              </button>
+              <button onClick={handleSaveProject} disabled={savingProject}
+                className="mono cursor-pointer flex items-center gap-1.5"
+                style={{ ...primaryActionStyle, opacity: savingProject ? 0.6 : 1 }}>
+                <RiCheckLine size={12} /> {savingProject ? "Saving..." : "Save"}
+              </button>
+            </div>
+          )}>
+
+          {!project && !editProject ? (
+            <div className="py-14 text-center">
+              <p style={{ fontSize: 14, color: "#64748b", marginBottom: 20 }}>
+                No project yet. Publish one to appear on the investor deal flow.
+              </p>
+              <button onClick={() => setEditProject(true)}
+                className="mono cursor-pointer inline-flex items-center gap-1.5"
+                style={primaryActionStyle}>
+                <RiRocketLine size={12} /> Create project
+              </button>
+            </div>
+          ) : editProject ? (
+            <div className="flex flex-col">
+              <FieldRow label="Name">
+                <input value={projectForm.name} onChange={e => setProjectForm({ ...projectForm, name: e.target.value })}
+                  placeholder="e.g. NovaPay" style={underlineInput} />
+              </FieldRow>
+              <FieldRow label="Description">
+                <input value={projectForm.description} onChange={e => setProjectForm({ ...projectForm, description: e.target.value })}
+                  placeholder="One-line pitch" style={underlineInput} />
+              </FieldRow>
+              <FieldRow label="Stage">
+                <select value={projectForm.stage} onChange={e => setProjectForm({ ...projectForm, stage: e.target.value })}
+                  style={{ ...underlineInput, cursor: "pointer", background: "#060608" }}>
+                  {STAGE_OPTIONS.map(s => <option key={s} value={s}>{STAGE_LABELS[s]}</option>)}
+                </select>
+              </FieldRow>
+              <FieldRow label="Chain">
+                <select value={projectForm.chain} onChange={e => setProjectForm({ ...projectForm, chain: e.target.value })}
+                  style={{ ...underlineInput, cursor: "pointer", background: "#060608" }}>
+                  {CHAIN_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </FieldRow>
+              <FieldRow label="Funding goal ($)">
+                <input type="number" value={projectForm.goal} onChange={e => setProjectForm({ ...projectForm, goal: e.target.value })}
+                  placeholder="2500000" style={underlineInput} />
+              </FieldRow>
+              <FieldRow label="Raised so far ($)">
+                <input type="number" value={projectForm.raised} onChange={e => setProjectForm({ ...projectForm, raised: e.target.value })}
+                  placeholder="0" style={underlineInput} />
+              </FieldRow>
+              <FieldRow label="Tags">
+                <input value={projectForm.tags} onChange={e => setProjectForm({ ...projectForm, tags: e.target.value })}
+                  placeholder="DeFi, AI, B2B" style={underlineInput} />
+              </FieldRow>
+              <div className="py-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                <button onClick={() => setProjectForm({ ...projectForm, published: !projectForm.published })}
+                  className="w-full grid grid-cols-[1fr_auto] gap-4 items-center cursor-pointer text-left"
+                  style={{ background: "transparent", border: 0, padding: 0 }}>
+                  <div className="flex items-center gap-3">
+                    {projectForm.published
+                      ? <RiEyeLine size={14} style={{ color: "#10b981" }} />
+                      : <RiEyeOffLine size={14} style={{ color: "#64748b" }} />}
+                    <div>
+                      <div style={{ fontSize: 14, color: "#e5e7eb", fontWeight: 500 }}>
+                        {projectForm.published ? "Published" : "Draft"}
+                      </div>
+                      <div className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.04em", marginTop: 2 }}>
+                        {projectForm.published ? "Investors see this on the deal flow" : "Only you can see this"}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Funding Goal ($)</label>
-                    <input type="number" value={projectForm.goal} onChange={e => setProjectForm({ ...projectForm, goal: e.target.value })}
-                      placeholder="2500000"
-                      className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
-                      style={{ background: "rgba(255,255,255,0.04)" }} />
+                  <div style={{
+                    width: 36, height: 20,
+                    background: projectForm.published ? "#10b981" : "rgba(255,255,255,0.08)",
+                    position: "relative",
+                    borderRadius: 2,
+                    transition: "background 180ms",
+                  }}>
+                    <div style={{
+                      position: "absolute", top: 2,
+                      left: projectForm.published ? 18 : 2,
+                      width: 16, height: 16,
+                      background: "#fff",
+                      borderRadius: 2,
+                      transition: "left 180ms",
+                    }} />
                   </div>
-                  <div>
-                    <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Raised So Far ($)</label>
-                    <input type="number" value={projectForm.raised} onChange={e => setProjectForm({ ...projectForm, raised: e.target.value })}
-                      placeholder="0"
-                      className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
-                      style={{ background: "rgba(255,255,255,0.04)" }} />
+                </button>
+              </div>
+            </div>
+          ) : project && (
+            <div className="flex flex-col gap-5 pb-2">
+              <div className="flex items-baseline gap-4">
+                <h3 className="serif text-white" style={{ fontSize: 28, fontWeight: 500, letterSpacing: "-0.02em" }}>{project.name}</h3>
+                <span className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                  {STAGE_LABELS[project.stage || ""] || project.stage} · {project.chain}
+                </span>
+              </div>
+              <p style={{ fontSize: 15, color: "#94a3b8", lineHeight: 1.7, maxWidth: 560 }}>{project.description}</p>
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <div className="mono mb-1" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                    Goal
+                  </div>
+                  <div className="serif" style={{ fontSize: 22, color: "#fff", fontWeight: 500, letterSpacing: "-0.02em" }}>
+                    ${Number(project.goal || 0).toLocaleString()}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[11px] text-slate-600 uppercase tracking-wider mb-1.5">Tags (comma separated)</label>
-                  <input value={projectForm.tags} onChange={e => setProjectForm({ ...projectForm, tags: e.target.value })}
-                    placeholder="DeFi, AI, B2B"
-                    className="w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-200 border border-white/[0.08] outline-none"
-                    style={{ background: "rgba(255,255,255,0.04)" }} />
-                </div>
-                <div className="flex items-center justify-between rounded-xl px-4 py-3 border border-white/[0.08]"
-                  style={{ background: "rgba(255,255,255,0.02)" }}>
-                  <div className="flex items-center gap-2.5">
-                    {projectForm.published ? <RiEyeLine size={15} className="text-emerald-400" /> : <RiEyeOffLine size={15} className="text-slate-600" />}
-                    <div>
-                      <p className="text-sm text-slate-300 font-medium">{projectForm.published ? "Published" : "Draft"}</p>
-                      <p className="text-[11px] text-slate-600">{projectForm.published ? "Visible to investors" : "Only you can see this"}</p>
-                    </div>
+                  <div className="mono mb-1" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                    Raised
                   </div>
-                  <button onClick={() => setProjectForm({ ...projectForm, published: !projectForm.published })}
-                    className="relative w-10 h-5 rounded-full transition-all cursor-pointer border-0 flex-shrink-0"
-                    style={{ background: projectForm.published ? "#10b981" : "rgba(255,255,255,0.1)" }}>
-                    <span className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all"
-                      style={{ left: projectForm.published ? "22px" : "2px" }} />
-                  </button>
+                  <div className="serif" style={{ fontSize: 22, color: "#34d399", fontWeight: 500, letterSpacing: "-0.02em" }}>
+                    ${Number(project.raised || 0).toLocaleString()}
+                  </div>
                 </div>
               </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold text-white"
-                    style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
-                    {project.name?.[0]}
-                  </div>
-                  <div>
-                    <p className="text-white font-semibold">{project.name}</p>
-                    <p className="text-xs text-slate-600">{STAGE_LABELS[project.stage]} · {project.chain}</p>
-                  </div>
+              {project.tags && project.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-2">
+                  {project.tags.map(t => (
+                    <span key={t} className="mono" style={{
+                      fontSize: 10, color: "#94a3b8", letterSpacing: "0.04em",
+                      padding: "3px 8px",
+                      background: "rgba(255,255,255,0.02)",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      borderRadius: 2,
+                    }}>{t}</span>
+                  ))}
                 </div>
-                <p className="text-sm text-slate-500">{project.description}</p>
-                <div className="flex gap-4 text-xs">
-                  <div><span className="text-slate-600">Goal: </span><span className="text-white">${Number(project.goal).toLocaleString()}</span></div>
-                  <div><span className="text-slate-600">Raised: </span><span className="text-white">${Number(project.raised).toLocaleString()}</span></div>
-                </div>
-                {project.tags?.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {project.tags.map((t: string) => (
-                      <span key={t} className="text-[10px] px-2 py-0.5 rounded-full"
-                        style={{ background: "rgba(255,255,255,0.04)", color: "#64748b", border: "1px solid rgba(255,255,255,0.07)" }}>
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+            </div>
+          )}
+        </Section>
+
+        <div style={{ height: 80 }} />
+      </div>
+    </main>
+  )
+}
+
+const editActionStyle: React.CSSProperties = {
+  padding: "8px 12px", fontSize: 10,
+  color: "#94a3b8", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500,
+  background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 2,
+  display: "flex", alignItems: "center", gap: 6,
+}
+const primaryActionStyle: React.CSSProperties = {
+  padding: "8px 12px", fontSize: 10,
+  color: "#fff", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600,
+  background: "#10b981", border: 0, borderRadius: 2,
+  display: "flex", alignItems: "center", gap: 6,
+}
+const underlineInput: React.CSSProperties = {
+  width: "100%",
+  background: "transparent",
+  border: 0,
+  borderBottom: "1px solid rgba(16,185,129,0.4)",
+  color: "#e5e7eb",
+  fontSize: 14,
+  outline: "none",
+  padding: "6px 0",
+  fontFamily: "inherit",
+}
+const valueStyle: React.CSSProperties = {
+  fontSize: 14, color: "#e5e7eb",
+}
+
+function Section({
+  kicker, title, badge, action, rightOfAction, children,
+}: {
+  kicker: string
+  title: string
+  badge?: React.ReactNode
+  action?: React.ReactNode
+  rightOfAction?: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <section className="py-10" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <p className="mono mb-3" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            {kicker}
+          </p>
+          <div className="flex items-baseline gap-3">
+            <h2 className="serif text-white" style={{ fontSize: 28, fontWeight: 500, letterSpacing: "-0.025em", lineHeight: 1.1 }}>
+              {title}
+            </h2>
+            {badge}
           </div>
         </div>
-
+        <div>{action}{rightOfAction}</div>
       </div>
+      {children}
+    </section>
+  )
+}
+
+function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-[120px_1fr] md:grid-cols-[160px_1fr] gap-4 py-4 items-baseline"
+      style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+      <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+        {label}
+      </span>
+      <div>{children}</div>
     </div>
   )
 }

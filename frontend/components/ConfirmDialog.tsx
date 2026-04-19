@@ -43,22 +43,25 @@ export default function ConfirmDialog({
   if (!open) return null
 
   const danger = variant === "danger"
-  const accent = danger ? "#f87171" : "#34d399"
-  const accentBg = danger ? "rgba(239,68,68,0.12)" : "rgba(16,185,129,0.12)"
-  const accentBorder = danger ? "rgba(239,68,68,0.25)" : "rgba(16,185,129,0.25)"
-  const confirmBg = danger
-    ? "linear-gradient(135deg, #ef4444, #dc2626)"
-    : "linear-gradient(135deg, #10b981, #059669)"
+  const accent = danger ? "#f87171" : "#10b981"
+  const confirmBg = danger ? "#ef4444" : "#10b981"
 
   return (
     <div
       className="fixed inset-0 z-[9998] flex items-center justify-center p-4"
-      style={{ background: "rgba(2,4,10,0.72)", backdropFilter: "blur(6px)" }}
+      style={{ background: "rgba(2,4,10,0.78)" }}
       onClick={() => !loading && onCancel()}
     >
       <div
-        className="w-full max-w-[400px] rounded-2xl border p-6"
-        style={{ background: "#0a0d14", borderColor: "rgba(255,255,255,0.08)", boxShadow: "0 24px 60px rgba(0,0,0,0.6)" }}
+        className="w-full max-w-[440px]"
+        style={{
+          background: "#060608",
+          border: "1px solid rgba(255,255,255,0.1)",
+          borderTop: `2px solid ${accent}`,
+          borderRadius: 2,
+          padding: "24px 28px 22px",
+          boxShadow: "0 24px 60px rgba(0,0,0,0.6)",
+        }}
         onClick={e => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -66,41 +69,60 @@ export default function ConfirmDialog({
       >
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: accentBg, border: `1px solid ${accentBorder}`, color: accent }}
-            >
-              <RiAlertLine size={18} />
-            </div>
-            <h3 id="confirm-dialog-title" className="text-[15px] font-bold text-white" style={{ fontFamily: "'Syne', sans-serif" }}>
-              {title}
-            </h3>
+            <span style={{ color: accent, display: "flex", alignItems: "center" }}>
+              <RiAlertLine size={16} />
+            </span>
+            <span className="mono" style={{ fontSize: 11, color: accent, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+              {danger ? "Destructive action" : "Confirm"}
+            </span>
           </div>
           <button
             onClick={onCancel}
             disabled={loading}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-300 cursor-pointer border-0 bg-transparent flex-shrink-0 disabled:opacity-50"
+            style={{
+              background: "transparent", border: 0,
+              color: "#64748b", cursor: "pointer", padding: 0,
+            }}
             aria-label="Close"
           >
             <RiCloseLine size={16} />
           </button>
         </div>
 
-        <p className="text-[13px] text-slate-400 leading-relaxed mb-6">{message}</p>
+        <h3 id="confirm-dialog-title" className="serif text-white"
+          style={{ fontSize: 24, fontWeight: 500, letterSpacing: "-0.02em", lineHeight: 1.2, marginBottom: 12 }}>
+          {title}
+        </h3>
+        <p style={{ fontSize: 14, color: "#94a3b8", lineHeight: 1.6, marginBottom: 24 }}>
+          {message}
+        </p>
 
         <div className="flex items-center gap-2 justify-end">
           <button
             onClick={onCancel}
             disabled={loading}
-            className="px-4 py-2 rounded-xl text-sm font-medium text-slate-400 border border-white/[0.08] cursor-pointer bg-transparent transition-all disabled:opacity-50"
+            className="mono cursor-pointer"
+            style={{
+              padding: "10px 16px", fontSize: 11,
+              color: "#cbd5e1", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500,
+              background: "transparent",
+              border: "1px solid rgba(255,255,255,0.12)", borderRadius: 2,
+              opacity: loading ? 0.5 : 1,
+            }}
           >
             {cancelLabel}
           </button>
           <button
             onClick={onConfirm}
             disabled={loading}
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-white border-0 cursor-pointer disabled:opacity-60"
-            style={{ background: confirmBg }}
+            className="mono cursor-pointer"
+            style={{
+              padding: "10px 16px", fontSize: 11,
+              color: "#fff", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600,
+              background: confirmBg,
+              border: 0, borderRadius: 2,
+              opacity: loading ? 0.6 : 1,
+            }}
           >
             {loading ? "Working..." : confirmLabel}
           </button>

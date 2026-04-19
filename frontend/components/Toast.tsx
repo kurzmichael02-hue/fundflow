@@ -38,7 +38,7 @@ const TOAST_STYLES: Record<ToastType, { bg: string; border: string; color: strin
 
 export function ToastContainer({ toasts, removeToast }: ToastProps) {
   return (
-    <div className="fixed top-5 right-4 z-[9999] flex flex-col gap-2.5 max-w-[320px] w-full pointer-events-none">
+    <div className="fixed bottom-5 right-5 z-[9999] flex flex-col gap-2 max-w-[360px] w-full pointer-events-none">
       {toasts.map(toast => (
         <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />
       ))}
@@ -54,26 +54,33 @@ function ToastItem({ toast, onRemove }: { toast: ToastMessage; onRemove: (id: st
     requestAnimationFrame(() => setVisible(true))
     const timer = setTimeout(() => {
       setVisible(false)
-      setTimeout(() => onRemove(toast.id), 300)
+      setTimeout(() => onRemove(toast.id), 240)
     }, 3500)
     return () => clearTimeout(timer)
-  }, [])
+  }, [toast.id, onRemove])
 
   return (
     <div
-      className="pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl border backdrop-blur-sm transition-all duration-300"
+      className="pointer-events-auto flex items-start gap-3 transition-all duration-200"
       style={{
-        background: style.bg,
-        borderColor: style.border,
+        background: "#060608",
+        border: "1px solid rgba(255,255,255,0.1)",
+        borderLeft: `2px solid ${style.color}`,
+        padding: "12px 14px",
+        borderRadius: 2,
         opacity: visible ? 1 : 0,
-        transform: visible ? "translateX(0)" : "translateX(20px)",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+        transform: visible ? "translateY(0)" : "translateY(8px)",
+        boxShadow: "0 12px 32px rgba(0,0,0,0.5)",
       }}>
-      <span style={{ color: style.color }} className="shrink-0">{style.icon}</span>
-      <p className="text-[13px] text-slate-200 flex-1">{toast.message}</p>
+      <span style={{ color: style.color, marginTop: 2 }} className="shrink-0">{style.icon}</span>
+      <p style={{ fontSize: 13, color: "#e5e7eb", flex: 1, lineHeight: 1.5 }}>{toast.message}</p>
       <button
-        onClick={() => { setVisible(false); setTimeout(() => onRemove(toast.id), 300) }}
-        className="text-slate-600 hover:text-slate-400 cursor-pointer bg-transparent border-0 shrink-0">
+        onClick={() => { setVisible(false); setTimeout(() => onRemove(toast.id), 240) }}
+        aria-label="Dismiss"
+        style={{
+          color: "#64748b", background: "transparent", border: 0, cursor: "pointer",
+          padding: 0, marginTop: 2,
+        }}>
         <RiCloseLine size={14} />
       </button>
     </div>

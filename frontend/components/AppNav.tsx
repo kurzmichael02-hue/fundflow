@@ -1,0 +1,290 @@
+"use client"
+import { useEffect, useRef, useState } from "react"
+import { usePathname, useRouter } from "next/navigation"
+import Link from "next/link"
+import {
+  RiDashboardLine, RiUserLine, RiKanbanView, RiBarChartLine,
+  RiAccountCircleLine, RiLogoutBoxLine, RiMenuLine, RiCloseLine,
+  RiDatabase2Line, RiListCheck2, RiArrowDownSLine,
+} from "react-icons/ri"
+
+// AppNav — the masthead shown to authenticated users across /dashboard,
+// /investors, /pipeline, /analytics, /profile.
+//
+// Same editorial language as PublicNav (serif wordmark, mono links, hairline
+// border) but carries a logged-in navigation set plus the plan badge and a
+// user menu with sign-out. Separate component so we can put logged-in-only
+// concerns here without polluting the public masthead.
+
+type Section = { label: string; href: string; icon: React.ReactNode }
+
+const SECTIONS: Section[] = [
+  { label: "Dashboard",  href: "/dashboard",  icon: <RiDashboardLine size={14} /> },
+  { label: "Pipeline",   href: "/pipeline",   icon: <RiKanbanView   size={14} /> },
+  { label: "Analytics",  href: "/analytics",  icon: <RiBarChartLine size={14} /> },
+  { label: "Profile",    href: "/profile",    icon: <RiAccountCircleLine size={14} /> },
+]
+
+// Investors lives behind a dropdown because there are two destinations —
+// the user's own CRM list and the curated directory — and conflating them
+// costs more than the extra click.
+const INVESTOR_LINKS = [
+  { label: "My Investors",  sub: "Your CRM pipeline",       href: "/investors",          icon: <RiListCheck2   size={13} /> },
+  { label: "Directory",     sub: "Curated funds",           href: "/investors/database", icon: <RiDatabase2Line size={13} /> },
+]
+
+export default function AppNav() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [investorsOpen, setInvestorsOpen] = useState(false)
+  const [userOpen, setUserOpen] = useState(false)
+  const [plan, setPlan] = useState<string | null>(null)
+  const [email, setEmail] = useState<string | null>(null)
+  const investorsRef = useRef<HTMLDivElement>(null)
+  const userRef = useRef<HTMLDivElement>(null)
+
+  // Close either dropdown on outside click.
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (investorsRef.current && !investorsRef.current.contains(e.target as Node)) {
+        setInvestorsOpen(false)
+      }
+      if (userRef.current && !userRef.current.contains(e.target as Node)) {
+        setUserOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", onClick)
+    return () => document.removeEventListener("mousedown", onClick)
+  }, [])
+
+  // Pull plan + email once so the badge and user menu can render.
+  useEffect(() => {
+    const token = localStorage.getItem("token")
+    if (!token) return
+    fetch("/api/profile", { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => {
+        setPlan(d?.plan || "free")
+        setEmail(d?.email || null)
+      })
+      .catch(() => {})
+  }, [])
+
+  const investorsActive = pathname === "/investors" || pathname === "/investors/database"
+
+  function handleLogout() {
+    localStorage.removeItem("token")
+    localStorage.removeItem("user_type")
+    router.push("/login")
+  }
+
+  function linkStyle(active: boolean): React.CSSProperties {
+    return {
+      fontSize: 12,
+      color: active ? "#fff" : "#94a3b8",
+      letterSpacing: "0.04em",
+      textTransform: "uppercase",
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      padding: "8px 0",
+      borderBottom: active ? "1px solid #10b981" : "1px solid transparent",
+      textDecoration: "none",
+      fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+    }
+  }
+
+  return (
+    <>
+      <nav style={{
+        position: "sticky", top: 0, zIndex: 50,
+        background: "#060608",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+      }}>
+        <div className="max-w-[1280px] mx-auto px-6 md:px-10 flex items-center justify-between" style={{ height: 64 }}>
+
+          {/* ── Left: wordmark + plan */}
+          <Link href="/dashboard" className="flex items-baseline gap-3 no-underline">
+            <span className="serif text-white" style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.02em" }}>
+              FundFlow
+            </span>
+            <span className="mono" style={{ fontSize: 10, color: plan === "pro" ? "#10b981" : "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              {plan === "pro" ? "Pro" : "Free"}
+            </span>
+          </Link>
+
+          {/* ── Centre: section links */}
+          <div className="hidden md:flex items-center" style={{ gap: 28 }}>
+            {SECTIONS.map((s, i) => {
+              const active = pathname === s.href
+              // Inject investors dropdown between Dashboard and Pipeline.
+              const afterDashboard = i === 1
+              return (
+                <div key={s.href} className="flex items-center" style={{ gap: 28 }}>
+                  {afterDashboard && (
+                    <div ref={investorsRef} style={{ position: "relative" }}>
+                      <button onClick={() => setInvestorsOpen(!investorsOpen)}
+                        style={{
+                          ...linkStyle(investorsActive),
+                          background: "transparent",
+                          border: 0,
+                          borderBottom: investorsActive ? "1px solid #10b981" : "1px solid transparent",
+                          cursor: "pointer",
+                        }}>
+                        <RiUserLine size={14} />
+                        Investors
+                        <RiArrowDownSLine size={12} style={{ transform: investorsOpen ? "rotate(180deg)" : "none", transition: "transform 120ms" }} />
+                      </button>
+                      {investorsOpen && (
+                        <div style={{
+                          position: "absolute", top: "calc(100% + 1px)", left: 0, minWidth: 220,
+                          background: "#060608",
+                          border: "1px solid rgba(255,255,255,0.08)",
+                          boxShadow: "0 24px 48px rgba(0,0,0,0.6)",
+                          padding: 6,
+                        }}>
+                          {INVESTOR_LINKS.map(i => {
+                            const a = pathname === i.href
+                            return (
+                              <Link key={i.href} href={i.href} onClick={() => setInvestorsOpen(false)}
+                                className="no-underline"
+                                style={{
+                                  display: "flex", alignItems: "flex-start", gap: 10,
+                                  padding: "10px 12px",
+                                  background: a ? "rgba(16,185,129,0.06)" : "transparent",
+                                  borderLeft: a ? "2px solid #10b981" : "2px solid transparent",
+                                }}>
+                                <span style={{ color: a ? "#10b981" : "#94a3b8", marginTop: 3 }}>{i.icon}</span>
+                                <div>
+                                  <div style={{ fontSize: 13, color: a ? "#fff" : "#e5e7eb", fontWeight: 500 }}>{i.label}</div>
+                                  <div className="mono" style={{ fontSize: 10, color: "#64748b", marginTop: 2, letterSpacing: "0.04em" }}>{i.sub}</div>
+                                </div>
+                              </Link>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <Link href={s.href} style={linkStyle(active)}>
+                    {s.icon}
+                    {s.label}
+                  </Link>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* ── Right: user menu */}
+          <div className="flex items-center gap-2">
+            <div ref={userRef} className="hidden md:block" style={{ position: "relative" }}>
+              <button onClick={() => setUserOpen(!userOpen)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  background: "transparent", border: "1px solid rgba(255,255,255,0.08)",
+                  padding: "6px 10px", cursor: "pointer",
+                  borderRadius: 2,
+                }}>
+                <span style={{
+                  width: 22, height: 22,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  background: "rgba(16,185,129,0.1)", color: "#34d399",
+                  fontSize: 10, fontWeight: 600, borderRadius: 2,
+                  fontFamily: "'Fraunces', serif",
+                }}>
+                  {email ? email[0]?.toUpperCase() : "—"}
+                </span>
+                <RiArrowDownSLine size={12} style={{ color: "#64748b", transform: userOpen ? "rotate(180deg)" : "none", transition: "transform 120ms" }} />
+              </button>
+              {userOpen && (
+                <div style={{
+                  position: "absolute", top: "calc(100% + 1px)", right: 0, minWidth: 240,
+                  background: "#060608",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  boxShadow: "0 24px 48px rgba(0,0,0,0.6)",
+                }}>
+                  <div style={{ padding: "14px 14px 12px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                    <div className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>
+                      Signed in as
+                    </div>
+                    <div style={{ fontSize: 13, color: "#e5e7eb", wordBreak: "break-all" }}>{email || "—"}</div>
+                  </div>
+                  <button onClick={() => { setUserOpen(false); router.push("/profile") }}
+                    style={{
+                      width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 10,
+                      padding: "10px 14px", fontSize: 13, color: "#cbd5e1",
+                      background: "transparent", border: 0, cursor: "pointer",
+                    }}>
+                    <RiAccountCircleLine size={14} style={{ color: "#64748b" }} />
+                    Profile
+                  </button>
+                  <button onClick={handleLogout}
+                    style={{
+                      width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 10,
+                      padding: "10px 14px", fontSize: 13, color: "#f87171",
+                      background: "transparent", border: 0, cursor: "pointer",
+                      borderTop: "1px solid rgba(255,255,255,0.06)",
+                    }}>
+                    <RiLogoutBoxLine size={14} />
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <button onClick={() => setMenuOpen(!menuOpen)}
+              className="md:hidden flex items-center justify-center cursor-pointer"
+              style={{ background: "transparent", width: 36, height: 36, color: "#94a3b8", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 2 }}
+              aria-label="Toggle menu">
+              {menuOpen ? <RiCloseLine size={18} /> : <RiMenuLine size={18} />}
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {menuOpen && (
+        <div className="md:hidden" style={{ background: "#060608", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="px-6 py-5 flex flex-col gap-3">
+            {[
+              { label: "Dashboard",            href: "/dashboard",           icon: <RiDashboardLine size={14} /> },
+              { label: "My Investors",         href: "/investors",           icon: <RiListCheck2 size={14} /> },
+              { label: "Investor Directory",   href: "/investors/database",  icon: <RiDatabase2Line size={14} /> },
+              { label: "Pipeline",             href: "/pipeline",            icon: <RiKanbanView size={14} /> },
+              { label: "Analytics",            href: "/analytics",           icon: <RiBarChartLine size={14} /> },
+              { label: "Profile",              href: "/profile",             icon: <RiAccountCircleLine size={14} /> },
+            ].map(s => {
+              const active = pathname === s.href
+              return (
+                <Link key={s.href} href={s.href} onClick={() => setMenuOpen(false)}
+                  className="no-underline mono" style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    fontSize: 13,
+                    color: active ? "#fff" : "#cbd5e1",
+                    letterSpacing: "0.04em", textTransform: "uppercase",
+                    padding: "6px 0",
+                  }}>
+                  <span style={{ color: active ? "#10b981" : "#64748b" }}>{s.icon}</span>
+                  {s.label}
+                </Link>
+              )
+            })}
+            <button onClick={handleLogout}
+              className="mono mt-2"
+              style={{
+                display: "flex", alignItems: "center", gap: 10,
+                fontSize: 13, color: "#f87171",
+                letterSpacing: "0.04em", textTransform: "uppercase",
+                background: "transparent", border: 0, cursor: "pointer",
+                padding: "10px 0", borderTop: "1px solid rgba(255,255,255,0.06)",
+              }}>
+              <RiLogoutBoxLine size={14} />
+              Sign out
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
