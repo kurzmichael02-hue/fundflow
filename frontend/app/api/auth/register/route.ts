@@ -23,11 +23,21 @@ function getServiceClient() {
 
 const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+const ALLOWED_USER_TYPES = ['founder', 'investor'] as const
+type UserType = typeof ALLOWED_USER_TYPES[number]
+
 export async function POST(req: NextRequest) {
   const body = await req.json()
   const name = String(body.name || '').trim()
   const email = String(body.email || '').trim().toLowerCase()
   const password = String(body.password || '')
+  // user_type comes from the client — default to founder for the legacy
+  // /register page, but /investor/register now correctly sets "investor"
+  // so investors actually land in the right portal on login.
+  const rawType = String(body.user_type || 'founder').toLowerCase()
+  const user_type: UserType = (ALLOWED_USER_TYPES as readonly string[]).includes(rawType)
+    ? (rawType as UserType)
+    : 'founder'
 
   if (!name || !email || !password) {
     return NextResponse.json({ error: 'Name, email and password are required' }, { status: 400 })
@@ -56,7 +66,7 @@ export async function POST(req: NextRequest) {
     id: data.user.id,
     name,
     email,
-    user_type: 'founder',
+    user_type,
     plan: 'free',
   })
 
