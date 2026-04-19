@@ -5,8 +5,9 @@ import Link from "next/link"
 import {
   RiDashboardLine, RiUserLine, RiKanbanView, RiBarChartLine,
   RiAccountCircleLine, RiLogoutBoxLine, RiMenuLine, RiCloseLine,
-  RiDatabase2Line, RiListCheck2, RiArrowDownSLine,
+  RiDatabase2Line, RiListCheck2, RiArrowDownSLine, RiSearchLine,
 } from "react-icons/ri"
+import CommandPalette from "@/components/CommandPalette"
 
 // AppNav — the masthead shown to authenticated users across /dashboard,
 // /investors, /pipeline, /analytics, /profile.
@@ -57,6 +58,51 @@ export default function AppNav() {
     document.addEventListener("mousedown", onClick)
     return () => document.removeEventListener("mousedown", onClick)
   }, [])
+
+  // Linear-style "g + letter" navigation. Press g, then within 1.5s press
+  // d/i/p/a/r/f to jump. Ignored when a form element has focus so typing
+  // "goose" into a field doesn't accidentally bounce you to the dashboard.
+  useEffect(() => {
+    const shortcuts: Record<string, string> = {
+      d: "/dashboard",
+      i: "/investors",
+      p: "/pipeline",
+      a: "/analytics",
+      r: "/investors/database",
+      f: "/profile",
+    }
+    let gPending = false
+    let timer: ReturnType<typeof setTimeout> | null = null
+
+    function onKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null
+      const tag = target?.tagName
+      const editable = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target?.isContentEditable
+      if (editable) return
+      // Don't fight Cmd+K or any modified key combos.
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+
+      if (!gPending && e.key === "g") {
+        gPending = true
+        timer = setTimeout(() => { gPending = false }, 1500)
+        return
+      }
+      if (gPending) {
+        const dest = shortcuts[e.key.toLowerCase()]
+        gPending = false
+        if (timer) { clearTimeout(timer); timer = null }
+        if (dest) {
+          e.preventDefault()
+          router.push(dest)
+        }
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => {
+      window.removeEventListener("keydown", onKey)
+      if (timer) clearTimeout(timer)
+    }
+  }, [router])
 
   // Pull plan + email once so the badge and user menu can render.
   useEffect(() => {
@@ -177,8 +223,39 @@ export default function AppNav() {
             })}
           </div>
 
-          {/* ── Right: user menu */}
+          {/* ── Right: command palette trigger + user menu */}
           <div className="flex items-center gap-2">
+            {/* Command palette trigger. Desktop only — on mobile the space
+                is worth saving and power users there aren't reaching for
+                ⌘K on a touchscreen anyway. */}
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("open-command-palette"))}
+              className="hidden md:flex items-center gap-2 cursor-pointer"
+              style={{
+                background: "transparent",
+                border: "1px solid rgba(255,255,255,0.08)",
+                padding: "6px 10px 6px 10px",
+                borderRadius: 2,
+                color: "#94a3b8",
+              }}
+              aria-label="Open command palette"
+              title="Command palette"
+            >
+              <RiSearchLine size={12} />
+              <span className="mono" style={{ fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                Search
+              </span>
+              <kbd className="mono" style={{
+                fontSize: 10, color: "#475569", letterSpacing: "0.04em",
+                padding: "1px 5px",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: 2,
+              }}>
+                ⌘K
+              </kbd>
+            </button>
+
             <div ref={userRef} className="hidden md:block" style={{ position: "relative" }}>
               <button onClick={() => setUserOpen(!userOpen)}
                 style={{
@@ -243,6 +320,8 @@ export default function AppNav() {
           </div>
         </div>
       </nav>
+
+      <CommandPalette />
 
       {menuOpen && (
         <div className="md:hidden" style={{ background: "#060608", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>

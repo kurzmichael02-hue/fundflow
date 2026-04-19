@@ -100,22 +100,52 @@ export async function POST(req: NextRequest) {
       const safeInvestorEmail = investor_email !== "anonymous" ? escapeHtml(investor_email) : ""
       const safeSubject = `New investor interest in ${projectName}`.replace(/[\r\n]+/g, " ")
 
+      // Editorial email. Web-safe fonts (Georgia/Courier/Arial) because
+      // every other email client refuses to load webfonts — and falling
+      // back silently to Times New Roman looks worse than just owning it.
       await getResend().emails.send({
         from: "FundFlow <onboarding@resend.dev>",
         to: founderEmail,
         subject: safeSubject,
         html: `
-          <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #04070f; color: #e2e8f0; border-radius: 16px;">
-            <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 24px;">FF</div>
-            <h2 style="color: #fff; font-size: 20px; font-weight: 700; margin: 0 0 8px;">New investor interest</h2>
-            <p style="color: #64748b; font-size: 14px; margin: 0 0 24px;">Someone just expressed interest in <strong style="color: #fff;">${safeProjectName}</strong>.</p>
-            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; margin-bottom: 24px;">
-              <p style="margin: 0 0 4px; color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Investor</p>
-              <p style="margin: 0; color: #fff; font-size: 15px; font-weight: 600;">${safeInvestorName}</p>
-              ${safeInvestorEmail ? `<p style="margin: 4px 0 0; color: #64748b; font-size: 13px;">${safeInvestorEmail}</p>` : ""}
+          <div style="font-family: Arial, Helvetica, sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 24px; background: #060608; color: #e5e7eb;">
+            <div style="font-family: Courier, monospace; font-size: 10px; color: #475569; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 20px;">
+              FundFlow · Inbound signal
             </div>
-            <a href="https://fundflow-omega.vercel.app/dashboard" style="display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 10px; font-weight: 600; font-size: 14px;">View on dashboard</a>
-            <p style="color: #334155; font-size: 12px; margin: 24px 0 0;">FundFlow · The investor CRM for Web3 founders</p>
+            <h1 style="font-family: Georgia, 'Times New Roman', serif; font-size: 32px; line-height: 1.1; letter-spacing: -0.02em; color: #ffffff; font-weight: 500; margin: 0 0 20px;">
+              New interest<br>
+              <em style="font-weight: 400;">in ${safeProjectName}.</em>
+            </h1>
+            <p style="font-size: 15px; line-height: 1.6; color: #94a3b8; margin: 0 0 28px;">
+              Someone tapped Express Interest on your project page. The details are below — reach out while it's warm.
+            </p>
+            <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; border-top: 1px solid rgba(255,255,255,0.08); border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 28px;">
+              <tr>
+                <td style="padding: 14px 0; width: 120px; vertical-align: top;">
+                  <div style="font-family: Courier, monospace; font-size: 10px; color: #475569; letter-spacing: 0.12em; text-transform: uppercase;">Investor</div>
+                </td>
+                <td style="padding: 14px 0; font-size: 15px; color: #ffffff; font-weight: 500;">${safeInvestorName}</td>
+              </tr>
+              ${safeInvestorEmail ? `
+              <tr style="border-top: 1px solid rgba(255,255,255,0.06);">
+                <td style="padding: 14px 0; vertical-align: top;">
+                  <div style="font-family: Courier, monospace; font-size: 10px; color: #475569; letter-spacing: 0.12em; text-transform: uppercase;">Email</div>
+                </td>
+                <td style="padding: 14px 0; font-family: Courier, monospace; font-size: 13px; color: #cbd5e1;">${safeInvestorEmail}</td>
+              </tr>` : ""}
+              <tr style="border-top: 1px solid rgba(255,255,255,0.06);">
+                <td style="padding: 14px 0; vertical-align: top;">
+                  <div style="font-family: Courier, monospace; font-size: 10px; color: #475569; letter-spacing: 0.12em; text-transform: uppercase;">Project</div>
+                </td>
+                <td style="padding: 14px 0; font-size: 15px; color: #ffffff;">${safeProjectName}</td>
+              </tr>
+            </table>
+            <a href="https://fundflow-omega.vercel.app/dashboard" style="display: inline-block; background: #10b981; color: #ffffff; text-decoration: none; padding: 12px 20px; font-family: Courier, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600;">
+              Open dashboard &rarr;
+            </a>
+            <p style="font-family: Courier, monospace; font-size: 10px; color: #475569; letter-spacing: 0.06em; margin: 40px 0 0; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06);">
+              FundFlow · The investor CRM for Web3 founders
+            </p>
           </div>
         `,
       })

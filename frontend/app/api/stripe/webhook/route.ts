@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
-import { createClient } from "@supabase/supabase-js"
+import { createClient, PostgrestError } from "@supabase/supabase-js"
 
 let _stripe: Stripe | null = null
 function getStripe(): Stripe {
@@ -16,26 +16,78 @@ function getClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
+    { auth: { autoRefreshToken: false, persistSession: false } },
   )
+}
+
+// Supabase returns 23505 on unique-constraint violations. We use that as the
+// "seen this event already" signal from the idempotency table below.
+const PG_UNIQUE_VIOLATION = "23505"
+
+/**
+ * Mark the event as seen. Returns true if this is the first time, false if
+ * Stripe already delivered it. Requires a table created with:
+ *
+ *   CREATE TABLE IF NOT EXISTS stripe_webhook_events (
+ *     id TEXT PRIMARY KEY,
+ *     type TEXT NOT NULL,
+ *     processed_at TIMESTAMPTZ DEFAULT now()
+ *   );
+ *
+ * If the table doesn't exist (42P01), we fall back to "proceed anyway" so
+ * the webhook never breaks on a fresh environment. Run the migration and
+ * idempotency kicks in on the next deploy.
+ */
+async function markEventSeen(
+  supabase: ReturnType<typeof getClient>,
+  eventId: string,
+  eventType: string,
+): Promise<{ firstTime: boolean; skipped: boolean }> {
+  const { error } = await supabase
+    .from("stripe_webhook_events")
+    .insert({ id: eventId, type: eventType })
+
+  if (!error) return { firstTime: true, skipped: false }
+  const err = error as PostgrestError
+  if (err.code === PG_UNIQUE_VIOLATION) {
+    return { firstTime: false, skipped: false }
+  }
+  // Missing table, permissions, or something else — log it and let the
+  // event process anyway. Production should have the migration applied
+  // so this path never fires there.
+  console.warn("stripe_webhook_events insert failed, proceeding without idempotency:", err.code, err.message)
+  return { firstTime: true, skipped: true }
 }
 
 export async function POST(req: NextRequest) {
   const body = await req.text()
-  const sig = req.headers.get("stripe-signature")!
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
+  const sig = req.headers.get("stripe-signature")
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+
+  if (!sig || !webhookSecret) {
+    return NextResponse.json({ error: "Missing webhook signature" }, { status: 400 })
+  }
 
   let event: Stripe.Event
   try {
     event = getStripe().webhooks.constructEvent(body, sig, webhookSecret)
-  } catch (err: any) {
-    return NextResponse.json({ error: `Webhook error: ${err.message}` }, { status: 400 })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Invalid signature"
+    return NextResponse.json({ error: `Webhook error: ${msg}` }, { status: 400 })
   }
 
   const supabase = getClient()
 
-  switch (event.type) {
+  // Idempotency — drop duplicates before any side effect runs. Stripe
+  // retries events on transient failures, and we don't want a second
+  // "checkout.session.completed" to overwrite the customer/subscription
+  // pointers with stale values from the retry attempt.
+  const seen = await markEventSeen(supabase, event.id, event.type)
+  if (!seen.firstTime) {
+    return NextResponse.json({ received: true, duplicate: true })
+  }
 
+  switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session
       const userId = session.metadata?.userId
@@ -53,9 +105,9 @@ export async function POST(req: NextRequest) {
     }
 
     case "invoice.paid": {
-      // Monthly renewal — keep plan active
+      // Monthly renewal — keep plan active.
       const invoice = event.data.object as Stripe.Invoice
-      const subId = (invoice as any).subscription as string
+      const subId = (invoice as unknown as { subscription?: string }).subscription
       if (subId) {
         await supabase
           .from("profiles")
@@ -66,8 +118,8 @@ export async function POST(req: NextRequest) {
     }
 
     case "invoice.payment_failed": {
-      // Payment failed — optionally notify, but don't downgrade yet
-      // Stripe will retry automatically
+      // Don't downgrade yet — Stripe will retry automatically and
+      // customer.subscription.updated will fire if it actually goes bad.
       console.log("Payment failed for invoice:", (event.data.object as Stripe.Invoice).id)
       break
     }
@@ -75,7 +127,6 @@ export async function POST(req: NextRequest) {
     case "customer.subscription.updated": {
       const subscription = event.data.object as Stripe.Subscription
       const status = subscription.status
-      // If subscription is past_due or unpaid, downgrade to free
       if (status === "past_due" || status === "unpaid" || status === "canceled") {
         await supabase
           .from("profiles")
@@ -94,7 +145,7 @@ export async function POST(req: NextRequest) {
       const subscription = event.data.object as Stripe.Subscription
       await supabase
         .from("profiles")
-        .update({ 
+        .update({
           plan: "free",
           stripe_subscription_id: null,
         })

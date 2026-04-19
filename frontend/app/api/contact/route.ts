@@ -74,23 +74,40 @@ export async function POST(req: NextRequest) {
     // Strip newlines from the subject — that's how header injection happens.
     const safeSubject = `[${category}] New message from ${first_name} ${last_name}`.replace(/[\r\n]+/g, " ")
 
+    // Editorial template to match the rest of the product. Web-safe fonts
+    // only (Georgia / Courier / Arial) since Resend-delivered emails get
+    // rendered by every mail client under the sun.
     await getResend().emails.send({
       from: "FundFlow Contact <onboarding@resend.dev>",
       to: "kurzmichael02@gmail.com",
       replyTo: email,
       subject: safeSubject,
       html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #10b981;">New Contact Form Submission</h2>
-          <table style="width: 100%; border-collapse: collapse;">
-            <tr><td style="padding: 8px 0; color: #64748b; font-size: 13px;">Name</td><td style="padding: 8px 0; font-size: 13px;">${safeFirst} ${safeLast}</td></tr>
-            <tr><td style="padding: 8px 0; color: #64748b; font-size: 13px;">Email</td><td style="padding: 8px 0; font-size: 13px;"><a href="mailto:${safeEmail}">${safeEmail}</a></td></tr>
-            <tr><td style="padding: 8px 0; color: #64748b; font-size: 13px;">Category</td><td style="padding: 8px 0; font-size: 13px;">${safeCategory}</td></tr>
-          </table>
-          <div style="margin-top: 16px; padding: 16px; background: #f8fafc; border-radius: 8px;">
-            <p style="color: #64748b; font-size: 12px; margin: 0 0 8px;">Message</p>
-            <p style="font-size: 14px; margin: 0; white-space: pre-wrap;">${safeMessage}</p>
+        <div style="font-family: Arial, Helvetica, sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 24px; background: #060608; color: #e5e7eb;">
+          <div style="font-family: Courier, monospace; font-size: 10px; color: #475569; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 20px;">
+            FundFlow · Contact form
           </div>
+          <h1 style="font-family: Georgia, 'Times New Roman', serif; font-size: 28px; line-height: 1.15; letter-spacing: -0.02em; color: #ffffff; font-weight: 500; margin: 0 0 8px;">
+            New message<br>
+            <em style="font-weight: 400;">from ${safeFirst} ${safeLast}.</em>
+          </h1>
+          <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; border-top: 1px solid rgba(255,255,255,0.08); border-bottom: 1px solid rgba(255,255,255,0.08); margin-top: 28px; margin-bottom: 20px;">
+            <tr>
+              <td style="padding: 12px 0; width: 100px; font-family: Courier, monospace; font-size: 10px; color: #475569; letter-spacing: 0.12em; text-transform: uppercase; vertical-align: top;">From</td>
+              <td style="padding: 12px 0; font-family: Courier, monospace; font-size: 13px; color: #cbd5e1;">
+                <a href="mailto:${safeEmail}" style="color: #10b981; text-decoration: none;">${safeEmail}</a>
+              </td>
+            </tr>
+            <tr style="border-top: 1px solid rgba(255,255,255,0.06);">
+              <td style="padding: 12px 0; font-family: Courier, monospace; font-size: 10px; color: #475569; letter-spacing: 0.12em; text-transform: uppercase; vertical-align: top;">Category</td>
+              <td style="padding: 12px 0; font-size: 14px; color: #e5e7eb;">${safeCategory}</td>
+            </tr>
+          </table>
+          <div style="font-family: Courier, monospace; font-size: 10px; color: #475569; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px;">Message</div>
+          <p style="font-size: 15px; line-height: 1.65; color: #cbd5e1; margin: 0; white-space: pre-wrap;">${safeMessage}</p>
+          <p style="font-family: Courier, monospace; font-size: 10px; color: #475569; letter-spacing: 0.06em; margin: 40px 0 0; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06);">
+            Hit reply — the reply-to is set to the sender.
+          </p>
         </div>
       `,
     })
