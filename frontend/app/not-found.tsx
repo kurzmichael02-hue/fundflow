@@ -3,7 +3,7 @@ import Link from "next/link"
 export default function NotFound() {
   return (
     <main className="min-h-screen flex items-center justify-center text-slate-200" style={{ background: "#050508" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap');`}</style>
+      {/* Syne is loaded globally via globals.css. */}
       <div className="fixed top-[10%] left-[20%] w-[600px] h-[600px] rounded-full pointer-events-none blur-[60px]"
         style={{ background: "radial-gradient(circle, rgba(16,185,129,0.05) 0%, transparent 70%)" }} />
       <div className="text-center relative z-10 px-6">

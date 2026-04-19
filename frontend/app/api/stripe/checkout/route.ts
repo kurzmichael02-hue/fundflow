@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2026-02-25.clover",
-})
+// Lazy init — Stripe throws on construction without a key, which breaks
+// Next.js page-data collection during builds where STRIPE_SECRET_KEY isn't set.
+let _stripe: Stripe | null = null
+function getStripe(): Stripe {
+  if (!_stripe) {
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: "2026-02-25.clover",
+    })
+  }
+  return _stripe
+}
 
 function getUserIdFromToken(token: string): string | null {
   try {
@@ -23,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     const { email } = await req.json()
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "subscription",
       line_items: [

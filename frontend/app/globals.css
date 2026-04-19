@@ -1,3 +1,8 @@
+/* Font @import must precede all other at-rules aside from @charset/@layer,
+   so it sits above the Tailwind import. Loading Syne + DM Sans here lets every
+   page/component keep using `font-family: 'Syne'` or `'DM Sans'` directly in
+   inline styles without each one firing its own <style>@import on mount. */
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {

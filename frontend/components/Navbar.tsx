@@ -42,7 +42,7 @@ export default function Navbar() {
 
   return (
     <>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&display=swap');`}</style>
+      {/* Syne is loaded globally via globals.css — no per-render <style> @import here. */}
       <nav className="sticky top-0 z-50" style={{ background: "rgba(5,5,8,0.85)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
         <div className="px-4 md:px-12 mx-auto max-w-6xl flex items-center justify-between h-14">
 
