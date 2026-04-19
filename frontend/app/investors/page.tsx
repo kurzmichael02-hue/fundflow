@@ -3,6 +3,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/Navbar"
 import { ToastContainer, useToast } from "@/components/Toast"
+import ConfirmDialog from "@/components/ConfirmDialog"
 import {
   RiAddLine, RiSearchLine, RiEditLine, RiDeleteBinLine,
   RiCheckLine, RiCloseLine, RiDownloadLine, RiUserLine,
@@ -38,6 +39,10 @@ export default function InvestorsPage() {
   const [selectedInv, setSelectedInv] = useState<any>(null)
   const [panelNotes, setPanelNotes] = useState("")
   const [savingNotes, setSavingNotes] = useState(false)
+
+  // Delete confirmation
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem("token")
@@ -161,8 +166,14 @@ export default function InvestorsPage() {
     }
   }
 
-  async function handleDelete(id: string, name: string) {
-    if (!confirm(`Delete ${name}?`)) return
+  function requestDelete(id: string, name: string) {
+    setPendingDelete({ id, name })
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return
+    const { id, name } = pendingDelete
+    setDeleting(true)
     const token = localStorage.getItem("token")!
     try {
       const res = await fetch(`/api/investors?id=${id}`, {
@@ -173,20 +184,28 @@ export default function InvestorsPage() {
       setInvestors(prev => prev.filter(i => i.id !== id))
       if (selectedInv?.id === id) closePanel()
       addToast(`${name} deleted`)
+      setPendingDelete(null)
     } catch (err: any) {
       addToast(err.message || "Failed to delete", "error")
+    } finally {
+      setDeleting(false)
     }
   }
 
   function handleExportCSV() {
     const headers = ["Name", "Company", "Email", "Status", "Deal Size", "Notes"]
     const rows = filtered.map(i => [i.name, i.company || "", i.email || "", i.status, i.deal_size || "", i.notes || ""])
-    const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(",")).join("\n")
-    const blob = new Blob([csv], { type: "text/csv" })
+    // RFC 4180: any cell containing quotes, commas, or newlines must be
+    // wrapped in quotes, and embedded quotes must be doubled. Skipping this
+    // breaks the export the moment a founder writes `5" pizza` in notes.
+    const escapeCell = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`
+    const csv = [headers, ...rows].map(r => r.map(escapeCell).join(",")).join("\r\n")
+    // Leading BOM so Excel picks UTF-8 instead of mangling umlauts/emoji.
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = "investors.csv"
+    a.download = `investors-${new Date().toISOString().slice(0, 10)}.csv`
     a.click()
     URL.revokeObjectURL(url)
     addToast("CSV exported!")
@@ -413,7 +432,7 @@ export default function InvestorsPage() {
                                 className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 hover:text-slate-300 cursor-pointer border-0 bg-transparent transition-colors">
                                 <RiEditLine size={13} />
                               </button>
-                              <button onClick={() => handleDelete(inv.id, inv.name)}
+                              <button onClick={() => requestDelete(inv.id, inv.name)}
                                 className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 hover:text-red-400 cursor-pointer border-0 bg-transparent transition-colors">
                                 <RiDeleteBinLine size={13} />
                               </button>
@@ -465,7 +484,7 @@ export default function InvestorsPage() {
                       className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-300 cursor-pointer border-0 bg-transparent transition-colors">
                       <RiEditLine size={12} /> Edit
                     </button>
-                    <button onClick={() => handleDelete(inv.id, inv.name)}
+                    <button onClick={() => requestDelete(inv.id, inv.name)}
                       className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-red-400 cursor-pointer border-0 bg-transparent transition-colors ml-auto">
                       <RiDeleteBinLine size={12} /> Delete
                     </button>
@@ -476,101 +495,129 @@ export default function InvestorsPage() {
           </div>
         </div>
 
-        {/* Detail Panel */}
+        {/* Detail Panel — right-side drawer on md+, full-screen sheet on mobile */}
         {selectedInv && (() => {
           const s = STATUS_STYLES[selectedInv.status] || STATUS_STYLES.outreach
           return (
-            <div className="fixed right-0 top-0 h-full w-[380px] border-l flex flex-col z-40 hidden md:flex"
-              style={{ background: "#050508", borderColor: "rgba(255,255,255,0.06)", marginTop: "0" }}>
-              {/* Panel header */}
-              <div className="flex items-center justify-between px-6 py-5 border-b" style={{ borderColor: "rgba(255,255,255,0.06)", paddingTop: "72px" }}>
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
-                    style={{ background: `${s.color}20`, color: s.color }}>
-                    {selectedInv.name?.[0]?.toUpperCase()}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[15px] font-bold text-white truncate" style={{ fontFamily: "'Syne', sans-serif" }}>{selectedInv.name}</p>
-                    <p className="text-[12px] text-slate-500 truncate">{selectedInv.company || selectedInv.email || "—"}</p>
-                  </div>
-                </div>
-                <button onClick={closePanel}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-300 cursor-pointer border-0 bg-transparent flex-shrink-0">
-                  <RiCloseLine size={16} />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
-                {/* Status */}
-                <div>
-                  <p className="text-[11px] text-slate-600 uppercase tracking-wider mb-2">Pipeline Stage</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {STATUSES.map(st => {
-                      const style = STATUS_STYLES[st]
-                      const active = selectedInv.status === st
-                      return (
-                        <button key={st} onClick={() => handlePanelStatusChange(st)}
-                          className="px-3 py-1.5 rounded-xl text-xs font-medium cursor-pointer border transition-all"
-                          style={{
-                            background: active ? style.bg : "rgba(255,255,255,0.02)",
-                            borderColor: active ? style.border : "rgba(255,255,255,0.06)",
-                            color: active ? style.color : "#64748b",
-                          }}>
-                          {style.label}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                {/* Info */}
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { label: "Email", value: selectedInv.email || "—" },
-                    { label: "Deal Size", value: selectedInv.deal_size || "—" },
-                  ].map(f => (
-                    <div key={f.label} className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
-                      <p className="text-[10px] text-slate-600 uppercase tracking-wider mb-1">{f.label}</p>
-                      <p className="text-[13px] text-slate-200 truncate">{f.value}</p>
+            <>
+              {/* Mobile backdrop — tap outside to close */}
+              <div
+                className="md:hidden fixed inset-0 z-30"
+                style={{ background: "rgba(2,4,10,0.6)", backdropFilter: "blur(4px)" }}
+                onClick={closePanel}
+              />
+              <div
+                className="fixed z-40 flex flex-col
+                           inset-x-0 bottom-0 top-16 rounded-t-3xl border-t
+                           md:inset-y-0 md:right-0 md:top-0 md:bottom-0 md:left-auto
+                           md:w-[380px] md:rounded-none md:border-t-0 md:border-l"
+                style={{ background: "#050508", borderColor: "rgba(255,255,255,0.06)" }}
+              >
+                {/* Panel header */}
+                <div className="flex items-center justify-between px-6 py-5 border-b md:pt-[72px]"
+                  style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
+                      style={{ background: `${s.color}20`, color: s.color }}>
+                      {selectedInv.name?.[0]?.toUpperCase()}
                     </div>
-                  ))}
-                </div>
-
-                {/* Last updated */}
-                {selectedInv.updated_at && (
-                  <div className="flex items-center gap-2 text-[11px] text-slate-700">
-                    <RiTimeLine size={12} />
-                    Last updated {new Date(selectedInv.updated_at).toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })}
+                    <div className="min-w-0">
+                      <p className="text-[15px] font-bold text-white truncate" style={{ fontFamily: "'Syne', sans-serif" }}>{selectedInv.name}</p>
+                      <p className="text-[12px] text-slate-500 truncate">{selectedInv.company || selectedInv.email || "—"}</p>
+                    </div>
                   </div>
-                )}
-
-                {/* Notes */}
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <RiStickyNoteLine size={13} className="text-slate-600" />
-                    <p className="text-[11px] text-slate-600 uppercase tracking-wider">Notes</p>
-                  </div>
-                  <textarea
-                    value={panelNotes}
-                    onChange={e => setPanelNotes(e.target.value)}
-                    placeholder="Add notes about this investor..."
-                    rows={8}
-                    className="w-full rounded-xl px-4 py-3 text-sm text-slate-200 border border-white/[0.08] outline-none resize-none"
-                    style={{ background: "rgba(255,255,255,0.03)", lineHeight: "1.7" }}
-                  />
-                  <button
-                    onClick={handleSaveNotes}
-                    disabled={savingNotes || panelNotes === (selectedInv.notes || "")}
-                    className="mt-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white cursor-pointer border-0 disabled:opacity-40 transition-all"
-                    style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
-                    {savingNotes ? "Saving..." : "Save Notes"}
+                  <button onClick={closePanel}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-200 cursor-pointer flex-shrink-0"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
+                    aria-label="Close panel">
+                    <RiCloseLine size={16} />
                   </button>
                 </div>
+
+                <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+                  {/* Status */}
+                  <div>
+                    <p className="text-[11px] text-slate-600 uppercase tracking-wider mb-2">Pipeline Stage</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {STATUSES.map(st => {
+                        const style = STATUS_STYLES[st]
+                        const active = selectedInv.status === st
+                        return (
+                          <button key={st} onClick={() => handlePanelStatusChange(st)}
+                            className="px-3 py-1.5 rounded-xl text-xs font-medium cursor-pointer border transition-all"
+                            style={{
+                              background: active ? style.bg : "rgba(255,255,255,0.02)",
+                              borderColor: active ? style.border : "rgba(255,255,255,0.06)",
+                              color: active ? style.color : "#64748b",
+                            }}>
+                            {style.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Info */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { label: "Email", value: selectedInv.email || "—" },
+                      { label: "Deal Size", value: selectedInv.deal_size || "—" },
+                    ].map(f => (
+                      <div key={f.label} className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                        <p className="text-[10px] text-slate-600 uppercase tracking-wider mb-1">{f.label}</p>
+                        <p className="text-[13px] text-slate-200 truncate">{f.value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Last updated */}
+                  {selectedInv.updated_at && (
+                    <div className="flex items-center gap-2 text-[11px] text-slate-700">
+                      <RiTimeLine size={12} />
+                      Last updated {new Date(selectedInv.updated_at).toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })}
+                    </div>
+                  )}
+
+                  {/* Notes */}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <RiStickyNoteLine size={13} className="text-slate-600" />
+                      <p className="text-[11px] text-slate-600 uppercase tracking-wider">Notes</p>
+                    </div>
+                    <textarea
+                      value={panelNotes}
+                      onChange={e => setPanelNotes(e.target.value)}
+                      placeholder="Add notes about this investor..."
+                      rows={8}
+                      className="w-full rounded-xl px-4 py-3 text-sm text-slate-200 border border-white/[0.08] outline-none resize-none"
+                      style={{ background: "rgba(255,255,255,0.03)", lineHeight: "1.7" }}
+                    />
+                    <button
+                      onClick={handleSaveNotes}
+                      disabled={savingNotes || panelNotes === (selectedInv.notes || "")}
+                      className="mt-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white cursor-pointer border-0 disabled:opacity-40 transition-all"
+                      style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
+                      {savingNotes ? "Saving..." : "Save Notes"}
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
+            </>
           )
         })()}
       </div>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        variant="danger"
+        title="Delete investor"
+        message={pendingDelete ? `Remove ${pendingDelete.name} from your pipeline? This can't be undone.` : ""}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => !deleting && setPendingDelete(null)}
+      />
     </div>
   )
 }

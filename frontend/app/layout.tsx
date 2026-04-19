@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, DM_Sans } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import CookieBanner from "@/components/CookieBanner"
 
@@ -13,11 +13,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
+// DM Sans is loaded globally in globals.css alongside Syne — pages use both
+// directly by name in inline styles, so a Next.js font variable on top of
+// that would just duplicate the fetch.
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://fundflow-omega.vercel.app"
 
 export const metadata: Metadata = {
   title: "FundFlow — Investor CRM for Web3 Founders",
@@ -25,11 +25,11 @@ export const metadata: Metadata = {
   keywords: ["investor CRM", "Web3 fundraising", "startup investors", "deal flow", "crypto founders", "fundraising pipeline"],
   authors: [{ name: "FundFlow" }],
   creator: "FundFlow",
-  metadataBase: new URL("https://fundflow.io"),
+  metadataBase: new URL(SITE_URL),
   openGraph: {
     title: "FundFlow — Investor CRM for Web3 Founders",
     description: "Track investors, manage your pipeline, and close your round faster. Built for Web3 founders.",
-    url: "https://fundflow.io",
+    url: SITE_URL,
     siteName: "FundFlow",
     type: "website",
     locale: "en_US",
@@ -54,11 +54,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${dmSans.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <CookieBanner />
-{children}
+        {children}
       </body>
     </html>
   );

@@ -43,16 +43,15 @@ export default function Home() {
   return (
     <main className="min-h-screen overflow-x-hidden text-slate-200" style={{ background: "#050508", fontFamily: "'Syne', sans-serif" }}>
 
-      {/* Syne font */}
+      {/* Fonts are loaded globally via globals.css — only keyframes + helper
+          classes live here since they're specific to this landing page. */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
         * { font-family: 'DM Sans', sans-serif; }
         h1, h2, h3, .syne { font-family: 'Syne', sans-serif; }
         .bounce-reveal { opacity: 0; transform: translateY(40px) scale(0.96); transition: opacity 0.6s cubic-bezier(0.16,1,0.3,1), transform 0.6s cubic-bezier(0.16,1,0.3,1); }
-.bounce-reveal.animate-in { opacity: 1; transform: translateY(0) scale(1); }
-@keyframes bounce-in { 0% { opacity: 0; transform: translateY(50px) scale(0.94); } 60% { transform: translateY(-6px) scale(1.01); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
-.bounce-reveal { opacity: 0; }
-.bounce-reveal.animate-in { animation: bounce-in 0.7s cubic-bezier(0.16,1,0.3,1) forwards; }
+        .bounce-reveal.animate-in { opacity: 1; transform: translateY(0) scale(1); }
+        @keyframes bounce-in { 0% { opacity: 0; transform: translateY(50px) scale(0.94); } 60% { transform: translateY(-6px) scale(1.01); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+        .bounce-reveal.animate-in { animation: bounce-in 0.7s cubic-bezier(0.16,1,0.3,1) forwards; }
         @keyframes scroll-x { from { transform: translateX(0); } to { transform: translateX(-50%); } }
         @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-8px); } }
         @keyframes glow-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.7; } }

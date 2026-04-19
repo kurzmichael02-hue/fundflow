@@ -56,8 +56,15 @@ export default function InvestorDiscoverPage() {
     const token = localStorage.getItem("token")
     if (!token) { router.push("/investor"); return }
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]))
+      // Supabase JWTs are URL-safe base64 without padding — plain atob
+      // rejects them if they happen to contain `-` or `_` or land on an
+      // unpadded length, so we normalise before decoding.
+      const raw = token.split('.')[1]
+      const normalised = raw.replace(/-/g, "+").replace(/_/g, "/")
+      const padded = normalised + "=".repeat((4 - normalised.length % 4) % 4)
+      const payload = JSON.parse(atob(padded))
       setInvestorEmail(payload.email || "")
+      setInvestorName(payload.user_metadata?.name || "")
     } catch {}
     fetchProjects()
   }, [])

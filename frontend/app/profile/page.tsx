@@ -72,15 +72,18 @@ export default function ProfilePage() {
 
   async function saveWalletAddress(address: string) {
     const token = localStorage.getItem("token")!
+    // Send only the wallet field — anything else in profileForm might be
+    // mid-edit, and sending it here would silently commit those drafts.
     const res = await fetch("/api/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ ...profileForm, wallet_address: address }),
+      body: JSON.stringify({ wallet_address: address }),
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error)
     setProfile(data)
-    setProfileForm(data)
+    // Keep any in-progress edits on other fields intact.
+    setProfileForm(prev => ({ ...prev, wallet_address: data.wallet_address }))
   }
 
   async function handleConnectMetaMask() {

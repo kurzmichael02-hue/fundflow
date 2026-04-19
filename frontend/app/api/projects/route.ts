@@ -30,6 +30,22 @@ export async function GET() {
   return NextResponse.json(data)
 }
 
+// Fields a founder may write via this endpoint. Anything else (id, user_id,
+// created_at) is either owned by the server or the DB — we never trust a
+// client-supplied value for those.
+const PROJECT_WRITABLE_FIELDS = [
+  "name", "description", "stage", "chain",
+  "goal", "raised", "tags", "published",
+] as const
+
+function pickProjectFields(body: Record<string, unknown>) {
+  const out: Record<string, unknown> = {}
+  for (const field of PROJECT_WRITABLE_FIELDS) {
+    if (field in body) out[field] = body[field]
+  }
+  return out
+}
+
 // POST — create or update project (founder only)
 export async function POST(req: NextRequest) {
   const auth = req.headers.get("authorization")
@@ -39,6 +55,12 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Invalid token" }, { status: 401 })
 
   const body = await req.json()
+  const payload = pickProjectFields(body)
+
+  if (!payload.name || typeof payload.name !== "string" || !(payload.name as string).trim()) {
+    return NextResponse.json({ error: "Project name is required" }, { status: 400 })
+  }
+
   const supabase = getClient()
 
   // Check if project already exists for this user
@@ -49,20 +71,19 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (existing) {
-    // Update
+    // Update — user_id pinned via WHERE, not spread in from the body
     const { data, error } = await supabase
       .from("projects")
-      .update({ ...body, user_id: userId })
+      .update(payload)
       .eq("user_id", userId)
       .select()
       .single()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json(data)
   } else {
-    // Insert
     const { data, error } = await supabase
       .from("projects")
-      .insert({ ...body, user_id: userId })
+      .insert({ ...payload, user_id: userId })
       .select()
       .single()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })

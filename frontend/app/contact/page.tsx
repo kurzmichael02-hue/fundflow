@@ -40,7 +40,7 @@ export default function ContactPage() {
 
   return (
     <main className="min-h-screen text-slate-200 overflow-x-hidden" style={{ background: "#050508" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap');`}</style>
+      {/* Syne + DM Sans are loaded globally via globals.css. */}
 
       {/* Ambient */}
       <div className="fixed top-[5%] left-[20%] w-[600px] h-[600px] rounded-full pointer-events-none z-0 blur-[60px]"
