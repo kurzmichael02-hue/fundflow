@@ -1,32 +1,70 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+// anon client for the signUp call — lazy so the module can be loaded during
+// Next.js page-data collection without env vars blowing up.
+function getAnonClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
+
+// service-role client for everything else in this route:
+// - profile insert (bypass RLS)
+// - admin.deleteUser rollback when the profile write fails
+function getServiceClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+}
+
+const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export async function POST(req: NextRequest) {
-  const { name, email, password } = await req.json()
+  const body = await req.json()
+  const name = String(body.name || '').trim()
+  const email = String(body.email || '').trim().toLowerCase()
+  const password = String(body.password || '')
 
-  const { data, error } = await supabase.auth.signUp({
+  if (!name || !email || !password) {
+    return NextResponse.json({ error: 'Name, email and password are required' }, { status: 400 })
+  }
+  if (!EMAIL_RX.test(email)) {
+    return NextResponse.json({ error: 'Invalid email address' }, { status: 400 })
+  }
+  if (password.length < 8) {
+    return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
+  }
+
+  const { data, error } = await getAnonClient().auth.signUp({
     email,
     password,
-    options: {
-      data: { name }
-    }
+    options: { data: { name } }
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+  if (!data.user) return NextResponse.json({ error: 'Sign up failed' }, { status: 500 })
 
-  // create profile
-  if (data.user) {
-    await supabase.from('profiles').insert({
-      id: data.user.id,
-      name,
-      email,
-      user_type: 'founder'
-    })
+  // Create the profile row. If this fails, we roll back the auth user —
+  // otherwise a duplicate or flaky insert leaves an orphan user that can log
+  // in but has no profile row, which breaks every downstream /api/* call.
+  const service = getServiceClient()
+  const { error: profileError } = await service.from('profiles').insert({
+    id: data.user.id,
+    name,
+    email,
+    user_type: 'founder',
+    plan: 'free',
+  })
+
+  if (profileError) {
+    // best-effort rollback — if the deleteUser itself fails we still surface
+    // the original profile error so the user at least sees the real problem
+    await service.auth.admin.deleteUser(data.user.id).catch(() => {})
+    return NextResponse.json({ error: profileError.message }, { status: 500 })
   }
 
   return NextResponse.json({ message: 'Success' })
