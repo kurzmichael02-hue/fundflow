@@ -83,8 +83,12 @@ export default function DashboardPage() {
   function setupRealtime(token: string) {
     let userId: string | null = null
     try {
+      // Buffer doesn't exist in the browser. Supabase JWTs use URL-safe
+      // base64 without padding, so normalise before handing it to atob.
       const payload = token.split(".")[1]
-      const decoded = JSON.parse(Buffer.from(payload, "base64").toString("utf8"))
+      const normalised = payload.replace(/-/g, "+").replace(/_/g, "/")
+      const padded = normalised + "=".repeat((4 - normalised.length % 4) % 4)
+      const decoded = JSON.parse(atob(padded))
       userId = decoded.sub
     } catch { return }
     if (!userId) return

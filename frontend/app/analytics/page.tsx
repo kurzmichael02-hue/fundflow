@@ -12,6 +12,39 @@ const STAGES = [
   { key: "closed",     label: "Closed",     color: "#34d399" },
 ]
 
+// Deal size is a free-text field, so founders write "$500k", "2.5M", "1b",
+// "€500.000" etc. Without this, "$5M" was parsed as 5 and the totals were off
+// by six orders of magnitude.
+function parseDealSize(raw: unknown): number {
+  if (raw == null) return 0
+  const s = String(raw).trim().toLowerCase()
+  if (!s) return 0
+  // Suffix check first — must come before digit extraction.
+  let multiplier = 1
+  if (/\bb\b|billion/.test(s))        multiplier = 1_000_000_000
+  else if (/\bm\b|million|mm\b/.test(s)) multiplier = 1_000_000
+  else if (/\bk\b|thousand/.test(s))     multiplier = 1_000
+  // European "500.000" vs US "500,000": if there are >= 2 groups of three digits
+  // separated by the same character and no other decimal, treat it as thousands.
+  // Otherwise drop commas (US thousands separator) and keep the dot as decimal.
+  const onlyNums = s.replace(/[^0-9.,]/g, "")
+  const hasCommaDecimal = /\d,\d{1,2}(?!\d)/.test(onlyNums) && !/\.\d/.test(onlyNums)
+  const normalised = hasCommaDecimal
+    ? onlyNums.replace(/\./g, "").replace(",", ".")
+    : onlyNums.replace(/,/g, "")
+  const num = parseFloat(normalised)
+  if (isNaN(num)) return 0
+  return num * multiplier
+}
+
+function formatCurrency(n: number): string {
+  if (n <= 0) return "$0"
+  if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(n >= 10_000_000_000 ? 0 : 1)}B`
+  if (n >= 1_000_000)     return `$${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`
+  if (n >= 1_000)         return `$${(n / 1_000).toFixed(0)}k`
+  return `$${n.toFixed(0)}`
+}
+
 export default function AnalyticsPage() {
   const router = useRouter()
   const [investors, setInvestors] = useState<any[]>([])
@@ -59,21 +92,14 @@ export default function AnalyticsPage() {
 
   // Total raised from closed deals
   const totalRaised = investors
-  .filter(i => i.status === "closed" && i.deal_size)
-  .reduce((sum, i) => {
-    const num = parseFloat(i.deal_size?.replace(/[^0-9.]/g, "") || "0")
-    return sum + (isNaN(num) ? 0 : num)
-  }, 0)
+    .filter(i => i.status === "closed" && i.deal_size)
+    .reduce((sum, i) => sum + parseDealSize(i.deal_size), 0)
 
   // Top investors by amount
   const topInvestors = [...investors]
-  .filter(i => i.deal_size)
-  .sort((a, b) => {
-    const aNum = parseFloat(a.deal_size?.replace(/[^0-9.]/g, "") || "0")
-    const bNum = parseFloat(b.deal_size?.replace(/[^0-9.]/g, "") || "0")
-    return bNum - aNum
-  })
-  .slice(0, 5)
+    .filter(i => i.deal_size)
+    .sort((a, b) => parseDealSize(b.deal_size) - parseDealSize(a.deal_size))
+    .slice(0, 5)
 
   // Interests over last 7 days
   const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -112,7 +138,7 @@ export default function AnalyticsPage() {
             { label: "Total in Pipeline", value: total, sub: "investors tracked", icon: <RiBarChartLine size={16} />, color: "#38bdf8" },
             { label: "Conversion Rate", value: `${conversionRate}%`, sub: "outreach → closed", icon: <RiTrophyLine size={16} />, color: "#34d399" },
             { label: "Response Rate", value: `${responseRate}%`, sub: "moved past outreach", icon: <RiArrowRightLine size={16} />, color: "#a78bfa" },
-            { label: "Total Raised", value: totalRaised > 0 ? `$${(totalRaised / 1000).toFixed(0)}k` : "$0", sub: "from closed deals", icon: <RiFundsLine size={16} />, color: "#fbbf24" },
+            { label: "Total Raised", value: formatCurrency(totalRaised), sub: "from closed deals", icon: <RiFundsLine size={16} />, color: "#fbbf24" },
           ].map(s => (
             <div key={s.label} className="rounded-2xl border border-white/[0.06] p-4"
               style={{ background: "rgba(255,255,255,0.02)" }}>

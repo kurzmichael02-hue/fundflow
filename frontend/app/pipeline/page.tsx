@@ -30,13 +30,16 @@ export default function PipelinePage() {
   }, [])
 
   async function moveInvestor(id: string, newStatus: Status) {
+    // Optimistic update — snapshot the previous state so we can roll back
+    // locally if the server rejects the move, instead of firing a full refetch.
+    const prevInvestors = investors
     setInvestors(prev => prev.map(i => i.id === id ? { ...i, status: newStatus } : i))
     try {
       await api.updateInvestor(id, { status: newStatus })
       addToast(`Moved to ${COLUMNS.find(c => c.key === newStatus)?.label}`)
     } catch (err: any) {
-      alert(err.message)
-      api.getInvestors().then(data => setInvestors(data))
+      setInvestors(prevInvestors)
+      addToast(err?.message || "Failed to move investor", "error")
     }
   }
 
