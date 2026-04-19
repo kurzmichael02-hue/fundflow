@@ -9,282 +9,276 @@ import {
   RiMailLine, RiRadioButtonLine,
 } from "react-icons/ri"
 
-const PIPELINE = [
-  { label: "Outreach", color: "#6b7280", investors: ["Paradigm", "Multicoin"] },
-  { label: "Meeting", color: "#f59e0b", investors: ["a16z Crypto"] },
-  { label: "Term Sheet", color: "#10b981", investors: ["Coinbase Ventures"] },
+// ─────────────────────────────────────────────────────────────────────────────
+// Design direction (April 2026 rewrite)
+//
+// Old landing used the familiar dark-emerald-gradient-glow SaaS-template stack:
+// mouse-follow glow, grain overlay, gradient text, pulsing dots, rounded-2xl
+// everywhere. That stack reads as AI-boilerplate in 2026, especially for a
+// product targeting founders and VCs who read Paradigm / Variant / a16z.
+//
+// New direction:
+//   · Editorial / magazine rhythm — asymmetric, left-aligned, text-led.
+//   · Fraunces (serif, optical size) for display. Dignified, not fintech-loud.
+//   · JetBrains Mono for kickers, dates, URLs, numbers — "the facts".
+//   · DM Sans for body copy. No change there.
+//   · Almost no color — dark background + off-white text. Emerald shows up
+//     in exactly three places: the accent rule under the masthead, the
+//     primary CTA, and the status dots on the mocks.
+//   · No gradients on text. No glows. No mouse-tracking ambient. No grain.
+//     No pulsing dots. No transform-on-hover card lift.
+//   · Hard hairline borders (rgba white 4%) instead of soft shadows.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const NAV_LINKS = [
+  { label: "Product",  href: "#features" },
+  { label: "Pricing",  href: "#pricing" },
+  { label: "FAQ",      href: "#faq" },
+  { label: "About",    href: "/about" },
 ]
 
 const FAQS = [
-  { q: "Is FundFlow really free to start?", a: "Yes — the Starter plan is completely free, no credit card required. You get up to 25 investors, full pipeline access, and basic analytics. Upgrade to Pro whenever you need more." },
-  { q: "What's the difference between Free and Pro?", a: "The Free plan is limited to 25 investors. Pro gives you unlimited investors, advanced analytics, full investor network access, and priority support for $99/month." },
-  { q: "Can I cancel my Pro subscription anytime?", a: "Yes, you can cancel anytime from your billing portal with one click. No contracts, no cancellation fees. Your account stays active until the end of the billing period." },
-  { q: "Is my fundraising data secure?", a: "Yes. All data is stored on Supabase infrastructure hosted in the EU (Frankfurt) with encryption at rest and in transit. We never sell or share your data with third parties." },
-  { q: "What is the Investor Portal?", a: "The Investor Portal is a separate login for VCs and investors. They can register, browse active deals from founders on the platform, and express interest directly — connecting both sides of the fundraising process." },
-  { q: "Do you support Web3 / crypto payments?", a: "We currently accept card payments, PayPal, Google Pay, and SEPA via Stripe. Native crypto payments are on our roadmap." },
+  { q: "Is FundFlow really free to start?", a: "Yes. Starter is free forever up to 25 investors. Full pipeline, basic analytics, no card required. Upgrade to Pro when you need more seats." },
+  { q: "What's the difference between Free and Pro?", a: "Free caps at 25 investors. Pro is $99/month, gives you unlimited investors, advanced analytics, the curated investor directory, and priority support." },
+  { q: "Can I cancel my Pro subscription anytime?", a: "Yes — one click from the Stripe billing portal. No contracts, no cancellation fees. Access stays active until the end of the period you already paid for." },
+  { q: "Is my fundraising data secure?", a: "Data is stored on Supabase in Frankfurt (EU). Encryption at rest and in transit. Server writes to sensitive columns (plan, Stripe IDs) are locked behind a whitelist and the Stripe webhook. We don't sell or share your data." },
+  { q: "What is the Investor Portal?", a: "A separate entry point for VCs. They register, browse active deals from founders on the platform, and tap Express Interest to signal you. You get an email immediately and a realtime badge on the dashboard." },
+  { q: "Do you support Web3 / crypto payments?", a: "Card, PayPal, Google Pay, and SEPA via Stripe today. Native crypto checkout is on the roadmap — wallet login is already live on the profile page." },
 ]
 
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
 
   useEffect(() => {
     setIsLoggedIn(!!localStorage.getItem("token"))
-    const m = (e: MouseEvent) => setMousePos({ x: e.clientX, y: e.clientY })
-    window.addEventListener("mousemove", m)
+    // Fade-in-on-scroll for elements marked with .reveal
     const observer = new IntersectionObserver(
-      (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("animate-in"); observer.unobserve(e.target) } }),
-      { threshold: 0.1 }
+      entries => entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add("is-in"); observer.unobserve(e.target) }
+      }),
+      { threshold: 0.12 }
     )
-    document.querySelectorAll(".bounce-reveal, .scroll-reveal").forEach(el => observer.observe(el))
-    return () => { window.removeEventListener("mousemove", m); observer.disconnect() }
+    document.querySelectorAll(".reveal").forEach(el => observer.observe(el))
+    return () => observer.disconnect()
   }, [])
 
   return (
-    <main className="min-h-screen overflow-x-hidden text-slate-200" style={{ background: "#050508", fontFamily: "'Syne', sans-serif" }}>
-
-      {/* Fonts are loaded globally via globals.css — only keyframes + helper
-          classes live here since they're specific to this landing page. */}
+    <main style={{ background: "#060608", color: "#e5e7eb", fontFamily: "'DM Sans', sans-serif" }}>
       <style>{`
-        * { font-family: 'DM Sans', sans-serif; }
-        h1, h2, h3, .syne { font-family: 'Syne', sans-serif; }
-        .bounce-reveal { opacity: 0; transform: translateY(40px) scale(0.96); transition: opacity 0.6s cubic-bezier(0.16,1,0.3,1), transform 0.6s cubic-bezier(0.16,1,0.3,1); }
-        .bounce-reveal.animate-in { opacity: 1; transform: translateY(0) scale(1); }
-        @keyframes bounce-in { 0% { opacity: 0; transform: translateY(50px) scale(0.94); } 60% { transform: translateY(-6px) scale(1.01); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
-        .bounce-reveal.animate-in { animation: bounce-in 0.7s cubic-bezier(0.16,1,0.3,1) forwards; }
-        @keyframes scroll-x { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-8px); } }
-        @keyframes glow-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.7; } }
-        .card-hover { transition: transform 0.3s ease, border-color 0.3s ease; }
-        .card-hover:hover { transform: translateY(-4px); }
+        .serif { font-family: 'Fraunces', Georgia, serif; font-variation-settings: "opsz" 144; }
+        .mono  { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+        .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.7s ease, transform 0.7s ease; }
+        .reveal.is-in { opacity: 1; transform: translateY(0); }
+        .rule { height: 1px; background: rgba(255,255,255,0.06); width: 100%; }
       `}</style>
 
-      {/* Ambient */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div style={{ position: "absolute", top: "-10%", left: "20%", width: "600px", height: "600px", borderRadius: "50%", background: "radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%)", filter: "blur(60px)", animation: "glow-pulse 6s ease-in-out infinite" }} />
-        <div style={{ position: "absolute", bottom: "10%", right: "10%", width: "400px", height: "400px", borderRadius: "50%", background: "radial-gradient(circle, rgba(14,165,233,0.05) 0%, transparent 70%)", filter: "blur(60px)" }} />
-        <div style={{ position: "fixed", width: "400px", height: "400px", borderRadius: "50%", pointerEvents: "none", background: "radial-gradient(circle, rgba(16,185,129,0.04) 0%, transparent 70%)", filter: "blur(40px)", left: mousePos.x, top: mousePos.y, transform: "translate(-50%, -50%)", transition: "left 0.2s ease, top 0.2s ease" }} className="hidden md:block" />
-        {/* Grain */}
-        <div style={{ position: "absolute", inset: 0, opacity: 0.03, backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")` }} />
-      </div>
-
-      {/* NAV */}
-      <nav className="fixed top-0 left-0 right-0 z-50 h-16 flex items-center"
-        style={{ background: "rgba(5,5,8,0.8)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-        <div className="w-full max-w-6xl mx-auto px-6 md:px-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 no-underline">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-black text-white"
-              style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>FF</div>
-            <span className="text-[17px] font-bold text-white syne tracking-tight">FundFlow</span>
+      {/* ─── MASTHEAD NAV ─── hairline border, no backdrop-blur drama */}
+      <nav style={{ position: "sticky", top: 0, zIndex: 50, background: "#060608", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="max-w-[1180px] mx-auto px-6 md:px-10 flex items-center justify-between" style={{ height: 64 }}>
+          <Link href="/" className="flex items-baseline gap-3 no-underline">
+            <span className="serif text-white" style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.02em" }}>FundFlow</span>
+            <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>Beta · v0.1</span>
           </Link>
-          <div className="hidden md:flex items-center gap-8">
-            {[{ label: "Pricing", href: "#pricing" }, { label: "FAQ", href: "#faq" }, { label: "About", href: "/about" }].map(l => (
-              <a key={l.label} href={l.href} className="text-sm font-medium no-underline transition-colors" style={{ color: "#64748b", fontFamily: "'DM Sans', sans-serif" }}
-                onMouseEnter={e => (e.target as HTMLElement).style.color = "#e2e8f0"}
-                onMouseLeave={e => (e.target as HTMLElement).style.color = "#64748b"}>
+          <div className="hidden md:flex items-center" style={{ gap: 32 }}>
+            {NAV_LINKS.map(l => (
+              <a key={l.label} href={l.href} className="mono no-underline"
+                style={{ fontSize: 12, color: "#94a3b8", letterSpacing: "0.04em", textTransform: "uppercase" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
+                onMouseLeave={e => (e.currentTarget.style.color = "#94a3b8")}>
                 {l.label}
               </a>
             ))}
           </div>
-          <div className="hidden md:flex items-center gap-2.5">
+          <div className="hidden md:flex items-center gap-3">
             {isLoggedIn ? (
-              <Link href="/dashboard" className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white no-underline"
-                style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
-                Dashboard <RiArrowRightLine />
+              <Link href="/dashboard" className="no-underline flex items-center gap-1.5"
+                style={{ fontSize: 13, color: "#fff", padding: "8px 14px", background: "#10b981", borderRadius: 2, fontWeight: 600 }}>
+                Dashboard <RiArrowRightLine size={13} />
               </Link>
             ) : (
               <>
-                <Link href="/login" className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 no-underline transition-all"
-                  style={{ border: "1px solid rgba(255,255,255,0.07)" }}
-                  onMouseEnter={e => { (e.target as HTMLElement).style.color = "#e2e8f0"; (e.target as HTMLElement).style.background = "rgba(255,255,255,0.04)" }}
-                  onMouseLeave={e => { (e.target as HTMLElement).style.color = "#94a3b8"; (e.target as HTMLElement).style.background = "transparent" }}>
-                  Login
+                <Link href="/login" className="no-underline"
+                  style={{ fontSize: 13, color: "#cbd5e1", padding: "8px 14px" }}>
+                  Sign in
                 </Link>
-                <Link href="/register" className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white no-underline transition-all"
-                  style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
-                  Get started <RiArrowRightLine />
+                <Link href="/register" className="no-underline flex items-center gap-1.5"
+                  style={{ fontSize: 13, color: "#fff", padding: "8px 14px", background: "#10b981", borderRadius: 2, fontWeight: 600 }}>
+                  Start free <RiArrowRightLine size={13} />
                 </Link>
               </>
             )}
           </div>
           <button onClick={() => setMenuOpen(!menuOpen)}
-            className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-transparent cursor-pointer"
-            style={{ border: "1px solid rgba(255,255,255,0.08)", color: "#94a3b8" }}>
-            {menuOpen ? <RiCloseLine size={20} /> : <RiMenuLine size={20} />}
+            className="md:hidden flex items-center justify-center cursor-pointer"
+            style={{ background: "transparent", width: 36, height: 36, color: "#94a3b8", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 2 }}>
+            {menuOpen ? <RiCloseLine size={18} /> : <RiMenuLine size={18} />}
           </button>
         </div>
       </nav>
 
-      {/* Mobile menu */}
       {menuOpen && (
-        <div className="fixed top-16 left-0 right-0 z-40 md:hidden" style={{ background: "rgba(5,5,8,0.98)", backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-          <div className="flex flex-col px-6 py-4 gap-1">
-            {[{ label: "Pricing", href: "#pricing" }, { label: "FAQ", href: "#faq" }, { label: "About", href: "/about" }].map(l => (
-              <a key={l.label} href={l.href} onClick={() => setMenuOpen(false)}
-                className="text-slate-400 text-base font-medium py-3 no-underline" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+        <div className="md:hidden" style={{ background: "#060608", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="px-6 py-5 flex flex-col gap-4">
+            {NAV_LINKS.map(l => (
+              <a key={l.label} href={l.href} onClick={() => setMenuOpen(false)} className="mono no-underline"
+                style={{ fontSize: 13, color: "#cbd5e1", letterSpacing: "0.04em", textTransform: "uppercase" }}>
                 {l.label}
               </a>
             ))}
-            <div className="flex gap-2.5 mt-3">
-              <Link href="/login" onClick={() => setMenuOpen(false)} className="flex-1 text-center py-3 rounded-lg text-sm font-medium text-slate-400 no-underline" style={{ border: "1px solid rgba(255,255,255,0.08)" }}>Login</Link>
-              <Link href="/register" onClick={() => setMenuOpen(false)} className="flex-1 text-center py-3 rounded-lg text-sm font-semibold text-white no-underline" style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>Get started</Link>
+            <div className="flex gap-2 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+              <Link href="/login" onClick={() => setMenuOpen(false)} className="flex-1 text-center no-underline"
+                style={{ fontSize: 13, color: "#cbd5e1", padding: "10px 0", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 2 }}>
+                Sign in
+              </Link>
+              <Link href="/register" onClick={() => setMenuOpen(false)} className="flex-1 text-center no-underline"
+                style={{ fontSize: 13, color: "#fff", padding: "10px 0", background: "#10b981", borderRadius: 2, fontWeight: 600 }}>
+                Start free
+              </Link>
             </div>
           </div>
         </div>
       )}
 
-      {/* HERO */}
-      <section className="relative z-10 max-w-6xl mx-auto px-6 md:px-16 pt-36 md:pt-44 pb-16 md:pb-24">
-        <div className="max-w-4xl">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium mb-8"
-            style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", color: "#34d399" }}>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Now in beta — free to start
-          </div>
-
-          <h1 className="syne font-black text-white mb-6 leading-[1.0]"
-            style={{ fontSize: "clamp(44px,7vw,88px)", letterSpacing: "-0.04em" }}>
-            Stop losing deals to{" "}
-            <span style={{ display: "block", background: "linear-gradient(135deg, #10b981 0%, #34d399 50%, #6ee7b7 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-              bad tracking.
+      {/* ─── HERO ─── editorial masthead + asymmetric split */}
+      <section>
+        <div className="max-w-[1180px] mx-auto px-6 md:px-10">
+          {/* Issue strip */}
+          <div className="flex items-center justify-between pt-10 md:pt-14 pb-8 md:pb-12"
+            style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <span className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+              Issue 01 · Spring 2026
             </span>
-          </h1>
-
-          <p className="text-slate-500 leading-relaxed mb-10 max-w-lg" style={{ fontSize: "17px", fontFamily: "'DM Sans', sans-serif", fontWeight: 300 }}>
-            FundFlow is the investor CRM built for Web3 founders. Track every conversation, manage your pipeline, and close your round — all in one place.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-3 mb-14">
-            <Link href="/register"
-              className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-white no-underline transition-all"
-              style={{ background: "linear-gradient(135deg, #10b981, #059669)", fontSize: "15px", boxShadow: "0 0 40px rgba(16,185,129,0.2)" }}
-              onMouseEnter={e => (e.target as HTMLElement).style.boxShadow = "0 0 60px rgba(16,185,129,0.35)"}
-              onMouseLeave={e => (e.target as HTMLElement).style.boxShadow = "0 0 40px rgba(16,185,129,0.2)"}>
-              Start for free <RiArrowRightLine size={16} />
-            </Link>
-            <Link href="/investor"
-              className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-medium text-slate-400 no-underline transition-all"
-              style={{ border: "1px solid rgba(255,255,255,0.08)", fontSize: "15px" }}
-              onMouseEnter={e => { (e.target as HTMLElement).style.background = "rgba(255,255,255,0.04)"; (e.target as HTMLElement).style.color = "#e2e8f0" }}
-              onMouseLeave={e => { (e.target as HTMLElement).style.background = "transparent"; (e.target as HTMLElement).style.color = "#94a3b8" }}>
-              Investor Portal →
-            </Link>
+            <span className="mono hidden sm:inline" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+              Investor CRM · Built for Web3
+            </span>
+            <span className="mono flex items-center gap-1.5" style={{ fontSize: 11, color: "#34d399", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981" }} />
+              Live
+            </span>
           </div>
-        </div>
 
-        {/* Pipeline Visual */}
-        <div className="relative" style={{ animation: "float 6s ease-in-out infinite" }}>
-          <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 40px 100px rgba(0,0,0,0.6)" }}>
-            {/* Browser bar */}
-            <div className="flex items-center gap-2 px-4 py-3" style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-              {["#ff5f57", "#ffbd2e", "#28ca41"].map((c, i) => <div key={i} className="w-2.5 h-2.5 rounded-full opacity-70" style={{ background: c }} />)}
-              <p className="flex-1 text-center text-[11px] font-mono" style={{ color: "#334155" }}>app.fundflow.io/pipeline</p>
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] gap-10 lg:gap-20 pt-12 md:pt-20 pb-16 md:pb-24 items-start">
+            {/* Left column — editorial block */}
+            <div>
+              <h1 className="serif text-white" style={{
+                fontSize: "clamp(56px, 8.5vw, 120px)",
+                lineHeight: 0.92,
+                letterSpacing: "-0.045em",
+                fontWeight: 500,
+              }}>
+                Raise the<br />
+                <span style={{ fontStyle: "italic", fontWeight: 400 }}>round.</span>
+              </h1>
+              <p style={{
+                fontSize: 18, lineHeight: 1.55, color: "#94a3b8",
+                marginTop: 28, maxWidth: 480, fontWeight: 300,
+              }}>
+                FundFlow is a private pipeline for every investor you're talking to, and a public
+                page where the rest of them can find you. Drop the spreadsheet, stop losing
+                deals to bad tracking.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-3 mt-10">
+                <Link href="/register" className="no-underline flex items-center justify-center gap-2"
+                  style={{
+                    background: "#10b981", color: "#fff",
+                    padding: "14px 22px", borderRadius: 2,
+                    fontSize: 14, fontWeight: 600,
+                  }}>
+                  Start for free <RiArrowRightLine size={14} />
+                </Link>
+                <Link href="/investor" className="no-underline flex items-center justify-center gap-2"
+                  style={{
+                    color: "#e5e7eb", padding: "14px 22px",
+                    border: "1px solid rgba(255,255,255,0.12)", borderRadius: 2,
+                    fontSize: 14, fontWeight: 500,
+                  }}>
+                  Investor portal →
+                </Link>
+              </div>
+
+              <div className="mono flex flex-wrap gap-x-8 gap-y-2 mt-10"
+                style={{ fontSize: 11, color: "#475569", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                <span>Free up to 25 investors</span>
+                <span>·</span>
+                <span>No credit card</span>
+                <span>·</span>
+                <span>EU-hosted</span>
+              </div>
             </div>
-            {/* Kanban */}
-            <div className="p-5 md:p-6">
-              <div className="flex items-center justify-between mb-5">
-                <p className="syne font-bold text-white text-sm">Deal Pipeline</p>
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.15)" }}>
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-[11px] font-medium" style={{ color: "#34d399" }}>Live</span>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                {PIPELINE.map((col) => (
-                  <div key={col.label} className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.02)", border: `1px solid rgba(255,255,255,0.05)`, borderTop: `2px solid ${col.color}` }}>
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-[11px] font-semibold syne" style={{ color: col.color }}>{col.label}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: `${col.color}15`, color: col.color }}>{col.investors.length}</span>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      {col.investors.map(inv => (
-                        <div key={inv} className="rounded-lg px-2.5 py-2" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                          <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0"
-                              style={{ background: `${col.color}25`, color: col.color }}>
-                              {inv[0]}
-                            </div>
-                            <span className="text-[11px] font-medium truncate" style={{ color: "#cbd5e1" }}>{inv}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {/* Stats row */}
-              <div className="grid grid-cols-3 gap-3 mt-4">
-                {[
-                  { label: "Total Investors", value: "47", color: "#38bdf8" },
-                  { label: "Active Leads", value: "23", color: "#a78bfa" },
-                  { label: "Deals Closed", value: "4", color: "#34d399" },
-                ].map(s => (
-                  <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
-                    <div className="syne font-bold text-white text-lg" style={{ color: s.color }}>{s.value}</div>
-                    <div className="text-[10px] mt-0.5" style={{ color: "#475569" }}>{s.label}</div>
-                  </div>
-                ))}
-              </div>
+
+            {/* Right column — pipeline visual, subtler than before */}
+            <div className="reveal">
+              <HeroPipeline />
             </div>
           </div>
         </div>
       </section>
 
-      {/* MARQUEE */}
-      <div className="overflow-hidden py-5 relative z-10" style={{ borderTop: "1px solid rgba(255,255,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-        <div className="flex gap-12 whitespace-nowrap" style={{ animation: "scroll-x 25s linear infinite" }}>
-          {[...Array(2)].map((_, ri) =>
-            ["Investor CRM", "Pipeline Tracking", "Deal Flow", "Web3 Native", "Real-time Dashboard", "Investor Network", "Secure & Private"].map((item, i) => (
-              <span key={`${ri}-${i}`} className="text-[11px] font-semibold tracking-widest uppercase flex items-center gap-12" style={{ color: "#1e293b" }}>
-                {item} <span style={{ color: "#10b981", fontSize: "6px" }}>◆</span>
-              </span>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* DEEP DIVES — four surfaces, one round.
-          Each section shows one feature with a real UI mockup instead of an
-          icon. Alternates sides so the rhythm breaks up the scroll. */}
-      <section id="features" className="relative z-10 max-w-6xl mx-auto px-6 md:px-16 pt-20 md:pt-28 pb-8"
-        style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-        <div className="max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "#10b981" }}>What&apos;s inside</p>
-          <h2 className="syne font-black text-white" style={{ fontSize: "clamp(32px,5vw,56px)", letterSpacing: "-0.04em", lineHeight: 1.02 }}>
-            Four surfaces.<br />
-            <span style={{ background: "linear-gradient(135deg, #10b981 0%, #6ee7b7 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-              One round.
-            </span>
-          </h2>
-          <p className="mt-5 text-slate-500 leading-relaxed max-w-lg" style={{ fontSize: "15px" }}>
-            Not a generic CRM with a crypto sticker on it. Each of these is a distinct view with its own job — the private side for tracking, the public side for getting found.
-          </p>
+      {/* ─── TRUST LINE ─── single mono row, no logo wall ─── */}
+      <section style={{ borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="max-w-[1180px] mx-auto px-6 md:px-10 py-5 flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-10">
+          <span className="mono" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            In use
+          </span>
+          <div className="mono flex flex-wrap gap-x-7 gap-y-2" style={{ fontSize: 12, color: "#94a3b8" }}>
+            <span>Web3 founders raising pre-seed through Series A</span>
+            <span style={{ color: "#334155" }}>·</span>
+            <span>Solo GPs</span>
+            <span style={{ color: "#334155" }}>·</span>
+            <span>Emerging fund managers</span>
+          </div>
         </div>
       </section>
 
-      {/* 01 — PIPELINE */}
+      {/* ─── SECTION INTRO — "What's inside" ─── */}
+      <section id="features" style={{ paddingTop: 100, paddingBottom: 40 }}>
+        <div className="max-w-[1180px] mx-auto px-6 md:px-10">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+            <div className="md:col-span-3">
+              <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                § The product
+              </p>
+            </div>
+            <div className="md:col-span-9">
+              <h2 className="serif text-white" style={{
+                fontSize: "clamp(36px, 5vw, 64px)", lineHeight: 1, letterSpacing: "-0.04em", fontWeight: 500,
+              }}>
+                Four surfaces.<br />
+                <span style={{ fontStyle: "italic", fontWeight: 400, color: "#cbd5e1" }}>One round.</span>
+              </h2>
+              <p style={{ fontSize: 17, lineHeight: 1.6, color: "#94a3b8", marginTop: 24, maxWidth: 560, fontWeight: 300 }}>
+                Not a generic CRM with a crypto sticker on it. Each of these is a distinct
+                view with its own job — the private side for tracking, the public side for
+                getting found, and the numbers to tell you if the round is actually moving.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── DEEP DIVES ─── four full-width sections with product mocks */}
       <DeepDive
-        kicker="01 · Pipeline"
-        accent="#10b981"
-        headline={<>Drag a deal<br />through every stage.</>}
+        number="01"
+        kicker="Pipeline"
+        headline={<>Drag a deal<br /><em style={{ fontWeight: 400 }}>through every stage.</em></>}
         body="The Kanban view of every investor you've talked to, grouped by status. Optimistic drag-and-drop, notes stay attached, nothing gets lost in a spreadsheet named final_v3_FINAL.xlsx."
         bullets={[
           "Outreach → Closed in five moves",
           "Per-card status, deal size, email, notes",
-          "Mobile-native — tabs on phone, columns on desktop",
+          "Mobile tabs on phone, columns on desktop",
         ]}
         visual={<KanbanMock />}
       />
 
-      {/* 02 — DEAL ROOM */}
       <DeepDive
-        kicker="02 · Deal room"
-        accent="#34d399"
+        number="02"
+        kicker="Deal room"
         reverse
-        headline={<>A public page<br />investors can find you on.</>}
-        body="Publish your project once. It shows up on the investor side of FundFlow where VCs filter by stage, chain, and sector. When someone taps Express Interest you get an email, a realtime badge on the dashboard, and a row in the interests table."
+        headline={<>A public page<br /><em style={{ fontWeight: 400 }}>investors can find you on.</em></>}
+        body="Publish your project once. It shows up on the investor side where VCs filter by stage, chain, and sector. When someone taps Express Interest you get an email, a realtime badge on the dashboard, and a row in the interests table."
         bullets={[
           "Stage · chain · tags · goal · raised",
           "One-click Express Interest — dedup'd per email",
@@ -293,11 +287,10 @@ export default function Home() {
         visual={<DealRoomMock />}
       />
 
-      {/* 03 — SIGNAL */}
       <DeepDive
-        kicker="03 · Signal"
-        accent="#a78bfa"
-        headline={<>Know where<br />the round actually stands.</>}
+        number="03"
+        kicker="Signal"
+        headline={<>Know where<br /><em style={{ fontWeight: 400 }}>the round actually stands.</em></>}
         body="The analytics page turns your pipeline into a funnel with real percentages — not vanity metrics. Conversion from outreach to close, response rate, total committed, and the top cheques ranked by size."
         bullets={[
           "Outreach → Closed conversion funnel",
@@ -307,12 +300,11 @@ export default function Home() {
         visual={<SignalMock />}
       />
 
-      {/* 04 — IDENTITY */}
       <DeepDive
-        kicker="04 · Identity"
-        accent="#38bdf8"
+        number="04"
+        kicker="Identity"
         reverse
-        headline={<>Web3-native<br />from day one.</>}
+        headline={<>Web3-native<br /><em style={{ fontWeight: 400 }}>from day one.</em></>}
         body="Wallet connect is a first-class login method, not a retrofit. Pair your address to your profile via MetaMask, WalletConnect, or paste. Then browse the curated investor directory — 30+ funds tagged by sector, stage, check size, and Web3 focus."
         bullets={[
           "MetaMask + WalletConnect v2 + manual paste",
@@ -322,19 +314,21 @@ export default function Home() {
         visual={<IdentityMock />}
       />
 
-      {/* Also included — the boring stuff still worth mentioning. */}
-      <section className="relative z-10 max-w-6xl mx-auto px-6 md:px-16 pt-10 pb-20 md:pb-28">
-        <div className="rounded-2xl border px-6 py-5 md:px-8 md:py-6 flex flex-col md:flex-row items-start md:items-center gap-5 md:gap-8 flex-wrap"
-          style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
-          <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "#64748b" }}>Also included</span>
-          <div className="flex flex-wrap gap-x-6 gap-y-3">
+      {/* ─── ALSO INCLUDED ─── single hairline row ─── */}
+      <section style={{ marginTop: 40 }}>
+        <div className="max-w-[1180px] mx-auto px-6 md:px-10">
+          <div className="py-6 flex flex-wrap gap-x-10 gap-y-3 items-center"
+            style={{ borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <span className="mono" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+              Also included
+            </span>
             {[
               { icon: <RiRadioButtonLine size={13} />, label: "Realtime sync" },
               { icon: <RiDownloadLine size={13} />, label: "CSV export (RFC 4180)" },
               { icon: <RiMailLine size={13} />, label: "Email notifications" },
-              { icon: <RiFlashlightLine size={13} />, label: "25 investors free, no card" },
+              { icon: <RiFlashlightLine size={13} />, label: "Password recovery" },
             ].map(item => (
-              <span key={item.label} className="flex items-center gap-2 text-[13px]" style={{ color: "#94a3b8" }}>
+              <span key={item.label} className="flex items-center gap-2" style={{ fontSize: 13, color: "#cbd5e1" }}>
                 <span style={{ color: "#10b981" }}>{item.icon}</span>
                 {item.label}
               </span>
@@ -343,191 +337,341 @@ export default function Home() {
         </div>
       </section>
 
-      {/* PRICING */}
-      <section id="pricing" className="relative z-10 max-w-4xl mx-auto px-6 md:px-16 py-20 md:py-24" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-        <div className="text-center mb-14 bounce-reveal">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "#10b981" }}>Pricing</p>
-          <h2 className="syne font-black text-white" style={{ fontSize: "clamp(28px,4vw,48px)", letterSpacing: "-0.03em" }}>Simple pricing</h2>
-          <p className="mt-3" style={{ fontSize: "15px", color: "#64748b" }}>Start free. Upgrade when you&apos;re ready to scale.</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[
-            { name: "Starter", price: "Free", period: "forever", desc: "For early-stage fundraising", features: ["Up to 25 investors", "Full pipeline view", "Basic analytics", "Email support"], cta: "Get started free", featured: false },
-            { name: "Pro", price: "$99", period: "/month", desc: "For founders closing serious rounds", features: ["Unlimited investors", "Advanced analytics", "Investor network access", "API access", "Priority support"], cta: "Get started", featured: true }
-          ].map((plan, i) => (
-            <div key={plan.name} className="bounce-reveal card-hover rounded-2xl p-8"
-              style={{
-                background: plan.featured ? "rgba(16,185,129,0.05)" : "rgba(255,255,255,0.02)",
-                border: plan.featured ? "1px solid rgba(16,185,129,0.2)" : "1px solid rgba(255,255,255,0.05)",
-                boxShadow: plan.featured ? "0 0 60px rgba(16,185,129,0.08)" : "none",
-                transitionDelay: `${i * 0.1}s`
+      {/* ─── PRICING ─── one table, no twin-cards ─── */}
+      <section id="pricing" style={{ paddingTop: 100, paddingBottom: 100 }}>
+        <div className="max-w-[1180px] mx-auto px-6 md:px-10">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-14">
+            <div className="md:col-span-3">
+              <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                § Pricing
+              </p>
+            </div>
+            <div className="md:col-span-9">
+              <h2 className="serif text-white" style={{
+                fontSize: "clamp(36px, 5vw, 64px)", lineHeight: 1, letterSpacing: "-0.04em", fontWeight: 500,
               }}>
-              {plan.featured && <p className="text-[11px] font-bold uppercase tracking-widest mb-3" style={{ color: "#10b981" }}>Most Popular</p>}
-              <p className="syne font-bold text-white mb-2" style={{ fontSize: "16px" }}>{plan.name}</p>
-              <div className="flex items-baseline gap-1 mb-2">
-                <span className="syne font-black text-white" style={{ fontSize: "44px", letterSpacing: "-0.03em" }}>{plan.price}</span>
-                <span style={{ fontSize: "14px", color: "#64748b" }}>{plan.period}</span>
-              </div>
-              <p style={{ fontSize: "13px", color: "#64748b", marginBottom: "24px" }}>{plan.desc}</p>
-              <div className="flex flex-col gap-3 mb-7">
-                {plan.features.map(f => (
-                  <div key={f} className="flex items-center gap-2.5" style={{ fontSize: "14px", color: "#94a3b8" }}>
-                    <RiCheckLine size={15} style={{ color: "#10b981", flexShrink: 0 }} /> {f}
+                Free until<br />
+                <span style={{ fontStyle: "italic", fontWeight: 400, color: "#cbd5e1" }}>you're serious.</span>
+              </h2>
+            </div>
+          </div>
+
+          {/* Pricing grid — two plans as rows in a shared table, not twin cards */}
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+            {[
+              {
+                name: "Starter",
+                price: "$0",
+                cadence: "Forever",
+                desc: "Everything you need to run a first round.",
+                featured: false,
+                features: [
+                  "Up to 25 investors",
+                  "Full pipeline + Kanban",
+                  "Public deal-flow page",
+                  "Basic analytics",
+                  "Email notifications",
+                ],
+                cta: "Start free",
+              },
+              {
+                name: "Pro",
+                price: "$99",
+                cadence: "per month",
+                desc: "For founders closing serious rounds.",
+                featured: true,
+                features: [
+                  "Unlimited investors",
+                  "Advanced analytics + funnel",
+                  "Curated investor directory",
+                  "API access (coming soon)",
+                  "Priority support",
+                ],
+                cta: "Upgrade to Pro",
+              },
+            ].map((plan) => (
+              <div key={plan.name}
+                className="grid grid-cols-1 md:grid-cols-12 gap-6 py-10"
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                <div className="md:col-span-3 flex flex-col gap-2">
+                  <p className="mono" style={{
+                    fontSize: 11, color: plan.featured ? "#10b981" : "#64748b",
+                    letterSpacing: "0.12em", textTransform: "uppercase",
+                  }}>
+                    {plan.name}{plan.featured && " · Recommended"}
+                  </p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="serif text-white" style={{ fontSize: 56, fontWeight: 500, letterSpacing: "-0.03em", lineHeight: 1 }}>
+                      {plan.price}
+                    </span>
+                    <span className="mono" style={{ fontSize: 12, color: "#64748b", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                      {plan.cadence}
+                    </span>
                   </div>
-                ))}
+                  <p style={{ fontSize: 14, color: "#94a3b8", maxWidth: 240, marginTop: 4 }}>{plan.desc}</p>
+                </div>
+                <div className="md:col-span-6">
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+                    {plan.features.map(f => (
+                      <li key={f} className="flex items-start gap-2.5" style={{ fontSize: 14, color: "#cbd5e1" }}>
+                        <RiCheckLine size={14} style={{ color: "#10b981", marginTop: 4, flexShrink: 0 }} />
+                        <span>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="md:col-span-3 flex md:justify-end items-start">
+                  <Link href="/register" className="no-underline flex items-center justify-center gap-2 w-full md:w-auto"
+                    style={{
+                      background: plan.featured ? "#10b981" : "transparent",
+                      color: plan.featured ? "#fff" : "#e5e7eb",
+                      border: plan.featured ? "1px solid #10b981" : "1px solid rgba(255,255,255,0.14)",
+                      padding: "12px 20px", borderRadius: 2,
+                      fontSize: 13, fontWeight: 600,
+                    }}>
+                    {plan.cta} <RiArrowRightLine size={13} />
+                  </Link>
+                </div>
               </div>
-              <Link href="/register"
-                className="block text-center py-3 px-6 rounded-xl font-semibold no-underline transition-all"
-                style={plan.featured
-                  ? { background: "linear-gradient(135deg, #10b981, #059669)", color: "#fff", fontSize: "14px" }
-                  : { border: "1px solid rgba(255,255,255,0.08)", color: "#94a3b8", fontSize: "14px" }}>
-                {plan.cta}
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── FAQ ─── editorial, full-width divider-based ─── */}
+      <section id="faq" style={{ paddingTop: 60, paddingBottom: 120 }}>
+        <div className="max-w-[1180px] mx-auto px-6 md:px-10">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-14">
+            <div className="md:col-span-3">
+              <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                § FAQ
+              </p>
+            </div>
+            <div className="md:col-span-9">
+              <h2 className="serif text-white" style={{
+                fontSize: "clamp(36px, 5vw, 64px)", lineHeight: 1, letterSpacing: "-0.04em", fontWeight: 500,
+              }}>
+                Questions,<br />
+                <span style={{ fontStyle: "italic", fontWeight: 400, color: "#cbd5e1" }}>honestly answered.</span>
+              </h2>
+            </div>
+          </div>
+
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+            {FAQS.map((faq, i) => {
+              const open = openFaq === i
+              return (
+                <div key={i} style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                  <button onClick={() => setOpenFaq(open ? null : i)}
+                    className="w-full flex items-start gap-6 text-left cursor-pointer"
+                    style={{ background: "transparent", border: 0, padding: "28px 0" }}>
+                    <span className="mono" style={{ fontSize: 12, color: "#475569", letterSpacing: "0.08em", marginTop: 6, minWidth: 32 }}>
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className="serif flex-1" style={{ fontSize: 22, fontWeight: 500, letterSpacing: "-0.02em", color: open ? "#fff" : "#e5e7eb", lineHeight: 1.3 }}>
+                      {faq.q}
+                    </span>
+                    <span style={{ color: open ? "#10b981" : "#64748b", marginTop: 8 }}>
+                      {open ? <RiSubtractLine size={18} /> : <RiAddLine size={18} />}
+                    </span>
+                  </button>
+                  {open && (
+                    <div className="grid grid-cols-1 md:grid-cols-[32px_1fr_18px] gap-6 pb-8">
+                      <span />
+                      <p style={{ fontSize: 16, color: "#94a3b8", lineHeight: 1.7, maxWidth: 720 }}>
+                        {faq.a}
+                      </p>
+                      <span />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── CTA ─── no neon box, just a full-width editorial footer-lead ─── */}
+      <section style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 120, paddingBottom: 120 }}>
+        <div className="max-w-[1180px] mx-auto px-6 md:px-10">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-10 items-end">
+            <div className="md:col-span-8">
+              <p className="mono mb-5" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                § Ready when you are
+              </p>
+              <h2 className="serif text-white" style={{
+                fontSize: "clamp(48px, 7vw, 96px)", lineHeight: 0.95, letterSpacing: "-0.045em", fontWeight: 500,
+              }}>
+                Start tracking<br />
+                <span style={{ fontStyle: "italic", fontWeight: 400, color: "#cbd5e1" }}>your round today.</span>
+              </h2>
+            </div>
+            <div className="md:col-span-4 flex flex-col gap-3">
+              <Link href="/register" className="no-underline flex items-center justify-center gap-2"
+                style={{
+                  background: "#10b981", color: "#fff",
+                  padding: "16px 24px", borderRadius: 2,
+                  fontSize: 14, fontWeight: 600,
+                }}>
+                Start for free <RiArrowRightLine size={14} />
+              </Link>
+              <Link href="/contact" className="no-underline flex items-center justify-center gap-2"
+                style={{
+                  color: "#cbd5e1", padding: "14px 24px",
+                  border: "1px solid rgba(255,255,255,0.14)", borderRadius: 2,
+                  fontSize: 14, fontWeight: 500,
+                }}>
+                Talk to us →
               </Link>
             </div>
-          ))}
+          </div>
         </div>
       </section>
 
-      {/* FAQ */}
-      <section id="faq" className="relative z-10 max-w-3xl mx-auto px-6 md:px-16 py-20 md:py-24" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-        <div className="text-center mb-14 bounce-reveal">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "#10b981" }}>FAQ</p>
-          <h2 className="syne font-black text-white" style={{ fontSize: "clamp(28px,4vw,48px)", letterSpacing: "-0.03em" }}>Common questions</h2>
-        </div>
-        <div className="flex flex-col gap-2">
-          {FAQS.map((faq, i) => (
-            <div key={i} className="bounce-reveal rounded-2xl overflow-hidden transition-all"
-              style={{
-                background: openFaq === i ? "rgba(16,185,129,0.04)" : "rgba(255,255,255,0.02)",
-                border: openFaq === i ? "1px solid rgba(16,185,129,0.15)" : "1px solid rgba(255,255,255,0.05)",
-                transitionDelay: `${i * 0.04}s`
-              }}>
-              <button onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                className="w-full flex items-center justify-between px-5 py-4 text-left cursor-pointer border-0 gap-4"
-                style={{ background: "transparent" }}>
-                <span className="syne font-semibold text-white" style={{ fontSize: "14px" }}>{faq.q}</span>
-                <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ background: openFaq === i ? "rgba(16,185,129,0.15)" : "rgba(255,255,255,0.05)", color: openFaq === i ? "#10b981" : "#64748b" }}>
-                  {openFaq === i ? <RiSubtractLine size={13} /> : <RiAddLine size={13} />}
-                </div>
-              </button>
-              {openFaq === i && (
-                <div className="px-5 pb-5">
-                  <p style={{ fontSize: "13px", color: "#64748b", lineHeight: "1.7" }}>{faq.a}</p>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="relative z-10 max-w-4xl mx-auto px-6 md:px-16 pb-24">
-        <div className="bounce-reveal text-center rounded-2xl p-12 md:p-16 relative overflow-hidden"
-          style={{ background: "rgba(16,185,129,0.04)", border: "1px solid rgba(16,185,129,0.12)" }}>
-          <div className="absolute top-1/2 left-1/2 pointer-events-none rounded-full"
-            style={{ width: "500px", height: "250px", transform: "translate(-50%, -50%)", background: "radial-gradient(ellipse, rgba(16,185,129,0.08), transparent 70%)", filter: "blur(40px)" }} />
-          <p className="text-xs font-semibold uppercase tracking-widest mb-6 relative" style={{ color: "#10b981" }}>Ready to close?</p>
-          <h2 className="syne font-black text-white mb-4 relative" style={{ fontSize: "clamp(28px,4vw,52px)", letterSpacing: "-0.03em", lineHeight: "1.05" }}>
-            Start tracking your<br />investors today.
-          </h2>
-          <p className="mb-8 relative" style={{ fontSize: "15px", color: "#64748b" }}>Free to start. No credit card required.</p>
-          <Link href="/register"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-white no-underline relative transition-all"
-            style={{ background: "linear-gradient(135deg, #10b981, #059669)", fontSize: "15px", boxShadow: "0 0 40px rgba(16,185,129,0.2)" }}>
-            Start for free — no credit card <RiArrowRightLine size={16} />
-          </Link>
-        </div>
-      </section>
-
-      {/* FOOTER */}
-      <footer className="relative z-10" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-        <div className="max-w-6xl mx-auto px-6 md:px-16 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-10">
-            <div className="md:col-span-1">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-black text-white" style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>FF</div>
-                <span className="syne font-bold text-white" style={{ fontSize: "15px" }}>FundFlow</span>
+      {/* ─── FOOTER ─── thin, mono, colophon-style ─── */}
+      <footer style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="max-w-[1180px] mx-auto px-6 md:px-10 pt-14 pb-10">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
+            <div className="col-span-2">
+              <div className="flex items-baseline gap-3 mb-3">
+                <span className="serif text-white" style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.02em" }}>FundFlow</span>
+                <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>Beta · v0.1</span>
               </div>
-              <p style={{ fontSize: "12px", color: "#334155", lineHeight: "1.7", maxWidth: "200px" }}>The investor CRM built for Web3 founders. Close your round faster.</p>
-              <div className="flex items-center gap-1.5 mt-4" style={{ fontSize: "12px", color: "#10b981" }}>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <p style={{ fontSize: 13, color: "#64748b", maxWidth: 280, lineHeight: 1.6 }}>
+                The investor CRM for Web3 founders. Built in Berlin, hosted in Frankfurt.
+              </p>
+              <div className="mono flex items-center gap-1.5 mt-5" style={{ fontSize: 11, color: "#34d399", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981" }} />
                 All systems operational
               </div>
             </div>
-            <div>
-              <p className="font-semibold uppercase tracking-widest mb-4" style={{ fontSize: "11px", color: "#334155" }}>Product</p>
-              <div className="flex flex-col gap-2.5">
-                {[{ label: "Home", href: "/" }, { label: "Pricing", href: "#pricing" }, { label: "FAQ", href: "#faq" }, { label: "About", href: "/about" }, { label: "Dashboard", href: "/dashboard" }].map(l => (
-                  <a key={l.label} href={l.href} className="no-underline transition-colors" style={{ fontSize: "14px", color: "#475569" }}
-                    onMouseEnter={e => (e.target as HTMLElement).style.color = "#e2e8f0"}
-                    onMouseLeave={e => (e.target as HTMLElement).style.color = "#475569"}>
-                    {l.label}
-                  </a>
-                ))}
+
+            {[
+              { title: "Product", links: [{ l: "Pricing", h: "#pricing" }, { l: "FAQ", h: "#faq" }, { l: "Dashboard", h: "/dashboard" }] },
+              { title: "Investors", links: [{ l: "Sign in", h: "/investor" }, { l: "Register", h: "/investor/register" }, { l: "Deal flow", h: "/investor/discover" }] },
+              { title: "Company", links: [{ l: "About", h: "/about" }, { l: "Contact", h: "/contact" }, { l: "Privacy", h: "/privacy" }, { l: "Terms", h: "/terms" }] },
+            ].map(col => (
+              <div key={col.title}>
+                <p className="mono mb-4" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                  {col.title}
+                </p>
+                <div className="flex flex-col gap-2.5">
+                  {col.links.map(l => (
+                    <a key={l.l} href={l.h} className="no-underline" style={{ fontSize: 14, color: "#94a3b8" }}
+                      onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
+                      onMouseLeave={e => (e.currentTarget.style.color = "#94a3b8")}>
+                      {l.l}
+                    </a>
+                  ))}
+                </div>
               </div>
-            </div>
-            <div>
-              <p className="font-semibold uppercase tracking-widest mb-4" style={{ fontSize: "11px", color: "#334155" }}>Investors</p>
-              <div className="flex flex-col gap-2.5">
-                {[{ label: "Investor Login", href: "/investor" }, { label: "Investor Register", href: "/investor/register" }, { label: "Deal Flow", href: "/investor/discover" }].map(l => (
-                  <a key={l.label} href={l.href} className="no-underline transition-colors" style={{ fontSize: "14px", color: "#475569" }}
-                    onMouseEnter={e => (e.target as HTMLElement).style.color = "#e2e8f0"}
-                    onMouseLeave={e => (e.target as HTMLElement).style.color = "#475569"}>
-                    {l.label}
-                  </a>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="font-semibold uppercase tracking-widest mb-4" style={{ fontSize: "11px", color: "#334155" }}>Company</p>
-              <div className="flex flex-col gap-2.5 mb-6">
-                {[{ label: "Privacy Policy", href: "/privacy" }, { label: "Terms of Service", href: "/terms" }, { label: "Contact", href: "/contact" }].map(l => (
-                  <a key={l.label} href={l.href} className="no-underline transition-colors" style={{ fontSize: "14px", color: "#475569" }}
-                    onMouseEnter={e => (e.target as HTMLElement).style.color = "#e2e8f0"}
-                    onMouseLeave={e => (e.target as HTMLElement).style.color = "#475569"}>
-                    {l.label}
-                  </a>
-                ))}
-              </div>
-              <div className="flex items-center gap-3">
-                {[
-                  { href: "https://twitter.com/fundflow", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.213 5.567zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> },
-                  { href: "https://t.me/fundflow", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.026 13.6l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.832.959h.29z"/></svg> },
-                  { href: "https://discord.gg/fundflow", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.032.055a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg> },
-                ].map((s, i) => (
-                  <a key={i} href={s.href} target="_blank" rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                    style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", color: "#475569" }}
-                    onMouseEnter={e => { (e.target as HTMLElement).closest('a')!.style.color = "#e2e8f0"; (e.target as HTMLElement).closest('a')!.style.borderColor = "rgba(255,255,255,0.12)" }}
-                    onMouseLeave={e => { (e.target as HTMLElement).closest('a')!.style.color = "#475569"; (e.target as HTMLElement).closest('a')!.style.borderColor = "rgba(255,255,255,0.06)" }}>
-                    {s.icon}
-                  </a>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
-          <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-3" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-            <span style={{ fontSize: "12px", color: "#1e293b" }}>© 2026 FundFlow. All rights reserved.</span>
-            <span style={{ fontSize: "12px", color: "#1e293b" }}>Built for Web3 founders.</span>
+
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pt-8"
+            style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+            <span className="mono" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.06em" }}>
+              © 2026 FundFlow · Set in Fraunces, DM Sans, JetBrains Mono
+            </span>
+            <div className="flex items-center gap-5">
+              {[
+                { href: "https://twitter.com/fundflow", label: "Twitter", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.213 5.567zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> },
+                { href: "https://t.me/fundflow", label: "Telegram", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.026 13.6l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.832.959h.29z"/></svg> },
+              ].map(s => (
+                <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
+                  aria-label={s.label}
+                  className="no-underline" style={{ color: "#64748b" }}
+                  onMouseEnter={e => (e.currentTarget.style.color = "#e5e7eb")}
+                  onMouseLeave={e => (e.currentTarget.style.color = "#64748b")}>
+                  {s.icon}
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       </footer>
-
     </main>
   )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DEEP-DIVE section layout. One feature per section; alternates sides based
-// on `reverse`. Keeping this local to the landing page — it's bespoke to this
-// file and wouldn't be used anywhere else.
+// HERO pipeline — compact version of the kanban, sits in the hero right column.
+// Kept minimal: 3 stages, tight cards, no browser chrome this time — the
+// chrome appears on the deep-dive mocks further down, so doubling it here
+// would feel repetitive.
+// ─────────────────────────────────────────────────────────────────────────────
+function HeroPipeline() {
+  const cols: Array<{ label: string; color: string; items: Array<{ name: string; size: string }> }> = [
+    { label: "Outreach",   color: "#94a3b8", items: [{ name: "Paradigm", size: "$5M" }, { name: "Multicoin", size: "$2M" }] },
+    { label: "Meeting",    color: "#fbbf24", items: [{ name: "a16z Crypto", size: "$10M" }] },
+    { label: "Term Sheet", color: "#10b981", items: [{ name: "Coinbase V.", size: "$3M" }] },
+  ]
+  return (
+    <div style={{ border: "1px solid rgba(255,255,255,0.08)", background: "#0a0a0d", borderRadius: 2 }}>
+      <div className="flex items-center justify-between px-4 py-3"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          app · pipeline
+        </span>
+        <span className="mono flex items-center gap-1.5" style={{ fontSize: 10, color: "#34d399", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#10b981" }} />
+          Live
+        </span>
+      </div>
+      <div className="p-4">
+        <div className="grid grid-cols-3 gap-2">
+          {cols.map(col => (
+            <div key={col.label} style={{ borderTop: `1px solid ${col.color}55`, paddingTop: 10 }}>
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="mono" style={{ fontSize: 10, color: col.color, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                  {col.label}
+                </span>
+                <span className="mono" style={{ fontSize: 10, color: "#475569" }}>{col.items.length}</span>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                {col.items.map(c => (
+                  <div key={c.name} style={{
+                    background: "rgba(255,255,255,0.02)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    padding: "8px 10px", borderRadius: 2,
+                  }}>
+                    <div style={{ fontSize: 12, color: "#e5e7eb", fontWeight: 500 }}>{c.name}</div>
+                    <div className="mono" style={{ fontSize: 10, color: col.color, marginTop: 2 }}>{c.size}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer stats row */}
+        <div className="grid grid-cols-3 gap-2 mt-5 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          {[
+            { label: "Total", value: "47" },
+            { label: "Active", value: "23" },
+            { label: "Closed", value: "4" },
+          ].map(s => (
+            <div key={s.label}>
+              <div className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>{s.label}</div>
+              <div className="serif" style={{ fontSize: 24, color: "#fff", fontWeight: 500, letterSpacing: "-0.02em", marginTop: 2 }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEEP-DIVE section — full-width alternating text + mock visual.
+// Numbered in Fraunces (display serif) so the "01/02/03/04" carries visual
+// weight instead of being a decorative badge.
 // ─────────────────────────────────────────────────────────────────────────────
 function DeepDive({
-  kicker, accent, headline, body, bullets, visual, reverse,
+  number, kicker, headline, body, bullets, visual, reverse,
 }: {
+  number: string
   kicker: string
-  accent: string
   headline: React.ReactNode
   body: string
   bullets: string[]
@@ -535,67 +679,73 @@ function DeepDive({
   reverse?: boolean
 }) {
   return (
-    <section className="relative z-10 max-w-6xl mx-auto px-6 md:px-16 py-14 md:py-20">
-      <div className={`grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center ${reverse ? "md:[&>div:first-child]:order-2" : ""}`}>
-        {/* Copy */}
-        <div className="bounce-reveal">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-widest mb-5"
-            style={{ background: `${accent}12`, border: `1px solid ${accent}25`, color: accent }}>
-            <span className="w-1 h-1 rounded-full" style={{ background: accent }} />
-            {kicker}
+    <section style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+      <div className="max-w-[1180px] mx-auto px-6 md:px-10 py-20 md:py-28">
+        <div className={`grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 items-start ${reverse ? "md:[&>div:first-child]:order-2" : ""}`}>
+          <div className="md:col-span-6 reveal">
+            <div className="flex items-baseline gap-5 mb-8">
+              <span className="serif" style={{ fontSize: 64, color: "rgba(255,255,255,0.08)", fontWeight: 500, letterSpacing: "-0.03em", lineHeight: 0.9 }}>
+                {number}
+              </span>
+              <span className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                § {kicker}
+              </span>
+            </div>
+            <h3 className="serif text-white" style={{
+              fontSize: "clamp(32px, 4.5vw, 56px)",
+              lineHeight: 1,
+              letterSpacing: "-0.04em",
+              fontWeight: 500,
+            }}>
+              {headline}
+            </h3>
+            <p style={{ fontSize: 17, lineHeight: 1.6, color: "#94a3b8", marginTop: 24, maxWidth: 520, fontWeight: 300 }}>
+              {body}
+            </p>
+            <ul className="flex flex-col gap-3 mt-8">
+              {bullets.map(b => (
+                <li key={b} className="flex items-start gap-3" style={{ fontSize: 15, color: "#cbd5e1" }}>
+                  <RiCheckLine size={15} style={{ color: "#10b981", marginTop: 4, flexShrink: 0 }} />
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
           </div>
-          <h3 className="syne font-black text-white leading-[1.02] mb-5"
-            style={{ fontSize: "clamp(28px,3.6vw,44px)", letterSpacing: "-0.035em" }}>
-            {headline}
-          </h3>
-          <p className="text-slate-500 leading-relaxed mb-6" style={{ fontSize: "15px" }}>
-            {body}
-          </p>
-          <ul className="flex flex-col gap-2.5">
-            {bullets.map(b => (
-              <li key={b} className="flex items-start gap-2.5 text-[14px]" style={{ color: "#94a3b8" }}>
-                <RiCheckLine size={14} style={{ color: accent, marginTop: 4, flexShrink: 0 }} />
-                <span>{b}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
 
-        {/* Product UI mock */}
-        <div className="bounce-reveal" style={{ transitionDelay: "0.15s" }}>
-          {visual}
+          <div className="md:col-span-6 reveal" style={{ transitionDelay: "0.15s" }}>
+            {visual}
+          </div>
         </div>
       </div>
     </section>
   )
 }
 
-// Frame that wraps every mock in a subtle browser-chrome — keeps the
-// landing feeling consistent with the hero pipeline visual.
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared mock frame — minimal chrome, mono URL strip.
+// ─────────────────────────────────────────────────────────────────────────────
 function MockFrame({ subtitle, children }: { subtitle: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl overflow-hidden"
-      style={{
-        background: "rgba(255,255,255,0.02)",
-        border: "1px solid rgba(255,255,255,0.06)",
-        boxShadow: "0 30px 80px rgba(0,0,0,0.5)",
-      }}>
-      <div className="flex items-center gap-2 px-4 py-3"
-        style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-        {["#ff5f57", "#ffbd2e", "#28ca41"].map((c, i) => (
-          <div key={i} className="w-2.5 h-2.5 rounded-full opacity-70" style={{ background: c }} />
-        ))}
-        <p className="flex-1 text-center text-[11px] font-mono" style={{ color: "#334155" }}>{subtitle}</p>
+    <div style={{
+      background: "#0a0a0d",
+      border: "1px solid rgba(255,255,255,0.08)",
+      borderRadius: 2,
+    }}>
+      <div className="flex items-center gap-3 px-4 py-3"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="flex gap-1.5">
+          {["#ff5f57", "#ffbd2e", "#28ca41"].map((c, i) => (
+            <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: c, opacity: 0.5 }} />
+          ))}
+        </div>
+        <p className="mono text-center flex-1" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.04em" }}>{subtitle}</p>
       </div>
-      <div className="p-4 md:p-5">{children}</div>
+      <div className="p-5">{children}</div>
     </div>
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 01 — Pipeline mock. Five columns, a handful of realistic cards, one card
-// visually lifted to imply drag-and-drop.
-// ─────────────────────────────────────────────────────────────────────────────
+// ── 01 Kanban ─────────────────────────────────────────────────────────────────
 function KanbanMock() {
   const cols: Array<{ label: string; color: string; cards: Array<{ name: string; deal: string; dragging?: boolean }> }> = [
     { label: "Outreach",   color: "#9ca3af", cards: [{ name: "Paradigm", deal: "$5M" }, { name: "Multicoin", deal: "$2M" }] },
@@ -607,50 +757,45 @@ function KanbanMock() {
   return (
     <MockFrame subtitle="app.fundflow.io/pipeline">
       <div className="flex items-center justify-between mb-4">
-        <p className="syne font-bold text-white text-[13px]">Deal pipeline</p>
-        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full"
-          style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.15)" }}>
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[10px] font-medium" style={{ color: "#34d399" }}>Live</span>
-        </div>
+        <span className="mono" style={{ fontSize: 11, color: "#cbd5e1", letterSpacing: "0.08em", textTransform: "uppercase" }}>Deal pipeline</span>
+        <span className="mono" style={{ fontSize: 10, color: "#475569" }}>7 deals · $23.5M ACV</span>
       </div>
       <div className="grid grid-cols-5 gap-2">
         {cols.map(col => (
-          <div key={col.label} className="rounded-xl p-2"
-            style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderTop: `2px solid ${col.color}` }}>
+          <div key={col.label} style={{ borderTop: `1px solid ${col.color}55`, paddingTop: 8 }}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[9px] font-semibold truncate syne" style={{ color: col.color }}>{col.label}</span>
-              <span className="text-[9px] px-1 rounded" style={{ background: `${col.color}15`, color: col.color }}>{col.cards.length}</span>
+              <span className="mono truncate" style={{ fontSize: 9, color: col.color, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                {col.label}
+              </span>
+              <span className="mono" style={{ fontSize: 9, color: "#475569" }}>{col.cards.length}</span>
             </div>
             <div className="flex flex-col gap-1.5">
               {col.cards.map(card => (
-                <div key={card.name} className="rounded-md p-1.5 transition-transform"
-                  style={{
-                    background: card.dragging ? `${col.color}18` : "rgba(255,255,255,0.03)",
-                    border: card.dragging ? `1px solid ${col.color}60` : "1px solid rgba(255,255,255,0.06)",
-                    boxShadow: card.dragging ? `0 8px 24px ${col.color}25, 0 0 0 1px ${col.color}35` : "none",
-                    transform: card.dragging ? "translate(2px, -4px) rotate(-1.5deg)" : "none",
-                  }}>
-                  <div className="text-[9px] font-medium truncate" style={{ color: "#cbd5e1" }}>{card.name}</div>
-                  <div className="text-[8px] mt-0.5" style={{ color: col.color }}>{card.deal}</div>
+                <div key={card.name} style={{
+                  background: card.dragging ? `${col.color}14` : "rgba(255,255,255,0.02)",
+                  border: card.dragging ? `1px solid ${col.color}70` : "1px solid rgba(255,255,255,0.06)",
+                  padding: "6px 8px", borderRadius: 2,
+                  transform: card.dragging ? "translate(2px, -3px) rotate(-1.2deg)" : "none",
+                  boxShadow: card.dragging ? `0 6px 18px ${col.color}25` : "none",
+                }}>
+                  <div style={{ fontSize: 10, color: "#e5e7eb", fontWeight: 500 }}>{card.name}</div>
+                  <div className="mono" style={{ fontSize: 9, color: col.color, marginTop: 2 }}>{card.deal}</div>
                 </div>
               ))}
             </div>
           </div>
         ))}
       </div>
-      {/* Optimistic-move hint */}
-      <div className="mt-3 flex items-center gap-2 text-[10px]" style={{ color: "#475569" }}>
-        <span className="inline-block w-1 h-1 rounded-full bg-amber-400" />
-        a16z Crypto · moving to Term Sheet
+      <div className="mono flex items-center gap-2 mt-4 pt-3"
+        style={{ borderTop: "1px solid rgba(255,255,255,0.06)", fontSize: 10, color: "#64748b", letterSpacing: "0.04em" }}>
+        <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#fbbf24" }} />
+        a16z Crypto — moving to Term Sheet
       </div>
     </MockFrame>
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 02 — Deal Room mock. One published project card as an investor sees it.
-// ─────────────────────────────────────────────────────────────────────────────
+// ── 02 Deal Room ─────────────────────────────────────────────────────────────
 function DealRoomMock() {
   const goal = 2_500_000
   const raised = 1_600_000
@@ -658,69 +803,68 @@ function DealRoomMock() {
   return (
     <MockFrame subtitle="app.fundflow.io/investor/discover">
       <div className="flex items-center justify-between mb-4">
-        <p className="syne font-bold text-white text-[13px]">Deal flow</p>
-        <span className="text-[10px]" style={{ color: "#475569" }}>30 founders raising</span>
+        <span className="mono" style={{ fontSize: 11, color: "#cbd5e1", letterSpacing: "0.08em", textTransform: "uppercase" }}>Deal flow</span>
+        <span className="mono" style={{ fontSize: 10, color: "#475569" }}>30 founders raising</span>
       </div>
-      <div className="rounded-xl overflow-hidden"
-        style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
-        <div className="h-[2px] w-full" style={{ background: "linear-gradient(90deg, #10b981, transparent)" }} />
+      <div style={{ background: "#0d0d10", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 2 }}>
+        <div style={{ height: 1, background: "linear-gradient(90deg, #10b981 0%, transparent 100%)" }} />
         <div className="p-4 flex flex-col gap-3">
           <div className="flex items-start justify-between">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center text-[12px] font-bold"
-              style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.25)", color: "#34d399" }}>
-              N
-            </div>
+            <div style={{
+              width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center",
+              background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.25)",
+              color: "#34d399", fontSize: 13, fontWeight: 600, borderRadius: 2,
+            }}>N</div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                style={{ background: "rgba(56,189,248,0.1)", color: "#38bdf8", border: "1px solid rgba(56,189,248,0.2)" }}>Seed</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-mono"
-                style={{ background: "rgba(255,255,255,0.04)", color: "#64748b", border: "1px solid rgba(255,255,255,0.08)" }}>Base</span>
+              <span className="mono" style={{ fontSize: 10, color: "#38bdf8", padding: "3px 8px", background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.2)", borderRadius: 2, letterSpacing: "0.04em", textTransform: "uppercase" }}>Seed</span>
+              <span className="mono" style={{ fontSize: 10, color: "#94a3b8", padding: "3px 8px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 2 }}>Base</span>
             </div>
           </div>
           <div>
-            <h4 className="syne font-bold text-white text-[14px] tracking-tight">NovaPay</h4>
-            <p className="text-[11px] mt-0.5" style={{ color: "#64748b" }}>by Elena K. · Stealth fintech</p>
+            <h4 className="serif" style={{ fontSize: 18, color: "#fff", fontWeight: 500, letterSpacing: "-0.02em" }}>NovaPay</h4>
+            <p className="mono" style={{ fontSize: 10, color: "#64748b", marginTop: 2, letterSpacing: "0.02em" }}>by Elena K. · Stealth fintech</p>
           </div>
-          <p className="text-[11px] leading-relaxed" style={{ color: "#94a3b8" }}>
+          <p style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.6 }}>
             Stablecoin payroll rails for remote-first teams — send USDC to 40+ countries, recipients never see a wallet.
           </p>
           <div className="flex flex-wrap gap-1">
             {["DeFi", "Payments", "B2B"].map(t => (
-              <span key={t} className="text-[9px] px-1.5 py-0.5 rounded-full"
-                style={{ background: "rgba(255,255,255,0.04)", color: "#64748b", border: "1px solid rgba(255,255,255,0.07)" }}>{t}</span>
+              <span key={t} className="mono" style={{ fontSize: 9, color: "#94a3b8", padding: "2px 6px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 2 }}>{t}</span>
             ))}
           </div>
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px]" style={{ color: "#475569" }}>Raised</span>
-              <div className="flex items-center gap-1">
-                <span className="text-[11px] font-semibold text-white">$1.6M</span>
-                <span className="text-[10px]" style={{ color: "#475569" }}>/ $2.5M</span>
+            <div className="flex items-center justify-between mb-2">
+              <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.04em", textTransform: "uppercase" }}>Raised</span>
+              <div className="flex items-baseline gap-1.5">
+                <span className="serif" style={{ fontSize: 16, color: "#fff", fontWeight: 500, letterSpacing: "-0.02em" }}>$1.6M</span>
+                <span className="mono" style={{ fontSize: 10, color: "#475569" }}>/ $2.5M</span>
               </div>
             </div>
-            <div className="h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
-              <div className="h-full rounded-full"
-                style={{ width: `${pct}%`, background: "linear-gradient(90deg, #10b981, #34d399)" }} />
+            <div style={{ height: 2, background: "rgba(255,255,255,0.06)" }}>
+              <div style={{ height: "100%", width: `${pct}%`, background: "#10b981" }} />
             </div>
-            <div className="text-[9px] mt-1 text-right" style={{ color: "#334155" }}>{pct}% funded</div>
+            <div className="mono" style={{ fontSize: 9, color: "#334155", marginTop: 4, textAlign: "right", letterSpacing: "0.04em" }}>{pct}% funded</div>
           </div>
-          <button className="w-full py-2 rounded-lg text-[11px] font-semibold mt-1 border-0 cursor-default flex items-center justify-center gap-1.5"
-            style={{ background: "rgba(16,185,129,0.12)", color: "#10b981" }}>
-            Express interest <RiArrowRightLine size={11} />
+          <button style={{
+            width: "100%", padding: "10px 0", cursor: "default",
+            background: "#10b981", color: "#fff", border: 0,
+            fontSize: 12, fontWeight: 600, borderRadius: 2, marginTop: 4,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+          }}>
+            Express interest <RiArrowRightLine size={12} />
           </button>
         </div>
       </div>
-      <div className="mt-3 flex items-center gap-2 text-[10px]" style={{ color: "#475569" }}>
-        <span className="inline-block w-1 h-1 rounded-full bg-emerald-400" />
-        Elena will get an email the moment you tap
+      <div className="mono flex items-center gap-2 mt-3 pt-3"
+        style={{ borderTop: "1px solid rgba(255,255,255,0.06)", fontSize: 10, color: "#64748b", letterSpacing: "0.04em" }}>
+        <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#10b981" }} />
+        Elena gets an email the moment you tap
       </div>
     </MockFrame>
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 03 — Signal mock. Funnel bars + a small "top deals" list.
-// ─────────────────────────────────────────────────────────────────────────────
+// ── 03 Signal ─────────────────────────────────────────────────────────────────
 function SignalMock() {
   const funnel = [
     { label: "Outreach",   count: 47, color: "#9ca3af", pct: 100 },
@@ -732,96 +876,94 @@ function SignalMock() {
   return (
     <MockFrame subtitle="app.fundflow.io/analytics">
       <div className="flex items-center justify-between mb-4">
-        <p className="syne font-bold text-white text-[13px]">Pipeline funnel</p>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px]" style={{ color: "#475569" }}>Conversion</span>
-          <span className="text-[11px] font-bold" style={{ color: "#34d399" }}>8.5%</span>
-        </div>
+        <span className="mono" style={{ fontSize: 11, color: "#cbd5e1", letterSpacing: "0.08em", textTransform: "uppercase" }}>Pipeline funnel</span>
+        <span className="mono flex items-baseline gap-1.5" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.04em" }}>
+          Conversion <span className="serif" style={{ fontSize: 14, color: "#10b981", fontWeight: 500 }}>8.5%</span>
+        </span>
       </div>
-      <div className="flex flex-col gap-2.5 mb-4">
+      <div className="flex flex-col gap-3 mb-4">
         {funnel.map((s, i) => (
           <div key={s.label}>
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[9px] font-mono" style={{ color: "#334155" }}>{String(i + 1).padStart(2, "0")}</span>
-                <span className="text-[10px] font-medium" style={{ color: "#cbd5e1" }}>{s.label}</span>
+            <div className="flex items-baseline justify-between mb-1">
+              <div className="flex items-baseline gap-3">
+                <span className="mono" style={{ fontSize: 10, color: "#334155" }}>{String(i + 1).padStart(2, "0")}</span>
+                <span style={{ fontSize: 12, color: "#cbd5e1" }}>{s.label}</span>
               </div>
-              <span className="text-[10px] font-bold" style={{ color: s.color }}>{s.count}</span>
+              <span className="serif" style={{ fontSize: 15, color: s.color, fontWeight: 500, letterSpacing: "-0.02em" }}>{s.count}</span>
             </div>
-            <div className="h-1 rounded-full" style={{ background: "rgba(255,255,255,0.04)" }}>
-              <div className="h-full rounded-full"
-                style={{ width: `${s.pct}%`, background: s.color, opacity: 0.8 }} />
+            <div style={{ height: 2, background: "rgba(255,255,255,0.05)" }}>
+              <div style={{ height: "100%", width: `${s.pct}%`, background: s.color, opacity: 0.85 }} />
             </div>
           </div>
         ))}
       </div>
-      <div className="rounded-lg p-2.5"
-        style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
-        <p className="text-[9px] font-semibold uppercase tracking-widest mb-2" style={{ color: "#475569" }}>Total committed</p>
-        <div className="flex items-baseline gap-1.5">
-          <span className="syne font-black text-white" style={{ fontSize: "22px", letterSpacing: "-0.02em" }}>$12.5M</span>
-          <span className="text-[10px]" style={{ color: "#34d399" }}>+ $4.2M this month</span>
+      <div className="pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>Total committed</div>
+        <div className="flex items-baseline gap-3">
+          <span className="serif" style={{ fontSize: 28, color: "#fff", fontWeight: 500, letterSpacing: "-0.02em", lineHeight: 1 }}>$12.5M</span>
+          <span className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.02em" }}>+$4.2M this month</span>
         </div>
       </div>
     </MockFrame>
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 04 — Identity mock. Wallet connect options stacked over one directory row.
-// ─────────────────────────────────────────────────────────────────────────────
+// ── 04 Identity ──────────────────────────────────────────────────────────────
 function IdentityMock() {
   return (
     <MockFrame subtitle="app.fundflow.io/profile">
-      <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#475569" }}>Connect wallet</p>
-      <div className="flex flex-col gap-1.5 mb-5">
+      <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>Connect wallet</span>
+      <div className="flex flex-col gap-1.5 mt-3 mb-6">
         {[
-          { icon: <RiWallet3Line size={14} />, label: "MetaMask",       hint: "Browser extension", color: "#fbbf24" },
-          { icon: <RiQrCodeLine size={14} />,  label: "WalletConnect",  hint: "QR · any wallet",   color: "#38bdf8" },
-          { icon: <RiPencilLine size={14} />,  label: "Paste address",  hint: "Any 0x…",           color: "#94a3b8" },
+          { icon: <RiWallet3Line size={14} />, label: "MetaMask",      hint: "Browser extension",  color: "#fbbf24" },
+          { icon: <RiQrCodeLine size={14} />,  label: "WalletConnect", hint: "QR · any wallet",    color: "#38bdf8" },
+          { icon: <RiPencilLine size={14} />,  label: "Paste address", hint: "Any 0x…",            color: "#94a3b8" },
         ].map(w => (
-          <div key={w.label} className="flex items-center gap-2.5 px-3 py-2 rounded-lg"
-            style={{ background: `${w.color}08`, border: `1px solid ${w.color}20`, color: w.color }}>
+          <div key={w.label} className="flex items-center gap-2.5" style={{
+            padding: "8px 12px", background: `${w.color}08`, border: `1px solid ${w.color}20`,
+            color: w.color, borderRadius: 2,
+          }}>
             {w.icon}
-            <span className="text-[11px] font-medium">{w.label}</span>
-            <span className="ml-auto text-[9px]" style={{ color: "#475569" }}>{w.hint}</span>
+            <span style={{ fontSize: 12, fontWeight: 500 }}>{w.label}</span>
+            <span className="mono ml-auto" style={{ fontSize: 9, color: "#475569", letterSpacing: "0.04em" }}>{w.hint}</span>
           </div>
         ))}
       </div>
 
-      <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "#475569" }}>From the directory</p>
-      <div className="rounded-lg p-3"
-        style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
-        <div className="flex items-start justify-between gap-2 mb-2">
+      <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>From the directory</span>
+      <div className="mt-2" style={{ padding: 12, background: "#0d0d10", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 2 }}>
+        <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold flex-shrink-0"
-              style={{ background: "rgba(251,191,36,0.15)", color: "#fbbf24" }}>
-              D
-            </div>
+            <div style={{
+              width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
+              background: "rgba(251,191,36,0.14)", color: "#fbbf24",
+              fontSize: 12, fontWeight: 600, borderRadius: 2,
+            }}>D</div>
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold text-white truncate">Dragonfly Capital</p>
-              <p className="text-[9px] truncate" style={{ color: "#64748b" }}>Haseeb Qureshi · San Francisco</p>
+              <p style={{ fontSize: 12, color: "#fff", fontWeight: 500 }}>Dragonfly Capital</p>
+              <p className="mono" style={{ fontSize: 9, color: "#64748b", marginTop: 1, letterSpacing: "0.02em" }}>Haseeb Qureshi · San Francisco</p>
             </div>
           </div>
-          <span className="text-[9px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 flex-shrink-0"
-            style={{ background: "rgba(251,191,36,0.08)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.15)" }}>
+          <span className="mono flex items-center gap-1" style={{ fontSize: 9, color: "#fbbf24", padding: "2px 6px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 2, letterSpacing: "0.04em", textTransform: "uppercase" }}>
             <RiFlashlightLine size={9} /> Web3
           </span>
         </div>
-        <div className="flex items-center gap-1 mb-2">
-          <span className="text-[9px]" style={{ color: "#475569" }}>Check:</span>
-          <span className="text-[10px] font-medium text-white">$250k — $5M</span>
+        <div className="flex items-baseline gap-2 mb-3">
+          <span className="mono" style={{ fontSize: 9, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>Check</span>
+          <span className="serif" style={{ fontSize: 13, color: "#fff", fontWeight: 500 }}>$250k — $5M</span>
         </div>
         <div className="flex items-center justify-between">
           <div className="flex gap-1">
             {["DeFi", "Infra"].map(s => (
-              <span key={s} className="text-[9px] px-1.5 py-0.5 rounded-full"
-                style={{ background: "rgba(16,185,129,0.06)", color: "#10b981", border: "1px solid rgba(16,185,129,0.12)" }}>{s}</span>
+              <span key={s} className="mono" style={{ fontSize: 9, color: "#10b981", padding: "2px 6px", background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.14)", borderRadius: 2 }}>{s}</span>
             ))}
           </div>
-          <button className="flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-semibold border-0 cursor-default"
-            style={{ background: "rgba(16,185,129,0.12)", color: "#10b981" }}>
-            <RiAddLine size={9} /> Add
+          <button className="mono flex items-center gap-1" style={{
+            fontSize: 10, color: "#10b981", padding: "3px 8px",
+            background: "rgba(16,185,129,0.1)", border: 0, borderRadius: 2,
+            letterSpacing: "0.04em", textTransform: "uppercase", cursor: "default", fontWeight: 600,
+          }}>
+            <RiAddLine size={10} /> Add
           </button>
         </div>
       </div>

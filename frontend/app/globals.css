@@ -1,8 +1,10 @@
-/* Font @import must precede all other at-rules aside from @charset/@layer,
-   so it sits above the Tailwind import. Loading Syne + DM Sans here lets every
-   page/component keep using `font-family: 'Syne'` or `'DM Sans'` directly in
-   inline styles without each one firing its own <style>@import on mount. */
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+/* Font @imports must precede every other at-rule aside from @charset/@layer.
+   Fraunces is the editorial display serif used by the landing page (opsz 144
+   for the big headlines). Syne is the previous display face, kept because
+   the authenticated app (dashboard/pipeline/etc.) still uses it. JetBrains
+   Mono carries data/monospaced accents — URLs, numbers, kickers. DM Sans
+   stays the body face across the board. */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,400&family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
 :root {
