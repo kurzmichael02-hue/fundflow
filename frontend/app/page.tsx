@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import PublicNav from "@/components/PublicNav"
 import PublicFooter from "@/components/PublicFooter"
+import LiveTicker from "@/components/LiveTicker"
 import {
   RiCheckLine, RiArrowRightLine,
   RiAddLine, RiSubtractLine,
@@ -71,7 +72,7 @@ export default function Home() {
               Built for Web3 founders raising pre-seed → Series A
             </span>
             <span className="mono flex items-center gap-1.5" style={{ fontSize: 11, color: "#34d399", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981" }} />
+              <span className="live-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981" }} />
               Live · Beta
             </span>
           </div>
@@ -140,21 +141,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── TRUST LINE ─── single mono row, no logo wall ─── */}
-      <section style={{ borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-        <div className="max-w-[1180px] mx-auto px-6 md:px-10 py-5 flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-10">
-          <span className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-            In use
-          </span>
-          <div className="mono flex flex-wrap gap-x-7 gap-y-2" style={{ fontSize: 12, color: "#94a3b8" }}>
-            <span>Web3 founders raising pre-seed through Series A</span>
-            <span style={{ color: "#475569" }}>·</span>
-            <span>Solo GPs</span>
-            <span style={{ color: "#475569" }}>·</span>
-            <span>Emerging fund managers</span>
-          </div>
-        </div>
-      </section>
+      {/* ─── LIVE TICKER ─── Bloomberg-style scrolling activity feed.
+          Replaces the previous static "in use by" line — that one was
+          redundant with the trust strip in the hero, and a static
+          declaration of audience always reads weak. The ticker hints at
+          the kind of motion the product captures (status changes, new
+          interests, closes) without faking real telemetry. */}
+      <LiveTicker />
 
       {/* ─── SECTION INTRO — "What's inside" ─── */}
       <section id="features" style={{ paddingTop: 100, paddingBottom: 40 }}>
@@ -486,10 +479,16 @@ export default function Home() {
 // would feel repetitive.
 // ─────────────────────────────────────────────────────────────────────────────
 function HeroPipeline() {
-  const cols: Array<{ label: string; color: string; items: Array<{ name: string; size: string }> }> = [
-    { label: "Outreach",   color: "#94a3b8", items: [{ name: "Paradigm", size: "$5M" }, { name: "Multicoin", size: "$2M" }] },
-    { label: "Meeting",    color: "#fbbf24", items: [{ name: "a16z Crypto", size: "$10M" }] },
-    { label: "Term Sheet", color: "#10b981", items: [{ name: "Coinbase V.", size: "$3M" }] },
+  // Anonymised stand-in names. The previous version used real fund names
+  // (a16z Crypto, Paradigm, Multicoin) which suggested those VCs were on
+  // the platform — they're not. Better to show realistic-but-fictional
+  // names than to imply social proof we haven't earned.
+  // The middle card (Atlas Mint, Meeting) gets the .drift class so it
+  // sways gently — hint of motion without a fake live demo.
+  const cols: Array<{ label: string; color: string; items: Array<{ name: string; size: string; drift?: boolean }> }> = [
+    { label: "Outreach",   color: "#94a3b8", items: [{ name: "Sarah K.",    size: "$500k" }, { name: "Lighthouse Capital", size: "$2M" }] },
+    { label: "Meeting",    color: "#fbbf24", items: [{ name: "Atlas Mint",  size: "$1M",   drift: true }] },
+    { label: "Term Sheet", color: "#10b981", items: [{ name: "Apollo Cap.", size: "$3M" }] },
   ]
   return (
     <div style={{ border: "1px solid rgba(255,255,255,0.08)", background: "#0a0a0d", borderRadius: 2 }}>
@@ -499,7 +498,7 @@ function HeroPipeline() {
           app · pipeline
         </span>
         <span className="mono flex items-center gap-1.5" style={{ fontSize: 10, color: "#34d399", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-          <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#10b981" }} />
+          <span className="live-dot" style={{ width: 5, height: 5, borderRadius: "50%", background: "#10b981" }} />
           Live
         </span>
       </div>
@@ -515,11 +514,14 @@ function HeroPipeline() {
               </div>
               <div className="flex flex-col gap-1.5">
                 {col.items.map(c => (
-                  <div key={c.name} style={{
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                    padding: "8px 10px", borderRadius: 2,
-                  }}>
+                  <div key={c.name}
+                    className={c.drift ? "drift" : undefined}
+                    style={{
+                      background: c.drift ? `${col.color}10` : "rgba(255,255,255,0.02)",
+                      border: c.drift ? `1px solid ${col.color}45` : "1px solid rgba(255,255,255,0.06)",
+                      padding: "8px 10px", borderRadius: 2,
+                      boxShadow: c.drift ? `0 6px 20px ${col.color}1a` : "none",
+                    }}>
                     <div style={{ fontSize: 12, color: "#e5e7eb", fontWeight: 500 }}>{c.name}</div>
                     <div className="mono" style={{ fontSize: 10, color: col.color, marginTop: 2 }}>{c.size}</div>
                   </div>
@@ -633,11 +635,13 @@ function MockFrame({ subtitle, children }: { subtitle: string; children: React.R
 // ── 01 Kanban ─────────────────────────────────────────────────────────────────
 function KanbanMock() {
   const cols: Array<{ label: string; color: string; cards: Array<{ name: string; deal: string; dragging?: boolean }> }> = [
-    { label: "Outreach",   color: "#9ca3af", cards: [{ name: "Paradigm", deal: "$5M" }, { name: "Multicoin", deal: "$2M" }] },
-    { label: "Interested", color: "#a78bfa", cards: [{ name: "Variant", deal: "$1M" }] },
-    { label: "Meeting",    color: "#fbbf24", cards: [{ name: "a16z Crypto", deal: "$10M", dragging: true }] },
-    { label: "Term Sheet", color: "#38bdf8", cards: [{ name: "Coinbase V.", deal: "$3M" }] },
-    { label: "Closed",     color: "#34d399", cards: [{ name: "Dragonfly", deal: "$2.5M" }] },
+    // Same anonymisation rationale as HeroPipeline — fictional names
+    // instead of borrowed VC brands.
+    { label: "Outreach",   color: "#9ca3af", cards: [{ name: "Lighthouse Cap.", deal: "$5M" }, { name: "Sarah K.", deal: "$500k" }] },
+    { label: "Interested", color: "#a78bfa", cards: [{ name: "Forge Labs",  deal: "$1M" }] },
+    { label: "Meeting",    color: "#fbbf24", cards: [{ name: "Atlas Mint",  deal: "$2M", dragging: true }] },
+    { label: "Term Sheet", color: "#38bdf8", cards: [{ name: "Apollo Cap.", deal: "$3M" }] },
+    { label: "Closed",     color: "#34d399", cards: [{ name: "Helix Studio",deal: "$2.5M" }] },
   ]
   return (
     <MockFrame subtitle="app.fundflow.io/pipeline">
@@ -674,7 +678,7 @@ function KanbanMock() {
       <div className="mono flex items-center gap-2 mt-4 pt-3"
         style={{ borderTop: "1px solid rgba(255,255,255,0.06)", fontSize: 10, color: "#64748b", letterSpacing: "0.04em" }}>
         <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#fbbf24" }} />
-        a16z Crypto — moving to Term Sheet
+        Atlas Mint — moving to Term Sheet
       </div>
     </MockFrame>
   )
@@ -823,10 +827,10 @@ function IdentityMock() {
               width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
               background: "rgba(251,191,36,0.14)", color: "#fbbf24",
               fontSize: 12, fontWeight: 600, borderRadius: 2,
-            }}>D</div>
+            }}>M</div>
             <div className="min-w-0">
-              <p style={{ fontSize: 12, color: "#fff", fontWeight: 500 }}>Dragonfly Capital</p>
-              <p className="mono" style={{ fontSize: 9, color: "#64748b", marginTop: 1, letterSpacing: "0.02em" }}>Haseeb Qureshi · San Francisco</p>
+              <p style={{ fontSize: 12, color: "#fff", fontWeight: 500 }}>Meridian Crypto</p>
+              <p className="mono" style={{ fontSize: 9, color: "#64748b", marginTop: 1, letterSpacing: "0.02em" }}>Alex Chen · San Francisco</p>
             </div>
           </div>
           <span className="mono flex items-center gap-1" style={{ fontSize: 9, color: "#fbbf24", padding: "2px 6px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 2, letterSpacing: "0.04em", textTransform: "uppercase" }}>
