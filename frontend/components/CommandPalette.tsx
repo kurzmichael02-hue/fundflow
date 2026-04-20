@@ -89,11 +89,26 @@ export default function CommandPalette() {
     if (!token) return
     setLoadingInvestors(true)
     fetch("/api/investors", { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : [])
-      .then(data => setInvestors(Array.isArray(data) ? data : []))
+      .then(r => {
+        // 401 = session expired. Don't silently render "no investors" —
+        // that's been the wrong answer for years in other CRMs. Bounce
+        // to the right login page and close the palette.
+        if (r.status === 401) {
+          setOpen(false)
+          localStorage.removeItem("token")
+          localStorage.removeItem("user_type")
+          router.push("/login")
+          return null
+        }
+        return r.ok ? r.json() : []
+      })
+      .then(data => {
+        if (data === null) return
+        setInvestors(Array.isArray(data) ? data : [])
+      })
       .catch(() => setInvestors([]))
       .finally(() => setLoadingInvestors(false))
-  }, [open])
+  }, [open, router])
 
   // Body scroll lock while the palette is open.
   useEffect(() => {

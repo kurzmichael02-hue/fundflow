@@ -3,6 +3,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import AppNav from "@/components/AppNav"
 import { ToastContainer, useToast } from "@/components/Toast"
+import { requireToken } from "@/lib/api"
 import {
   RiCheckLine, RiEditLine, RiCloseLine, RiRocketLine,
   RiEyeLine, RiEyeOffLine, RiWallet3Line, RiQrCodeLine, RiPencilLine,
@@ -108,7 +109,8 @@ export default function ProfilePage() {
   }
 
   async function saveWalletAddress(address: string) {
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) return
     const res = await fetch("/api/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -170,10 +172,14 @@ export default function ProfilePage() {
   async function handleSaveManual() {
     const trimmed = manualAddress.trim()
     if (!trimmed) return
-    // EVM addresses are 0x followed by 40 hex chars. Reject anything else
-    // up front rather than letting users save typos that look correct.
-    if (!/^0x[a-fA-F0-9]{40}$/.test(trimmed)) {
-      addToast("That doesn't look like a wallet address (0x + 40 hex chars)", "error")
+    // Accept either an EVM address (0x + 40 hex) or a Solana address
+    // (base58, 32–44 chars with Bitcoin's no-0/O/I/l alphabet). The
+    // CHAIN_OPTIONS list has SOL as a first-class option, so rejecting
+    // Solana addresses here leaves those founders unable to save a wallet.
+    const isEvm    = /^0x[a-fA-F0-9]{40}$/.test(trimmed)
+    const isSolana = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(trimmed)
+    if (!isEvm && !isSolana) {
+      addToast("That doesn't look like a wallet address — paste an EVM (0x…) or Solana address", "error")
       return
     }
     setConnectingWallet(true)
@@ -189,7 +195,8 @@ export default function ProfilePage() {
 
   async function handleSaveProfile() {
     setSavingProfile(true)
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) { setSavingProfile(false); return }
     try {
       const res = await fetch("/api/profile", {
         method: "PATCH",
@@ -221,7 +228,8 @@ export default function ProfilePage() {
 
   async function handleSaveProject() {
     setSavingProject(true)
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) { setSavingProject(false); return }
     try {
       const tagsArray = projectForm.tags.split(",").map(t => t.trim()).filter(Boolean)
       // Number("") is 0, Number("abc") is NaN — guard both. We also clamp

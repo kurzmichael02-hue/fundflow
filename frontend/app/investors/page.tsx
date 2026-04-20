@@ -7,6 +7,7 @@ import ConfirmDialog from "@/components/ConfirmDialog"
 import CsvImportDialog from "@/components/CsvImportDialog"
 import FollowUpPill from "@/components/FollowUpPill"
 import { useTimeTick } from "@/lib/useTimeTick"
+import { requireToken } from "@/lib/api"
 import {
   RiAddLine, RiSearchLine, RiEditLine, RiDeleteBinLine,
   RiCheckLine, RiCloseLine, RiDownloadLine, RiUploadLine, RiUserLine,
@@ -235,7 +236,8 @@ function InvestorsPage() {
   async function handleSaveNotes() {
     if (!selectedInv) return
     setSavingNotes(true)
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) { setSavingNotes(false); return }
     try {
       const res = await fetch(`/api/investors?id=${selectedInv.id}`, {
         method: "PATCH",
@@ -256,7 +258,8 @@ function InvestorsPage() {
 
   async function handlePanelStatusChange(newStatus: Status) {
     if (!selectedInv) return
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) return
     try {
       const res = await fetch(`/api/investors?id=${selectedInv.id}`, {
         method: "PATCH",
@@ -277,7 +280,8 @@ function InvestorsPage() {
   // Works for both quick-set ("in 3 days") and the custom date picker.
   async function handlePanelFollowUp(iso: string | null) {
     if (!selectedInv) return
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) return
     try {
       const res = await fetch(`/api/investors?id=${selectedInv.id}`, {
         method: "PATCH",
@@ -302,7 +306,8 @@ function InvestorsPage() {
   // and still want the nudge.
   async function handlePanelLogContact() {
     if (!selectedInv) return
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) return
     const nextAt = selectedInv.next_follow_up_at
     const isOverdue = nextAt && new Date(nextAt).getTime() < Date.now()
     const body: Record<string, unknown> = { last_contacted_at: new Date().toISOString() }
@@ -327,7 +332,8 @@ function InvestorsPage() {
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) { setSaving(false); return }
     try {
       const res = await fetch("/api/investors", {
         method: "POST",
@@ -368,7 +374,8 @@ function InvestorsPage() {
   }
 
   async function handleSaveEdit(id: string) {
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) return
     try {
       const res = await fetch(`/api/investors?id=${id}`, {
         method: "PATCH",
@@ -400,7 +407,8 @@ function InvestorsPage() {
     if (!pendingDelete) return
     const { ids } = pendingDelete
     setDeleting(true)
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) { setDeleting(false); return }
     try {
       // Parallel DELETE for the bulk case. If a single one fails we show
       // a toast but still drop the successes from local state.
@@ -440,7 +448,8 @@ function InvestorsPage() {
     if (selectedIds.size === 0) return
     setBulkBusy(true)
     setBulkStatusOpen(false)
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) { setBulkBusy(false); return }
     const ids = Array.from(selectedIds)
     try {
       const results = await Promise.allSettled(ids.map(id =>

@@ -109,25 +109,40 @@ export default function AppNav() {
   // If the token is rejected (401) we sign the user out — otherwise the
   // nav shows a logged-in shell with no real session and every other
   // page would 401 right after.
+  //
+  // We re-fetch when the tab regains visibility too. Without that, a user
+  // who upgrades via Stripe Checkout (redirects off-site, webhook lands,
+  // redirects back) would see the old "Free" plan badge in the nav until
+  // they hard-reload. Same cost as the mount fetch, runs at most once per
+  // tab-switch.
   useEffect(() => {
-    const token = localStorage.getItem("token")
-    if (!token) return
-    fetch("/api/profile", { headers: { Authorization: `Bearer ${token}` } })
-      .then(async r => {
-        if (r.status === 401) {
-          localStorage.removeItem("token")
-          localStorage.removeItem("user_type")
-          router.push("/login")
-          return null
-        }
-        return r.ok ? r.json() : null
-      })
-      .then(d => {
-        if (!d) return
-        setPlan(d.plan || "free")
-        setEmail(d.email || null)
-      })
-      .catch(() => {})
+    function loadProfile() {
+      const token = localStorage.getItem("token")
+      if (!token) return
+      fetch("/api/profile", { headers: { Authorization: `Bearer ${token}` } })
+        .then(async r => {
+          if (r.status === 401) {
+            localStorage.removeItem("token")
+            localStorage.removeItem("user_type")
+            router.push("/login")
+            return null
+          }
+          return r.ok ? r.json() : null
+        })
+        .then(d => {
+          if (!d) return
+          setPlan(d.plan || "free")
+          setEmail(d.email || null)
+        })
+        .catch(() => {})
+    }
+    loadProfile()
+
+    function onVisibility() {
+      if (document.visibilityState === "visible") loadProfile()
+    }
+    document.addEventListener("visibilitychange", onVisibility)
+    return () => document.removeEventListener("visibilitychange", onVisibility)
   }, [router])
 
   const investorsActive = pathname === "/investors" || pathname === "/investors/database"
