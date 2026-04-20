@@ -51,7 +51,7 @@ export default async function TwitterImage() {
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
           <span style={{ fontSize: 16, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 28 }}>
-            § The investor CRM for Web3 founders
+            The investor CRM for Web3 founders
           </span>
           <div style={{
             fontFamily: "Serif",
@@ -64,7 +64,7 @@ export default async function TwitterImage() {
             flexDirection: "column",
           }}>
             <span>Raise the</span>
-            <span style={{ fontStyle: "italic", fontWeight: 400 }}>round.</span>
+            round.
           </div>
         </div>
         <div style={{

@@ -305,18 +305,18 @@ export default function ProfilePage() {
         {/* ── Masthead ── */}
         <section className="pt-10 md:pt-14 pb-10">
           <p className="mono mb-3" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-            § Account
+            Account
           </p>
           <h1 className="serif text-white" style={{
             fontSize: "clamp(40px, 5.5vw, 64px)", lineHeight: 0.95, letterSpacing: "-0.045em", fontWeight: 500,
           }}>
-            You & <span style={{ fontStyle: "italic", fontWeight: 400 }}>your project.</span>
+            You & your project.
           </h1>
         </section>
 
         {/* ── Section: Profile ── */}
         <Section
-          kicker="§ Identity"
+          kicker="Identity"
           title="Who you are."
           action={!editProfile && (
             <button onClick={() => setEditProfile(true)} className="mono cursor-pointer flex items-center gap-1.5"
@@ -364,7 +364,7 @@ export default function ProfilePage() {
         </Section>
 
         {/* ── Section: Wallet ── */}
-        <Section kicker="§ Wallet" title="Connect an address.">
+        <Section kicker="Wallet" title="Connect an address.">
           {profile.wallet_address && walletMode === "idle" ? (
             <div className="grid grid-cols-[1fr_auto] items-center gap-4 py-4"
               style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
@@ -436,7 +436,7 @@ export default function ProfilePage() {
 
         {/* ── Section: Project ── */}
         <Section
-          kicker="§ Deal room"
+          kicker="Deal room"
           title={project?.published ? "Live on the deal flow." : project ? "Draft." : "Publish a project."}
           badge={project && (
             <span className="mono" style={{

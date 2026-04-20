@@ -114,12 +114,12 @@ export default function PipelinePage() {
         {/* ── Masthead ── */}
         <section className="pt-10 md:pt-14 pb-8">
           <p className="mono mb-3" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-            § Deal flow
+            Deal flow
           </p>
           <h1 className="serif text-white" style={{
             fontSize: "clamp(40px, 5.5vw, 72px)", lineHeight: 0.95, letterSpacing: "-0.045em", fontWeight: 500,
           }}>
-            Every deal, <span style={{ fontStyle: "italic", fontWeight: 400 }}>one column at a time.</span>
+            Every deal, one column at a time.
           </h1>
         </section>
 
@@ -181,12 +181,12 @@ function PipelineEmpty() {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-10 items-start">
         <div className="md:col-span-7">
           <p className="mono mb-5" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-            § Empty pipeline
+            Empty pipeline
           </p>
           <h2 className="serif text-white" style={{
             fontSize: "clamp(32px, 4.5vw, 56px)", lineHeight: 1, letterSpacing: "-0.04em", fontWeight: 500,
           }}>
-            Nothing in the funnel <span style={{ fontStyle: "italic", fontWeight: 400 }}>yet.</span>
+            Nothing in the funnel yet.
           </h2>
           <p style={{ fontSize: 16, color: "#94a3b8", marginTop: 20, maxWidth: 480, lineHeight: 1.65 }}>
             Add a few investors first — they&apos;ll show up here as cards you can drag from

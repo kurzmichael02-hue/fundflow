@@ -599,7 +599,12 @@ function DeepDive({
             </ul>
           </div>
 
-          <div className="md:col-span-6 reveal" style={{ transitionDelay: "0.15s" }}>
+          {/* Sticky on md+ so the mock visual stays in the viewport while
+              the text column scrolls past — Linear-style scroll story.
+              top: 84px = AppNav (64) + breathing room (20). On mobile the
+              sticky is dropped so the visual just sits below the text. */}
+          <div className="md:col-span-6 reveal md:sticky md:self-start"
+            style={{ transitionDelay: "0.15s", top: 84 }}>
             {visual}
           </div>
         </div>

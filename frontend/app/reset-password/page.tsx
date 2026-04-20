@@ -75,10 +75,10 @@ export default function ResetPasswordPage() {
   }
 
   const title = phase === "done"
-    ? <>Password<br /><em style={{ fontWeight: 400 }}>updated.</em></>
+    ? <>Password<br />updated.</>
     : phase === "invalid"
-      ? <>Link<br /><em style={{ fontWeight: 400 }}>invalid.</em></>
-      : <>Set a<br /><em style={{ fontWeight: 400 }}>new password.</em></>
+      ? <>Link<br />invalid.</>
+      : <>Set a<br />new password.</>
 
   const intro = phase === "done"
     ? "Redirecting you to sign in..."
@@ -87,7 +87,7 @@ export default function ResetPasswordPage() {
       : "Pick something you haven't used before. Minimum 8 characters, anything longer is better."
 
   return (
-    <AuthShell kicker="§ New password" title={title} intro={intro} side="founder">
+    <AuthShell kicker="New password" title={title} intro={intro} side="founder">
       {phase === "waiting" && (
         <div style={{ padding: "12px 0", display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ width: 18, height: 18, borderRadius: "50%", border: "2px solid #10b981", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />

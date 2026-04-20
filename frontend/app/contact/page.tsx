@@ -90,7 +90,7 @@ export default function ContactPage() {
             {/* ─── Left column — editorial letter ─── */}
             <div className="md:col-span-5">
               <p className="mono mb-6" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                § Get in touch
+                Get in touch
               </p>
               <h1 className="serif text-white" style={{
                 fontSize: "clamp(44px, 6.5vw, 88px)",
@@ -99,7 +99,7 @@ export default function ContactPage() {
                 fontWeight: 500,
               }}>
                 Say hello.<br />
-                <span style={{ fontStyle: "italic", fontWeight: 400 }}>We're listening.</span>
+                We're listening.
               </h1>
               <p style={{ fontSize: 17, color: "#94a3b8", lineHeight: 1.7, marginTop: 28, maxWidth: 420, fontWeight: 300 }}>
                 Whether you have a question about the product, want to partner, are writing about us,

@@ -121,7 +121,7 @@ export default function ShortcutsCheatsheet() {
           {GROUPS.map((g, gi) => (
             <div key={g.label} style={{ marginTop: gi === 0 ? 0 : 28 }}>
               <div className="mono mb-3" style={{ fontSize: 10, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                § {g.label}
+                {g.label}
               </div>
               <div>
                 {g.rows.map(r => (

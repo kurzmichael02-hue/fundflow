@@ -334,7 +334,7 @@ export default function DashboardPage() {
         <section className="grid grid-cols-1 md:grid-cols-12 gap-10 pt-10 md:pt-14 pb-10 md:pb-14 items-end">
           <div className="md:col-span-7">
             <p className="mono mb-3" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-              § Overview
+              Overview
             </p>
             <h1 className="serif text-white" style={{
               fontSize: "clamp(40px, 5.5vw, 72px)", lineHeight: 0.95, letterSpacing: "-0.045em", fontWeight: 500,
@@ -350,7 +350,7 @@ export default function DashboardPage() {
                 const handle = (userEmail || "").split("@")[0].trim()
                 return (
                   <>
-                    {greeting}{handle ? <>, <span style={{ fontStyle: "italic", fontWeight: 400 }}>{handle}</span></> : ""}.
+                    {greeting}{handle ? <>, {handle}</> : ""}.
                   </>
                 )
               })()}
@@ -520,7 +520,7 @@ export default function DashboardPage() {
             <div className="md:col-span-7">
               <div className="flex items-baseline justify-between mb-6">
                 <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                  § Focus today
+                  Focus today
                 </p>
                 <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                   Ranked by impact
@@ -591,7 +591,7 @@ export default function DashboardPage() {
             <div className="md:col-span-5">
               <div className="flex items-baseline justify-between mb-6">
                 <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                  § Recent
+                  Recent
                 </p>
                 <button onClick={() => router.push("/investors")}
                   className="mono no-underline cursor-pointer"

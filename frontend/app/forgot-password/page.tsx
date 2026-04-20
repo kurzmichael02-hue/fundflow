@@ -34,10 +34,10 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthShell
-      kicker="§ Reset password"
+      kicker="Reset password"
       title={sent
-        ? <>Check your<br /><em style={{ fontWeight: 400 }}>inbox.</em></>
-        : <>Forgot your<br /><em style={{ fontWeight: 400 }}>password?</em></>
+        ? <>Check your<br />inbox.</>
+        : <>Forgot your<br />password?</>
       }
       intro={sent
         ? "If that address is registered with us, a reset link is on the way. The link expires in an hour — if nothing shows up, check spam or try again in a few minutes."

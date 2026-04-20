@@ -154,12 +154,12 @@ export default function InvestorDiscoverPage() {
         {/* ── Masthead ── */}
         <section className="pt-10 md:pt-14 pb-8">
           <p className="mono mb-3" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-            § Active founders
+            Active founders
           </p>
           <h1 className="serif text-white" style={{
             fontSize: "clamp(40px, 5.5vw, 72px)", lineHeight: 0.95, letterSpacing: "-0.045em", fontWeight: 500,
           }}>
-            Web3 rounds <span style={{ fontStyle: "italic", fontWeight: 400 }}>worth a look.</span>
+            Web3 rounds worth a look.
           </h1>
           <p style={{ fontSize: 16, color: "#94a3b8", marginTop: 20, maxWidth: 560, lineHeight: 1.6 }}>
             Curated projects that founders chose to publish. Filter by stage and sector, tap

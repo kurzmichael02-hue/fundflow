@@ -151,7 +151,7 @@ export default function PrivacyPage() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-10 pt-16 md:pt-24 pb-12">
             <div className="md:col-span-3">
               <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                § Privacy
+                Privacy
               </p>
             </div>
             <div className="md:col-span-9">
@@ -162,7 +162,7 @@ export default function PrivacyPage() {
                 fontWeight: 500,
               }}>
                 Your data,<br />
-                <span style={{ fontStyle: "italic", fontWeight: 400 }}>on your terms.</span>
+                on your terms.
               </h1>
               <p style={{ fontSize: 17, color: "#94a3b8", lineHeight: 1.7, marginTop: 28, maxWidth: 560, fontWeight: 300 }}>
                 Plain language, no dark patterns. Here&apos;s what we collect, why we collect it,

@@ -95,7 +95,7 @@ export default function About() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-10 pt-16 md:pt-24 pb-16 md:pb-24">
             <div className="md:col-span-3">
               <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                § About
+                About
               </p>
             </div>
             <div className="md:col-span-9">
@@ -106,7 +106,7 @@ export default function About() {
                 fontWeight: 500,
               }}>
                 Built by founders,<br />
-                <span style={{ fontStyle: "italic", fontWeight: 400 }}>for founders.</span>
+                for founders.
               </h1>
               <p style={{ fontSize: 18, color: "#94a3b8", marginTop: 32, maxWidth: 560, lineHeight: 1.6, fontWeight: 300 }}>
                 FundFlow started as a spreadsheet. Then a Notion board. Then a Retool prototype.
@@ -124,7 +124,7 @@ export default function About() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
             <div className="md:col-span-3">
               <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                § Why we built it
+                Why we built it
               </p>
             </div>
             <div className="md:col-span-9">
@@ -132,7 +132,7 @@ export default function About() {
                 fontSize: "clamp(36px, 5vw, 64px)", lineHeight: 1, letterSpacing: "-0.04em", fontWeight: 500,
               }}>
                 The blockchain is fast.<br />
-                <span style={{ fontStyle: "italic", fontWeight: 400, color: "#cbd5e1" }}>Fundraising isn't.</span>
+                Fundraising isn't.
               </h2>
               <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-5 max-w-[720px]" style={{ fontSize: 16, color: "#94a3b8", lineHeight: 1.75 }}>
                 <p>
@@ -157,7 +157,7 @@ export default function About() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-10 mb-14">
             <div className="md:col-span-3">
               <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                § What we believe
+                What we believe
               </p>
             </div>
             <div className="md:col-span-9">
@@ -165,7 +165,7 @@ export default function About() {
                 fontSize: "clamp(36px, 5vw, 64px)", lineHeight: 1, letterSpacing: "-0.04em", fontWeight: 500,
               }}>
                 Four principles<br />
-                <span style={{ fontStyle: "italic", fontWeight: 400, color: "#cbd5e1" }}>we actually follow.</span>
+                we actually follow.
               </h2>
             </div>
           </div>
@@ -202,7 +202,7 @@ export default function About() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-10 mb-14">
             <div className="md:col-span-3">
               <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                § The team
+                The team
               </p>
             </div>
             <div className="md:col-span-9">
@@ -210,7 +210,7 @@ export default function About() {
                 fontSize: "clamp(36px, 5vw, 64px)", lineHeight: 1, letterSpacing: "-0.04em", fontWeight: 500,
               }}>
                 Three people<br />
-                <span style={{ fontStyle: "italic", fontWeight: 400, color: "#cbd5e1" }}>behind every release.</span>
+                behind every release.
               </h2>
             </div>
           </div>
@@ -262,13 +262,13 @@ export default function About() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-10 items-end">
             <div className="md:col-span-8">
               <p className="mono mb-5" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                § Want to work with us?
+                Want to work with us?
               </p>
               <h2 className="serif text-white" style={{
                 fontSize: "clamp(40px, 6vw, 80px)", lineHeight: 1, letterSpacing: "-0.045em", fontWeight: 500,
               }}>
                 We're always<br />
-                <span style={{ fontStyle: "italic", fontWeight: 400, color: "#cbd5e1" }}>open to conversations.</span>
+                open to conversations.
               </h2>
             </div>
             <div className="md:col-span-4 flex flex-col gap-3">

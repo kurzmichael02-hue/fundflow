@@ -39,8 +39,8 @@ export default function InvestorLoginPage() {
 
   return (
     <AuthShell
-      kicker="§ Investor sign in"
-      title={<>Back to<br /><em style={{ fontWeight: 400 }}>the deal flow.</em></>}
+      kicker="Investor sign in"
+      title={<>Back to<br />the deal flow.</>}
       intro="Sign in to browse curated Web3 founders actively raising. Filter by stage, chain, sector — express interest with one tap."
       side="investor">
       <form onSubmit={handleLogin} className="flex flex-col gap-7">

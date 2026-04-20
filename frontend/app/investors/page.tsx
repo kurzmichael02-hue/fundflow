@@ -592,12 +592,12 @@ function InvestorsPage() {
         {/* ── Masthead ── */}
         <section className="pt-10 md:pt-14 pb-8">
           <p className="mono mb-3" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-            § Your pipeline
+            Your pipeline
           </p>
           <h1 className="serif text-white" style={{
             fontSize: "clamp(40px, 5.5vw, 72px)", lineHeight: 0.95, letterSpacing: "-0.045em", fontWeight: 500,
           }}>
-            The <span style={{ fontStyle: "italic", fontWeight: 400 }}>data room.</span>
+            The data room.
           </h1>
         </section>
 
@@ -647,7 +647,7 @@ function InvestorsPage() {
         {showAdd && (
           <section className="py-6" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
             <div className="mono mb-4" style={{ fontSize: 10, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-              § New entry
+              New entry
             </div>
             <form onSubmit={handleAdd} className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               {[
