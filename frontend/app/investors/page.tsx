@@ -4,12 +4,15 @@ import { useRouter, useSearchParams } from "next/navigation"
 import AppNav from "@/components/AppNav"
 import { ToastContainer, useToast } from "@/components/Toast"
 import ConfirmDialog from "@/components/ConfirmDialog"
+import CsvImportDialog from "@/components/CsvImportDialog"
+import FollowUpPill from "@/components/FollowUpPill"
 import {
   RiAddLine, RiSearchLine, RiEditLine, RiDeleteBinLine,
-  RiCheckLine, RiCloseLine, RiDownloadLine, RiUserLine,
+  RiCheckLine, RiCloseLine, RiDownloadLine, RiUploadLine, RiUserLine,
   RiStickyNoteLine, RiTimeLine, RiCheckboxBlankLine, RiCheckboxLine,
   RiHistoryLine, RiArrowRightLine, RiEditBoxLine, RiAddCircleLine,
-  RiCoinLine,
+  RiCoinLine, RiArrowUpSLine, RiArrowDownSLine,
+  RiAlarmLine, RiMailSendLine, RiCalendarScheduleLine,
 } from "react-icons/ri"
 
 // Investors page — editorial CRM with shareable filters and bulk operations.
@@ -31,6 +34,8 @@ type Investor = {
   deal_size?: string | null
   notes?: string | null
   updated_at?: string | null
+  next_follow_up_at?: string | null
+  last_contacted_at?: string | null
 }
 
 const STATUSES: Status[] = ["outreach", "interested", "meeting", "term_sheet", "closed"]
@@ -111,6 +116,12 @@ function InvestorsPage() {
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null)
   const [bulkStatusOpen, setBulkStatusOpen] = useState(false)
   const [bulkBusy, setBulkBusy] = useState(false)
+
+  // CSV import + table sort
+  const [csvOpen, setCsvOpen] = useState(false)
+  type SortKey = "name" | "status" | "deal_size" | "updated_at"
+  const [sortKey, setSortKey] = useState<SortKey | null>(null)
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
 
   // ── Sync state into the URL (replace, don't push, so back button works) ─
   const writeUrl = useCallback((next: Record<string, string | null>) => {
@@ -232,6 +243,57 @@ function InvestorsPage() {
       addToast(`Moved to ${STATUS_LABEL[newStatus]}`)
     } catch (err) {
       addToast(err instanceof Error ? err.message : "Failed to update", "error")
+    }
+  }
+
+  // Follow-up reminder — `iso` is the target timestamp, or null to clear.
+  // Works for both quick-set ("in 3 days") and the custom date picker.
+  async function handlePanelFollowUp(iso: string | null) {
+    if (!selectedInv) return
+    const token = localStorage.getItem("token")!
+    try {
+      const res = await fetch(`/api/investors?id=${selectedInv.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ next_follow_up_at: iso }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setInvestors(prev => prev.map(i => i.id === selectedInv.id ? data : i))
+      setSelectedInv(data)
+      addToast(iso ? "Reminder set" : "Reminder cleared")
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : "Failed to update", "error")
+    }
+  }
+
+  // Log an outreach touch. Stamps last_contacted_at = now. If the current
+  // reminder is already in the past (i.e. this is the follow-up you were
+  // supposed to do), we clear it in the same PATCH — otherwise the red
+  // pill would linger after the founder's done the thing. If the reminder
+  // is still in the future we leave it alone: they might be pinging early
+  // and still want the nudge.
+  async function handlePanelLogContact() {
+    if (!selectedInv) return
+    const token = localStorage.getItem("token")!
+    const nextAt = selectedInv.next_follow_up_at
+    const isOverdue = nextAt && new Date(nextAt).getTime() < Date.now()
+    const body: Record<string, unknown> = { last_contacted_at: new Date().toISOString() }
+    if (isOverdue) body.next_follow_up_at = null
+
+    try {
+      const res = await fetch(`/api/investors?id=${selectedInv.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setInvestors(prev => prev.map(i => i.id === selectedInv.id ? data : i))
+      setSelectedInv(data)
+      addToast(isOverdue ? "Logged — reminder cleared" : "Logged as contacted")
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : "Failed to log touch", "error")
     }
   }
 
@@ -402,16 +464,67 @@ function InvestorsPage() {
     addToast(`CSV exported (${rows.length})`)
   }
 
-  // ── Filtering ─────────────────────────────────────────────────────────
-  const filtered = useMemo(() => investors.filter(inv => {
-    const q = search.toLowerCase()
-    const matchSearch = !q ||
-      inv.name?.toLowerCase().includes(q) ||
-      inv.company?.toLowerCase().includes(q) ||
-      inv.email?.toLowerCase().includes(q)
-    const matchStatus = statusFilter === "all" || inv.status === statusFilter
-    return matchSearch && matchStatus
-  }), [investors, search, statusFilter])
+  // Status order so a sort by status reads outreach → closed in ascending,
+  // not alphabetical (which would sort interested before meeting etc).
+  const STATUS_ORDER: Record<Status, number> = useMemo(() => ({
+    outreach: 0, interested: 1, meeting: 2, term_sheet: 3, closed: 4,
+  }), [])
+
+  // Free-form deal_size string ("$5M", "500k") gets coerced to a number for
+  // sorting only — same parser idea as analytics, lighter touch here.
+  function sortValue(inv: Investor, key: SortKey): string | number {
+    switch (key) {
+      case "name":       return (inv.name || "").toLowerCase()
+      case "status":     return STATUS_ORDER[inv.status]
+      case "deal_size": {
+        const s = String(inv.deal_size || "").toLowerCase()
+        if (!s) return -1
+        let mult = 1
+        if (/\bb\b|billion/.test(s))      mult = 1e9
+        else if (/\bm\b|million/.test(s)) mult = 1e6
+        else if (/\bk\b|thousand/.test(s)) mult = 1e3
+        const n = parseFloat(s.replace(/[^0-9.]/g, ""))
+        return isNaN(n) ? -1 : n * mult
+      }
+      case "updated_at": return inv.updated_at ? new Date(inv.updated_at).getTime() : 0
+    }
+  }
+
+  // ── Filtering + sorting ───────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    const matched = investors.filter(inv => {
+      const q = search.toLowerCase()
+      const matchSearch = !q ||
+        inv.name?.toLowerCase().includes(q) ||
+        inv.company?.toLowerCase().includes(q) ||
+        inv.email?.toLowerCase().includes(q)
+      const matchStatus = statusFilter === "all" || inv.status === statusFilter
+      return matchSearch && matchStatus
+    })
+    if (!sortKey) return matched
+    const sorted = [...matched].sort((a, b) => {
+      const va = sortValue(a, sortKey)
+      const vb = sortValue(b, sortKey)
+      if (va < vb) return sortDir === "asc" ? -1 : 1
+      if (va > vb) return sortDir === "asc" ? 1 : -1
+      return 0
+    })
+    return sorted
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [investors, search, statusFilter, sortKey, sortDir, STATUS_ORDER])
+
+  function toggleSort(key: SortKey) {
+    if (sortKey !== key) {
+      setSortKey(key)
+      setSortDir("asc")
+    } else if (sortDir === "asc") {
+      setSortDir("desc")
+    } else {
+      // Third click clears the sort and goes back to insertion order.
+      setSortKey(null)
+      setSortDir("asc")
+    }
+  }
 
   // ── Selection helpers ────────────────────────────────────────────────
   const allFilteredSelected = filtered.length > 0 && filtered.every(i => selectedIds.has(i.id))
@@ -501,6 +614,15 @@ function InvestorsPage() {
             )}
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={() => setCsvOpen(true)}
+              className="mono flex items-center gap-1.5 cursor-pointer"
+              style={{
+                fontSize: 11, color: "#94a3b8", letterSpacing: "0.08em", textTransform: "uppercase",
+                padding: "8px 14px",
+                background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 2,
+              }}>
+              <RiUploadLine size={12} /> Import CSV
+            </button>
             <button onClick={handleExportCSV}
               className="mono flex items-center gap-1.5 cursor-pointer"
               style={{
@@ -525,12 +647,12 @@ function InvestorsPage() {
         {/* ── Masthead ── */}
         <section className="pt-10 md:pt-14 pb-8">
           <p className="mono mb-3" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-            § Your pipeline
+            Your pipeline
           </p>
           <h1 className="serif text-white" style={{
             fontSize: "clamp(40px, 5.5vw, 72px)", lineHeight: 0.95, letterSpacing: "-0.045em", fontWeight: 500,
           }}>
-            The <span style={{ fontStyle: "italic", fontWeight: 400 }}>data room.</span>
+            The data room.
           </h1>
         </section>
 
@@ -580,7 +702,7 @@ function InvestorsPage() {
         {showAdd && (
           <section className="py-6" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
             <div className="mono mb-4" style={{ fontSize: 10, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-              § New entry
+              New entry
             </div>
             <form onSubmit={handleAdd} className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               {[
@@ -753,11 +875,11 @@ function InvestorsPage() {
                     ? <PartialCheckboxIcon />
                     : <RiCheckboxBlankLine size={14} />}
               </button>
-              <span>Investor</span>
-              <span>Status</span>
-              <span>Deal size</span>
+              <SortHeader label="Investor"  active={sortKey === "name"}       dir={sortDir} onClick={() => toggleSort("name")} />
+              <SortHeader label="Status"    active={sortKey === "status"}     dir={sortDir} onClick={() => toggleSort("status")} />
+              <SortHeader label="Deal size" active={sortKey === "deal_size"}  dir={sortDir} onClick={() => toggleSort("deal_size")} />
               <span>Notes</span>
-              <span />
+              <SortHeader label="Updated"   active={sortKey === "updated_at"} dir={sortDir} onClick={() => toggleSort("updated_at")} alignRight />
             </div>
 
             {filtered.length === 0 ? (
@@ -804,7 +926,10 @@ function InvestorsPage() {
                         <input value={editData.name || ""} onChange={e => setEditData({ ...editData, name: e.target.value })}
                           onClick={e => e.stopPropagation()} style={ROW_INPUT} />
                       ) : (
-                        <div style={{ fontSize: 14, color: "#e5e7eb", fontWeight: 500 }} className="truncate">{inv.name}</div>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span style={{ fontSize: 14, color: "#e5e7eb", fontWeight: 500 }} className="truncate">{inv.name}</span>
+                          <FollowUpPill at={inv.next_follow_up_at || null} />
+                        </div>
                       )}
                       {isEditing ? (
                         <input value={editData.company || ""} onChange={e => setEditData({ ...editData, company: e.target.value })}
@@ -896,7 +1021,10 @@ function InvestorsPage() {
                 <div onClick={() => openPanel(inv)} className="flex items-center gap-3 min-w-0">
                   <span style={{ width: 6, height: 6, borderRadius: "50%", background: color, flexShrink: 0 }} />
                   <div className="min-w-0">
-                    <div style={{ fontSize: 14, color: "#e5e7eb", fontWeight: 500 }} className="truncate">{inv.name}</div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span style={{ fontSize: 14, color: "#e5e7eb", fontWeight: 500 }} className="truncate">{inv.name}</span>
+                      <FollowUpPill at={inv.next_follow_up_at || null} />
+                    </div>
                     <div className="mono truncate" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.04em", marginTop: 2 }}>
                       {inv.company || inv.email || "—"}
                     </div>
@@ -918,6 +1046,8 @@ function InvestorsPage() {
         panelNotes={panelNotes} setPanelNotes={setPanelNotes}
         savingNotes={savingNotes} onSaveNotes={handleSaveNotes}
         onStatusChange={handlePanelStatusChange}
+        onFollowUpSet={handlePanelFollowUp}
+        onLogContact={handlePanelLogContact}
         onDelete={() => requestDelete(selectedInv.id, selectedInv.name)} />}
 
       <ConfirmDialog
@@ -932,6 +1062,21 @@ function InvestorsPage() {
         loading={deleting}
         onConfirm={confirmDelete}
         onCancel={() => !deleting && setPendingDelete(null)}
+      />
+
+      <CsvImportDialog
+        open={csvOpen}
+        onClose={() => setCsvOpen(false)}
+        onImported={(count) => {
+          // Reload the list so the new rows appear without a manual refresh.
+          // Cheaper than refetching during the import — we just do it once
+          // when the dialog finishes, then the user can dismiss when ready.
+          if (count > 0) {
+            const token = localStorage.getItem("token")
+            if (token) fetchInvestors(token)
+            addToast(`${count} investor${count === 1 ? "" : "s"} imported`)
+          }
+        }}
       />
     </main>
   )
@@ -957,6 +1102,34 @@ function PartialCheckboxIcon() {
     }}>
       <span style={{ width: 8, height: 1.5, background: "currentColor" }} />
     </span>
+  )
+}
+
+// Column header that doubles as a sort toggle. Cycle is asc → desc → off,
+// matching how every linear/airtable-style table behaves.
+function SortHeader({
+  label, active, dir, onClick, alignRight,
+}: {
+  label: string
+  active: boolean
+  dir: "asc" | "desc"
+  onClick: () => void
+  alignRight?: boolean
+}) {
+  return (
+    <button onClick={onClick}
+      className="mono cursor-pointer flex items-center gap-1.5"
+      style={{
+        background: "transparent", border: 0, padding: 0,
+        color: active ? "#10b981" : "#64748b",
+        fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase",
+        justifyContent: alignRight ? "flex-end" : "flex-start",
+      }}>
+      {label}
+      {active && (dir === "asc"
+        ? <RiArrowUpSLine size={12} />
+        : <RiArrowDownSLine size={12} />)}
+    </button>
   )
 }
 
@@ -989,7 +1162,7 @@ type InvestorEvent = {
 
 function DetailDrawer({
   inv, onClose, panelNotes, setPanelNotes, savingNotes, onSaveNotes,
-  onStatusChange, onDelete,
+  onStatusChange, onFollowUpSet, onLogContact, onDelete,
 }: {
   inv: Investor
   onClose: () => void
@@ -998,6 +1171,8 @@ function DetailDrawer({
   savingNotes: boolean
   onSaveNotes: () => void
   onStatusChange: (s: Status) => void
+  onFollowUpSet: (iso: string | null) => void
+  onLogContact: () => void
   onDelete: () => void
 }) {
   const color = STATUS_COLOR[inv.status]
@@ -1108,8 +1283,20 @@ function DetailDrawer({
             <div className="mono flex items-center gap-2" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase" }}>
               <RiTimeLine size={11} />
               Last updated {new Date(inv.updated_at).toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })}
+              {inv.last_contacted_at && (
+                <>
+                  <span style={{ color: "#475569" }}>·</span>
+                  Pinged {relTime(inv.last_contacted_at)}
+                </>
+              )}
             </div>
           )}
+
+          <FollowUpBlock
+            nextAt={inv.next_follow_up_at || null}
+            onSet={onFollowUpSet}
+            onLogContact={onLogContact}
+          />
 
           <div>
             <div className="mono flex items-center gap-2 mb-3" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
@@ -1161,6 +1348,145 @@ function DetailDrawer({
         </div>
       </aside>
     </>
+  )
+}
+
+// Follow-up reminder block. Shows the current reminder state (if any),
+// a row of quick-set presets, a native date picker for arbitrary dates,
+// and a "log a touch" button that stamps last_contacted_at = now.
+// The presets drop the user into the same PATCH the date picker uses.
+function FollowUpBlock({
+  nextAt, onSet, onLogContact,
+}: {
+  nextAt: string | null
+  onSet: (iso: string | null) => void
+  onLogContact: () => void
+}) {
+  const [showPicker, setShowPicker] = useState(false)
+  const [customVal, setCustomVal] = useState("")
+
+  // "+N days at 9am" — 9am local reads as a human-friendly "first thing
+  // tomorrow" default instead of the current second.
+  function atNineAm(offsetDays: number): string {
+    const d = new Date()
+    d.setDate(d.getDate() + offsetDays)
+    d.setHours(9, 0, 0, 0)
+    return d.toISOString()
+  }
+
+  // Current-state copy — color-coded so overdue pops red.
+  const stateMeta = (() => {
+    if (!nextAt) return null
+    const t = new Date(nextAt).getTime()
+    if (isNaN(t)) return null
+    const diff = t - Date.now()
+    if (diff < 0) {
+      const h = Math.floor(-diff / 3_600_000)
+      const d = Math.floor(h / 24)
+      return {
+        color: "#f87171",
+        copy: d >= 1 ? `Overdue · ${d}d late` : h >= 1 ? `Overdue · ${h}h late` : "Overdue",
+      }
+    }
+    const h = Math.floor(diff / 3_600_000)
+    const d = Math.floor(h / 24)
+    if (d >= 1) return { color: "#cbd5e1", copy: `In ${d}d` }
+    if (h >= 1) return { color: "#fbbf24", copy: `In ${h}h` }
+    const m = Math.max(1, Math.floor(diff / 60_000))
+    return { color: "#fbbf24", copy: `In ${m}m` }
+  })()
+
+  const PRESET_STYLE: React.CSSProperties = {
+    padding: "6px 10px", fontSize: 10,
+    color: "#cbd5e1", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500,
+    background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 2,
+    cursor: "pointer",
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <div className="mono flex items-center gap-2" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+          <RiAlarmLine size={11} /> Follow-up
+        </div>
+        {stateMeta && (
+          <div className="mono flex items-center gap-2" style={{ fontSize: 10, color: stateMeta.color, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            <span>{stateMeta.copy}</span>
+            <button onClick={() => onSet(null)}
+              aria-label="Clear reminder"
+              style={{
+                background: "transparent", border: 0, cursor: "pointer",
+                color: "#64748b", padding: 0,
+              }}>
+              <RiCloseLine size={12} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {nextAt && (
+        <div className="mb-3" style={{ fontSize: 12, color: "#cbd5e1" }}>
+          Reminder set for{" "}
+          <span className="mono" style={{ color: "#e5e7eb" }}>
+            {new Date(nextAt).toLocaleString("en", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+          </span>
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-1.5">
+        <button onClick={() => onSet(atNineAm(1))} style={PRESET_STYLE}>Tomorrow</button>
+        <button onClick={() => onSet(atNineAm(3))} style={PRESET_STYLE}>In 3 days</button>
+        <button onClick={() => onSet(atNineAm(7))} style={PRESET_STYLE}>Next week</button>
+        <button onClick={() => setShowPicker(v => !v)}
+          style={{ ...PRESET_STYLE, color: showPicker ? "#10b981" : "#cbd5e1", borderColor: showPicker ? "rgba(16,185,129,0.3)" : "rgba(255,255,255,0.1)" }}>
+          <RiCalendarScheduleLine size={11} style={{ display: "inline", marginRight: 4, verticalAlign: "-2px" }} />
+          Custom
+        </button>
+      </div>
+
+      {showPicker && (
+        <div className="mt-3 flex items-center gap-2">
+          <input type="datetime-local"
+            value={customVal}
+            onChange={e => setCustomVal(e.target.value)}
+            style={{
+              flex: 1,
+              background: "transparent", color: "#e5e7eb",
+              border: "1px solid rgba(255,255,255,0.12)", borderRadius: 2,
+              padding: "6px 8px", fontSize: 12,
+              fontFamily: "inherit",
+              colorScheme: "dark",
+            }} />
+          <button onClick={() => {
+            if (!customVal) return
+            const d = new Date(customVal)
+            if (isNaN(d.getTime())) return
+            onSet(d.toISOString())
+            setShowPicker(false)
+            setCustomVal("")
+          }}
+            className="mono"
+            style={{
+              padding: "7px 12px", fontSize: 10,
+              color: "#fff", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600,
+              background: "#10b981", border: 0, borderRadius: 2, cursor: "pointer",
+            }}>
+            Set
+          </button>
+        </div>
+      )}
+
+      <button onClick={onLogContact}
+        className="mono mt-3 flex items-center gap-1.5"
+        style={{
+          padding: "7px 12px", fontSize: 10,
+          color: "#94a3b8", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500,
+          background: "transparent", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 2,
+          cursor: "pointer",
+        }}>
+        <RiMailSendLine size={11} /> Log a touch
+      </button>
+    </div>
   )
 }
 
@@ -1235,6 +1561,54 @@ function eventDescriptor(event: InvestorEvent): { icon: React.ReactNode; label: 
         icon: <RiEditLine size={12} />,
         color: "#94a3b8",
         label: <>Renamed to <span className="mono" style={{ color: "#fff" }}>{String(payload.to || "")}</span></>,
+      }
+    }
+    case "follow_up_set": {
+      const at = payload.at ? new Date(String(payload.at)) : null
+      return {
+        icon: <RiAlarmLine size={12} />,
+        color: "#fbbf24",
+        label: (
+          <>
+            Reminder set for{" "}
+            <span className="mono" style={{ color: "#fff" }}>
+              {at ? at.toLocaleDateString("en", { month: "short", day: "numeric" }) : "—"}
+            </span>
+          </>
+        ),
+      }
+    }
+    case "follow_up_rescheduled": {
+      const from = payload.from ? new Date(String(payload.from)) : null
+      const to   = payload.to   ? new Date(String(payload.to))   : null
+      return {
+        icon: <RiAlarmLine size={12} />,
+        color: "#fbbf24",
+        label: (
+          <>
+            Reminder moved{" "}
+            <span className="mono" style={{ color: "#94a3b8" }}>
+              {from ? from.toLocaleDateString("en", { month: "short", day: "numeric" }) : "—"}
+            </span>{" "}→{" "}
+            <span className="mono" style={{ color: "#fff" }}>
+              {to ? to.toLocaleDateString("en", { month: "short", day: "numeric" }) : "—"}
+            </span>
+          </>
+        ),
+      }
+    }
+    case "follow_up_cleared": {
+      return {
+        icon: <RiCloseLine size={12} />,
+        color: "#64748b",
+        label: <>Reminder cleared</>,
+      }
+    }
+    case "contacted": {
+      return {
+        icon: <RiMailSendLine size={12} />,
+        color: "#34d399",
+        label: <>Logged a touch</>,
       }
     }
     default:

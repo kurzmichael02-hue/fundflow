@@ -31,8 +31,8 @@ export default function RegisterPage() {
 
   return (
     <AuthShell
-      kicker="§ Create account"
-      title={<>Start tracking<br /><em style={{ fontWeight: 400 }}>your round.</em></>}
+      kicker="Create account"
+      title={<>Start tracking<br />your round.</>}
       intro="Founder sign-up — free forever up to 25 investors. No credit card needed, no onboarding calls, just a form and a dashboard."
       side="founder">
       <form onSubmit={handleRegister} className="flex flex-col gap-7">

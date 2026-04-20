@@ -27,6 +27,8 @@ type Investor = {
   status: Status
   deal_size?: string | null
   updated_at?: string | null
+  next_follow_up_at?: string | null
+  last_contacted_at?: string | null
 }
 type Interest = {
   id: string
@@ -95,6 +97,30 @@ function relTime(iso: string): string {
   return new Date(iso).toLocaleDateString("en", { month: "short", day: "numeric" })
 }
 
+// How far overdue a follow-up is, one-line copy. Separate from relTime so
+// we can say "2d late" instead of "2d ago" — different verb in the user's
+// head. Anything more than two weeks just says "stale" because the exact
+// number stops mattering.
+function overdueMeta(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  if (diff < 0) return "Due"
+  const h = Math.floor(diff / 3_600_000)
+  if (h < 24) return h <= 1 ? "Just slipped" : `${h}h late`
+  const d = Math.floor(h / 24)
+  if (d <= 14) return `${d}d late`
+  return "Stale"
+}
+
+// Minute/hour precision for a follow-up due today.
+function todayMeta(iso: string): string {
+  const diff = new Date(iso).getTime() - Date.now()
+  if (diff <= 0) return "Now"
+  const m = Math.floor(diff / 60_000)
+  if (m < 60) return `in ${m}m`
+  const h = Math.floor(m / 60)
+  return `in ${h}h`
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [investors, setInvestors] = useState<Investor[]>([])
@@ -104,6 +130,7 @@ export default function DashboardPage() {
   const [plan, setPlan] = useState("free")
   const [upgrading, setUpgrading] = useState(false)
   const [userEmail, setUserEmail] = useState("")
+  const [seeding, setSeeding] = useState(false)
   const channelsRef = useRef<Array<{ unsubscribe: () => void }>>([])
 
   useEffect(() => {
@@ -161,6 +188,50 @@ export default function DashboardPage() {
       if (data.url) window.location.href = data.url
       else setUpgrading(false)
     } catch { setUpgrading(false) }
+  }
+
+  // Seed 8 demo investors so a fresh user sees the dashboard with content.
+  // Names + companies are obviously fictional ("Sarah K.", "Lighthouse
+  // Capital") so nobody's confused about which rows are real.
+  async function handleSeedDemo() {
+    setSeeding(true)
+    const token = localStorage.getItem("token")!
+    const samples: Array<{ name: string; company: string; email: string; status: string; deal_size: string; notes: string }> = [
+      { name: "Sarah K.",         company: "Lighthouse Capital", email: "sarah@lighthouse.demo",  status: "outreach",   deal_size: "$500k",  notes: "Met at ETHBerlin. Following up." },
+      { name: "Apollo Cap.",      company: "Apollo Capital",     email: "team@apollo.demo",       status: "term_sheet", deal_size: "$3M",    notes: "Term sheet draft sent. Waiting on legal." },
+      { name: "Atlas Mint",       company: "Atlas Mint",         email: "intros@atlas.demo",      status: "meeting",    deal_size: "$1M",    notes: "Pitch booked Friday 3pm." },
+      { name: "Forge Labs",       company: "Forge Labs",         email: "deals@forge.demo",       status: "interested", deal_size: "$2M",    notes: "Replied yes to deck." },
+      { name: "Helix Studio",     company: "Helix Studio",       email: "hi@helix.demo",          status: "closed",     deal_size: "$2.5M",  notes: "Closed first cheque." },
+      { name: "Solenya Ventures", company: "Solenya Ventures",   email: "sol@solenya.demo",       status: "interested", deal_size: "$800k",  notes: "Wants follow-up call." },
+      { name: "Dovetail",         company: "Dovetail",           email: "info@dovetail.demo",     status: "outreach",   deal_size: "",       notes: "Cold intro from David." },
+      { name: "Meridian Crypto",  company: "Meridian Crypto",    email: "alex@meridian.demo",     status: "meeting",    deal_size: "$1.5M",  notes: "Demo went well. Following up Monday." },
+    ]
+    try {
+      // Sequential so we can stop early when the free plan limit kicks in.
+      let imported = 0
+      for (const s of samples) {
+        const res = await fetch("/api/investors", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify(s),
+        })
+        if (!res.ok) {
+          const data = await res.json().catch(() => null)
+          if (data?.limit) break
+        } else {
+          imported++
+        }
+      }
+      // Refetch the world so dashboard, focus column, ticker — all update.
+      await fetchAll(token)
+      if (imported === 0) {
+        // Most likely cause: the free plan cap. The error message from the
+        // route already explains it, but we don't have it in scope here.
+        alert("Couldn't seed demo data. You may have hit the free-plan cap.")
+      }
+    } finally {
+      setSeeding(false)
+    }
   }
 
   async function handleManageBilling() {
@@ -235,6 +306,31 @@ export default function DashboardPage() {
     investors.filter(i => i.status === "term_sheet"),
     [investors]
   )
+
+  // Follow-ups bucketed into overdue (past) vs today (within 24h). Anything
+  // further out doesn't need to hit the dashboard — the investor's own row
+  // badge handles the lookahead. We re-compute on every render because the
+  // boundary moves with wall-clock time; cheap enough for a solo pipeline.
+  const followUps = useMemo(() => {
+    const now = Date.now()
+    const endOfToday = new Date()
+    endOfToday.setHours(23, 59, 59, 999)
+    const todayMax = endOfToday.getTime()
+    const overdue: Investor[] = []
+    const today: Investor[] = []
+    for (const inv of investors) {
+      if (!inv.next_follow_up_at) continue
+      const t = new Date(inv.next_follow_up_at).getTime()
+      if (isNaN(t)) continue
+      if (t < now) overdue.push(inv)
+      else if (t <= todayMax) today.push(inv)
+    }
+    // Overdue: oldest first (the one you've been dodging longest at the top).
+    overdue.sort((a, b) => new Date(a.next_follow_up_at!).getTime() - new Date(b.next_follow_up_at!).getTime())
+    // Today: soonest first.
+    today.sort((a, b) => new Date(a.next_follow_up_at!).getTime() - new Date(b.next_follow_up_at!).getTime())
+    return { overdue, today }
+  }, [investors])
   const stalledOutreach = useMemo(() => {
     const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000
     return investors
@@ -289,7 +385,7 @@ export default function DashboardPage() {
         <section className="grid grid-cols-1 md:grid-cols-12 gap-10 pt-10 md:pt-14 pb-10 md:pb-14 items-end">
           <div className="md:col-span-7">
             <p className="mono mb-3" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-              § Overview
+              Overview
             </p>
             <h1 className="serif text-white" style={{
               fontSize: "clamp(40px, 5.5vw, 72px)", lineHeight: 0.95, letterSpacing: "-0.045em", fontWeight: 500,
@@ -305,16 +401,47 @@ export default function DashboardPage() {
                 const handle = (userEmail || "").split("@")[0].trim()
                 return (
                   <>
-                    {greeting}{handle ? <>, <span style={{ fontStyle: "italic", fontWeight: 400 }}>{handle}</span></> : ""}.
+                    {greeting}{handle ? <>, {handle}</> : ""}.
                   </>
                 )
               })()}
             </h1>
-            <p style={{ fontSize: 16, color: "#94a3b8", marginTop: 20, maxWidth: 520, lineHeight: 1.6 }}>
-              {investors.length === 0
-                ? "Nothing in the pipeline yet. Add your first investor to get moving."
-                : `${stats.active} active leads, ${stats.meetings} meetings scheduled, ${stats.closed} deals closed so far.`}
-            </p>
+            {/* Subtitle leads with urgency when there is any, otherwise
+                falls back to the neutral summary. Overdue beats today,
+                today beats fresh interests — that's the order a founder's
+                eye should move in. */}
+            {(() => {
+              if (investors.length === 0) {
+                return (
+                  <p style={{ fontSize: 16, color: "#94a3b8", marginTop: 20, maxWidth: 520, lineHeight: 1.6 }}>
+                    Nothing in the pipeline yet. Add your first investor to get moving.
+                  </p>
+                )
+              }
+              if (followUps.overdue.length > 0) {
+                const n = followUps.overdue.length
+                return (
+                  <p style={{ fontSize: 16, color: "#cbd5e1", marginTop: 20, maxWidth: 520, lineHeight: 1.6 }}>
+                    <span style={{ color: "#f87171", fontWeight: 600 }}>{n} follow-up{n === 1 ? "" : "s"} overdue.</span>{" "}
+                    Clear them before they get colder — the rest of the pipeline can wait ten minutes.
+                  </p>
+                )
+              }
+              if (followUps.today.length > 0) {
+                const n = followUps.today.length
+                return (
+                  <p style={{ fontSize: 16, color: "#cbd5e1", marginTop: 20, maxWidth: 520, lineHeight: 1.6 }}>
+                    <span style={{ color: "#fbbf24", fontWeight: 600 }}>{n} follow-up{n === 1 ? "" : "s"} due today.</span>{" "}
+                    Get them out of the way while the context is fresh.
+                  </p>
+                )
+              }
+              return (
+                <p style={{ fontSize: 16, color: "#94a3b8", marginTop: 20, maxWidth: 520, lineHeight: 1.6 }}>
+                  {stats.active} active leads, {stats.meetings} meetings scheduled, {stats.closed} deals closed so far.
+                </p>
+              )
+            })()}
           </div>
 
           <div className="md:col-span-5 md:text-right">
@@ -412,11 +539,11 @@ export default function DashboardPage() {
         {investors.length === 0 && (
           <section className="py-10">
             <div className="mono mb-6" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-              § First moves
+              First moves
             </div>
             <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
               {[
-                { n: "01", title: "Add your first investor",   sub: "Start building your pipeline",                        icon: <RiUserLine size={14} />,           href: "/investors" },
+                { n: "01", title: "Add your first investor",   sub: "Start building your pipeline",                        icon: <RiUserLine size={14} />,           href: "/investors?new=1" },
                 { n: "02", title: "Complete your profile",     sub: "Company info and wallet address",                     icon: <RiAccountCircleLine size={14} />,  href: "/profile" },
                 { n: "03", title: "Publish your project",      sub: "Let VCs find you on the deal flow",                   icon: <RiRocketLine size={14} />,         href: "/profile" },
               ].map(s => (
@@ -439,6 +566,31 @@ export default function DashboardPage() {
                 </button>
               ))}
             </div>
+
+            {/* Demo data — lets a fresh user see the dashboard with content
+                instead of zero-state. Clearly labelled "demo" so they know
+                to delete it before going live. */}
+            <div className="mt-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 py-5"
+              style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+              <div>
+                <div className="mono mb-1" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                  Just kicking the tyres?
+                </div>
+                <p style={{ fontSize: 14, color: "#cbd5e1" }}>
+                  Drop in 8 sample investors so the dashboard, pipeline and analytics actually have something to show. Delete them whenever.
+                </p>
+              </div>
+              <button onClick={handleSeedDemo} disabled={seeding}
+                className="mono cursor-pointer flex items-center gap-1.5 flex-shrink-0"
+                style={{
+                  padding: "10px 16px", fontSize: 11,
+                  color: "#cbd5e1", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500,
+                  background: "transparent", border: "1px solid rgba(255,255,255,0.18)", borderRadius: 2,
+                  opacity: seeding ? 0.6 : 1,
+                }}>
+                {seeding ? "Seeding..." : "Seed demo data →"}
+              </button>
+            </div>
           </section>
         )}
 
@@ -450,7 +602,7 @@ export default function DashboardPage() {
             <div className="md:col-span-7">
               <div className="flex items-baseline justify-between mb-6">
                 <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                  § Focus today
+                  Focus today
                 </p>
                 <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                   Ranked by impact
@@ -458,6 +610,38 @@ export default function DashboardPage() {
               </div>
 
               <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                {followUps.overdue.length > 0 && (
+                  <FocusBlock
+                    kicker={`${followUps.overdue.length} overdue`}
+                    title={followUps.overdue.length === 1
+                      ? "You owe one investor a follow-up."
+                      : `${followUps.overdue.length} follow-ups slipped.`}
+                    body="Reminders you set and missed. Either ping them now or reschedule so the number doesn't keep climbing."
+                    accent="#f87171"
+                    items={followUps.overdue.slice(0, 3).map(i => ({
+                      label: i.name,
+                      sub: i.company || i.email || "—",
+                      meta: overdueMeta(i.next_follow_up_at!),
+                    }))}
+                    href="/investors"
+                  />
+                )}
+
+                {followUps.today.length > 0 && (
+                  <FocusBlock
+                    kicker={`${followUps.today.length} due today`}
+                    title="Follow up before end of day."
+                    body="You flagged these for today. Knock them out while the context is fresh."
+                    accent="#fbbf24"
+                    items={followUps.today.slice(0, 3).map(i => ({
+                      label: i.name,
+                      sub: i.company || i.email || "—",
+                      meta: todayMeta(i.next_follow_up_at!),
+                    }))}
+                    href="/investors"
+                  />
+                )}
+
                 {pendingTermSheets.length > 0 && (
                   <FocusBlock
                     kicker={`${pendingTermSheets.length} on term sheet`}
@@ -504,7 +688,7 @@ export default function DashboardPage() {
                   />
                 )}
 
-                {pendingTermSheets.length === 0 && freshInterests.length === 0 && stalledOutreach.length === 0 && (
+                {pendingTermSheets.length === 0 && freshInterests.length === 0 && stalledOutreach.length === 0 && followUps.overdue.length === 0 && followUps.today.length === 0 && (
                   <div className="py-14 text-center">
                     <div className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                       Nothing urgent
@@ -521,7 +705,7 @@ export default function DashboardPage() {
             <div className="md:col-span-5">
               <div className="flex items-baseline justify-between mb-6">
                 <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                  § Recent
+                  Recent
                 </p>
                 <button onClick={() => router.push("/investors")}
                   className="mono no-underline cursor-pointer"

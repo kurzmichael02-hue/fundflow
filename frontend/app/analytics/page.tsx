@@ -160,12 +160,12 @@ export default function AnalyticsPage() {
         <section className="grid grid-cols-1 md:grid-cols-12 gap-10 pt-10 md:pt-14 pb-10 items-end">
           <div className="md:col-span-6">
             <p className="mono mb-3" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-              § Signal
+              Signal
             </p>
             <h1 className="serif text-white" style={{
               fontSize: "clamp(40px, 5.5vw, 72px)", lineHeight: 0.95, letterSpacing: "-0.045em", fontWeight: 500,
             }}>
-              The honest <span style={{ fontStyle: "italic", fontWeight: 400 }}>numbers.</span>
+              The honest numbers.
             </h1>
             <p style={{ fontSize: 16, color: "#94a3b8", marginTop: 20, maxWidth: 480, lineHeight: 1.6 }}>
               Every investor you&apos;ve added, where they sit in the funnel, how fast the round is
@@ -184,7 +184,7 @@ export default function AnalyticsPage() {
         <section className="py-12" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
           <div className="flex items-baseline justify-between mb-8">
             <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-              § Funnel
+              Funnel
             </p>
             <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
               Stage → next stage
@@ -235,7 +235,7 @@ export default function AnalyticsPage() {
           <div className="md:col-span-6">
             <div className="flex items-baseline justify-between mb-8">
               <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                § Inbound signal
+                Inbound signal
               </p>
               <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 Last 7 days · {totalInterests} total
@@ -268,7 +268,7 @@ export default function AnalyticsPage() {
           <div className="md:col-span-6">
             <div className="flex items-baseline justify-between mb-8">
               <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                § Top cheques
+                Top cheques
               </p>
               <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 By deal size

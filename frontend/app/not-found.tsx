@@ -22,7 +22,7 @@ export default function NotFound() {
           marginBottom: 24,
         }}>
           Nothing<br />
-          <span style={{ fontStyle: "italic", fontWeight: 400 }}>here.</span>
+          here.
         </h1>
         <p style={{ fontSize: 17, color: "#94a3b8", lineHeight: 1.7, maxWidth: 440, marginBottom: 40 }}>
           The page you&apos;re looking for doesn&apos;t exist, or has moved. Head back to the home

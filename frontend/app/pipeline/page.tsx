@@ -5,6 +5,7 @@ import Link from "next/link"
 import { api, isUnauthorized, clearSessionAndRedirect } from "@/lib/api"
 import AppNav from "@/components/AppNav"
 import { ToastContainer, useToast } from "@/components/Toast"
+import FollowUpPill from "@/components/FollowUpPill"
 import { RiArrowRightLine } from "react-icons/ri"
 
 // Pipeline — Kanban of investors by status.
@@ -20,6 +21,7 @@ type Investor = {
   email?: string | null
   status: Status
   deal_size?: string | null
+  next_follow_up_at?: string | null
 }
 
 const COLUMNS: Array<{ key: Status; label: string; color: string }> = [
@@ -114,12 +116,12 @@ export default function PipelinePage() {
         {/* ── Masthead ── */}
         <section className="pt-10 md:pt-14 pb-8">
           <p className="mono mb-3" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-            § Deal flow
+            Deal flow
           </p>
           <h1 className="serif text-white" style={{
             fontSize: "clamp(40px, 5.5vw, 72px)", lineHeight: 0.95, letterSpacing: "-0.045em", fontWeight: 500,
           }}>
-            Every deal, <span style={{ fontStyle: "italic", fontWeight: 400 }}>one column at a time.</span>
+            Every deal, one column at a time.
           </h1>
         </section>
 
@@ -181,12 +183,12 @@ function PipelineEmpty() {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-10 items-start">
         <div className="md:col-span-7">
           <p className="mono mb-5" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-            § Empty pipeline
+            Empty pipeline
           </p>
           <h2 className="serif text-white" style={{
             fontSize: "clamp(32px, 4.5vw, 56px)", lineHeight: 1, letterSpacing: "-0.04em", fontWeight: 500,
           }}>
-            Nothing in the funnel <span style={{ fontStyle: "italic", fontWeight: 400 }}>yet.</span>
+            Nothing in the funnel yet.
           </h2>
           <p style={{ fontSize: 16, color: "#94a3b8", marginTop: 20, maxWidth: 480, lineHeight: 1.65 }}>
             Add a few investors first — they&apos;ll show up here as cards you can drag from
@@ -285,15 +287,26 @@ function PipelineCard({
   color: string
   moveInvestor: (id: string, s: Status) => void
 }) {
+  // Overdue reminder gets a visual nudge on the whole card — thin red
+  // left border — so it's impossible to miss when you're scanning a full
+  // column. Upcoming + today stay subtle (just the pill).
+  const overdue = inv.next_follow_up_at
+    && !isNaN(new Date(inv.next_follow_up_at).getTime())
+    && new Date(inv.next_follow_up_at).getTime() < Date.now()
+
   return (
     <div style={{
       background: "#0a0a0d",
       border: "1px solid rgba(255,255,255,0.06)",
+      borderLeft: overdue ? "2px solid #f87171" : "1px solid rgba(255,255,255,0.06)",
       padding: "12px 14px",
       borderRadius: 2,
     }}>
-      <div style={{ fontSize: 13, color: "#e5e7eb", fontWeight: 500, lineHeight: 1.3 }}>
-        {inv.name}
+      <div className="flex items-start justify-between gap-2">
+        <div style={{ fontSize: 13, color: "#e5e7eb", fontWeight: 500, lineHeight: 1.3 }}>
+          {inv.name}
+        </div>
+        <FollowUpPill at={inv.next_follow_up_at || null} />
       </div>
       <div className="mono mt-1" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.04em" }}>
         {inv.company || inv.email || "—"}

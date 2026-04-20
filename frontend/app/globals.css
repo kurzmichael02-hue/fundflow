@@ -114,3 +114,50 @@ body {
 .skip-link:focus {
   transform: translateY(0);
 }
+
+/* ── Subtle live-dot pulse used on the "Live" indicator everywhere.
+   Two-keyframe ring that fades out — gives a heartbeat feel without
+   the aggressive .animate-pulse class we banned earlier. */
+@keyframes ff-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.55); }
+  70%  { box-shadow: 0 0 0 7px rgba(16,185,129,0);   }
+  100% { box-shadow: 0 0 0 0 rgba(16,185,129,0);     }
+}
+.live-dot {
+  animation: ff-pulse 2.4s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-dot { animation: none; }
+}
+
+/* ── Bloomberg-style ticker. Track scrolls left forever; the row inside
+   contains the data twice so the loop reads continuously. */
+@keyframes ff-ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.ticker-track {
+  display: flex;
+  width: max-content;
+  animation: ff-ticker 60s linear infinite;
+}
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track { animation: none; transform: none; }
+}
+
+/* ── Hero card "drift" — used by HeroPipeline to nudge a single card
+   sideways every cycle, hinting at drag-to-move without being a real
+   live demo. Small movement (translateY ±3px), long cycle. */
+@keyframes ff-drift {
+  0%, 100% { transform: translateY(0)   rotate(0); }
+  50%      { transform: translateY(-3px) rotate(-0.6deg); }
+}
+.drift {
+  animation: ff-drift 4.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .drift { animation: none; }
+}

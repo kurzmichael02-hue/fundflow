@@ -131,12 +131,12 @@ export default function InvestorDatabasePage() {
         {/* ── Masthead ── */}
         <section className="pt-10 md:pt-14 pb-8">
           <p className="mono mb-3" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-            § Investor directory
+            Investor directory
           </p>
           <h1 className="serif text-white" style={{
             fontSize: "clamp(40px, 5.5vw, 72px)", lineHeight: 0.95, letterSpacing: "-0.045em", fontWeight: 500,
           }}>
-            Curated funds, <span style={{ fontStyle: "italic", fontWeight: 400 }}>tagged honestly.</span>
+            Curated funds, tagged honestly.
           </h1>
           <p style={{ fontSize: 16, color: "#94a3b8", marginTop: 20, maxWidth: 560, lineHeight: 1.6 }}>
             Investors hand-picked by sector, stage, and cheque size. Tap Add to pull one

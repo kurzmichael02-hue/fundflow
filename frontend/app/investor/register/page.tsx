@@ -33,10 +33,10 @@ export default function InvestorRegisterPage() {
 
   return (
     <AuthShell
-      kicker="§ Investor register"
+      kicker="Investor register"
       title={success
-        ? <>Check your<br /><em style={{ fontWeight: 400 }}>inbox.</em></>
-        : <>Join the<br /><em style={{ fontWeight: 400 }}>investor side.</em></>
+        ? <>Check your<br />inbox.</>
+        : <>Join the<br />investor side.</>
       }
       intro={success
         ? `We sent a confirmation link to ${form.email}. Click it to activate your investor account, then sign in to start browsing deals.`

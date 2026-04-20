@@ -179,7 +179,7 @@ export default function TermsPage() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-10 pt-16 md:pt-24 pb-12">
             <div className="md:col-span-3">
               <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                § Terms
+                Terms
               </p>
             </div>
             <div className="md:col-span-9">
@@ -190,7 +190,7 @@ export default function TermsPage() {
                 fontWeight: 500,
               }}>
                 The ground<br />
-                <span style={{ fontStyle: "italic", fontWeight: 400 }}>rules.</span>
+                rules.
               </h1>
               <p style={{ fontSize: 17, color: "#94a3b8", lineHeight: 1.7, marginTop: 28, maxWidth: 560, fontWeight: 300 }}>
                 Twelve short sections. No lawyer-speak where plain language works. If anything
