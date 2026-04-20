@@ -6,6 +6,7 @@ import {
   RiAccountCircleLine, RiDatabase2Line, RiListCheck2,
   RiAddLine, RiDownloadLine, RiLogoutBoxLine, RiSearchLine,
   RiCornerDownLeftLine, RiArrowUpLine, RiArrowDownLine,
+  RiAlarmLine,
 } from "react-icons/ri"
 
 // ⌘K command palette. The goal is a Linear/Raycast-style pane that lets
@@ -129,6 +130,14 @@ export default function CommandPalette() {
     { id: "action:add-investor", section: "action", label: "Add investor",
       hint: "Opens /investors", icon: <RiAddLine size={14} />,
       run: () => router.push("/investors?new=1"), keywords: "new create" },
+    { id: "action:jump-overdue", section: "action", label: "Jump to overdue follow-ups",
+      hint: "Filtered investors view", icon: <RiAlarmLine size={14} />,
+      run: () => router.push("/investors?overdue=1"),
+      keywords: "reminder overdue late chase follow up" },
+    { id: "action:jump-today", section: "action", label: "Jump to follow-ups due today",
+      hint: "Filtered investors view", icon: <RiAlarmLine size={14} />,
+      run: () => router.push("/investors?today=1"),
+      keywords: "reminder today due follow up" },
     { id: "action:export-csv", section: "action", label: "Export investors CSV",
       hint: "Opens /investors", icon: <RiDownloadLine size={14} />,
       run: () => router.push("/investors?export=1"), keywords: "csv download export" },

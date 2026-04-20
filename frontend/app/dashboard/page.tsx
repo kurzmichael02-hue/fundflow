@@ -623,7 +623,7 @@ export default function DashboardPage() {
                       sub: i.company || i.email || "—",
                       meta: overdueMeta(i.next_follow_up_at!),
                     }))}
-                    href="/investors"
+                    href="/investors?overdue=1"
                   />
                 )}
 
@@ -638,7 +638,7 @@ export default function DashboardPage() {
                       sub: i.company || i.email || "—",
                       meta: todayMeta(i.next_follow_up_at!),
                     }))}
-                    href="/investors"
+                    href="/investors?today=1"
                   />
                 )}
 

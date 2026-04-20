@@ -92,11 +92,19 @@ function InvestorsPage() {
   const initialSearch = searchParams.get("q") || ""
   const initialStatus = (searchParams.get("status") || "all") as Status | "all"
   const initialOpenId = searchParams.get("inv") || null
+  // Reminder filter: null = off, "overdue" = next_follow_up_at in the past,
+  // "today" = within end-of-day. Deep-linked from the dashboard Focus blocks.
+  type ReminderFilter = null | "overdue" | "today"
+  const initialReminder: ReminderFilter =
+    searchParams.get("overdue") === "1" ? "overdue"
+    : searchParams.get("today") === "1" ? "today"
+    : null
 
   const [investors, setInvestors] = useState<Investor[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState(initialSearch)
   const [statusFilter, setStatusFilter] = useState<Status | "all">(STATUSES.includes(initialStatus as Status) || initialStatus === "all" ? initialStatus : "all")
+  const [reminderFilter, setReminderFilter] = useState<ReminderFilter>(initialReminder)
   const [showAdd, setShowAdd] = useState(searchParams.get("new") === "1")
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
@@ -134,15 +142,17 @@ function InvestorsPage() {
     router.replace(qs ? `?${qs}` : "?", { scroll: false })
   }, [router, searchParams])
 
-  // Whenever search / status / open-id change locally, push to the URL.
+  // Whenever search / status / open-id / reminder change locally, push to the URL.
   useEffect(() => {
     writeUrl({
       q: search || null,
       status: statusFilter === "all" ? null : statusFilter,
       inv: selectedInv?.id || null,
+      overdue: reminderFilter === "overdue" ? "1" : null,
+      today:   reminderFilter === "today"   ? "1" : null,
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, statusFilter, selectedInv?.id])
+  }, [search, statusFilter, selectedInv?.id, reminderFilter])
 
   // ── Initial fetch ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -492,6 +502,12 @@ function InvestorsPage() {
 
   // ── Filtering + sorting ───────────────────────────────────────────────
   const filtered = useMemo(() => {
+    // Compute the end-of-today boundary once per render, not per row.
+    const now = Date.now()
+    const endOfToday = new Date()
+    endOfToday.setHours(23, 59, 59, 999)
+    const todayMax = endOfToday.getTime()
+
     const matched = investors.filter(inv => {
       const q = search.toLowerCase()
       const matchSearch = !q ||
@@ -499,7 +515,16 @@ function InvestorsPage() {
         inv.company?.toLowerCase().includes(q) ||
         inv.email?.toLowerCase().includes(q)
       const matchStatus = statusFilter === "all" || inv.status === statusFilter
-      return matchSearch && matchStatus
+
+      let matchReminder = true
+      if (reminderFilter) {
+        const t = inv.next_follow_up_at ? new Date(inv.next_follow_up_at).getTime() : NaN
+        if (isNaN(t)) matchReminder = false
+        else if (reminderFilter === "overdue") matchReminder = t < now
+        else if (reminderFilter === "today")   matchReminder = t >= now && t <= todayMax
+      }
+
+      return matchSearch && matchStatus && matchReminder
     })
     if (!sortKey) return matched
     const sorted = [...matched].sort((a, b) => {
@@ -511,7 +536,7 @@ function InvestorsPage() {
     })
     return sorted
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [investors, search, statusFilter, sortKey, sortDir, STATUS_ORDER])
+  }, [investors, search, statusFilter, reminderFilter, sortKey, sortDir, STATUS_ORDER])
 
   function toggleSort(key: SortKey) {
     if (sortKey !== key) {
@@ -606,6 +631,14 @@ function InvestorsPage() {
             <span><span style={{ color: "#e5e7eb" }}>{investors.length}</span> total</span>
             <span style={{ color: "#475569" }}>·</span>
             <span>{filtered.length} shown</span>
+            {reminderFilter && (
+              <>
+                <span style={{ color: "#475569" }}>·</span>
+                <span style={{ color: reminderFilter === "overdue" ? "#f87171" : "#fbbf24" }}>
+                  Filter: {reminderFilter === "overdue" ? "Overdue" : "Due today"}
+                </span>
+              </>
+            )}
             {selectionCount > 0 && (
               <>
                 <span style={{ color: "#475569" }}>·</span>
@@ -675,7 +708,7 @@ function InvestorsPage() {
                 fontFamily: "inherit",
               }} />
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5 items-center">
             {(["all", ...STATUSES] as const).map(s => {
               const active = statusFilter === s
               const color = s === "all" ? "#10b981" : STATUS_COLOR[s as Status]
@@ -692,6 +725,29 @@ function InvestorsPage() {
                     borderRadius: 2,
                   }}>
                   {label}
+                </button>
+              )
+            })}
+            {/* Separator — reminder chips are conceptually a second axis,
+                so a hair of whitespace makes the grouping read correctly. */}
+            <span style={{ width: 8 }} />
+            {([
+              { key: "overdue" as const, label: "Overdue",   color: "#f87171" },
+              { key: "today"   as const, label: "Due today", color: "#fbbf24" },
+            ]).map(r => {
+              const active = reminderFilter === r.key
+              return (
+                <button key={r.key} onClick={() => setReminderFilter(active ? null : r.key)}
+                  className="mono cursor-pointer flex items-center gap-1.5"
+                  style={{
+                    padding: "6px 12px",
+                    fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500,
+                    color: active ? r.color : "#64748b",
+                    background: active ? `${r.color}12` : "transparent",
+                    border: `1px solid ${active ? r.color + "40" : "rgba(255,255,255,0.08)"}`,
+                    borderRadius: 2,
+                  }}>
+                  <RiAlarmLine size={10} /> {r.label}
                 </button>
               )
             })}

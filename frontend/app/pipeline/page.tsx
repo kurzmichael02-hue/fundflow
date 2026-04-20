@@ -191,9 +191,9 @@ function PipelineEmpty() {
             Nothing in the funnel yet.
           </h2>
           <p style={{ fontSize: 16, color: "#94a3b8", marginTop: 20, maxWidth: 480, lineHeight: 1.65 }}>
-            Add a few investors first — they&apos;ll show up here as cards you can drag from
-            Outreach all the way to Closed. The board mirrors your CRM, so anything you
-            change here lives in the data room too.
+            Add a few investors first — each one lands in a column based on its status,
+            and you can move them between columns from the card. The board mirrors your
+            CRM, so anything you change here lives in the data room too.
           </p>
           <div className="flex flex-wrap gap-3 mt-8">
             <Link href="/investors?new=1" className="mono no-underline flex items-center gap-1.5"
@@ -220,8 +220,9 @@ function PipelineEmpty() {
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
             {[
               "Five columns — Outreach to Closed",
-              "Drag and drop, or change status from a card",
+              "Change status from the card, pipeline re-shuffles live",
               "Optimistic moves, rolls back if the server says no",
+              "Overdue follow-ups show a red border so you can't miss them",
               "Mobile collapses to one column with tabs",
             ].map(t => (
               <li key={t} className="flex items-start gap-3 py-2.5" style={{
