@@ -41,6 +41,21 @@ const GROUPS: Group[] = [
       { keys: ["click checkbox"], desc: "Toggle selection" },
     ],
   },
+  {
+    label: "Pipeline",
+    rows: [
+      { keys: ["drag"], desc: "Move a card between columns" },
+      { keys: ["select"], desc: "Or change status from the card" },
+    ],
+  },
+  {
+    label: "Follow-ups",
+    rows: [
+      { keys: ["⌘", "K"], desc: "Jump to overdue follow-ups (in palette)" },
+      { keys: ["red pill"], desc: "Reminder is overdue" },
+      { keys: ["amber pill"], desc: "Reminder is due today" },
+    ],
+  },
 ]
 
 export default function ShortcutsCheatsheet() {

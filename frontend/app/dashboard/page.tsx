@@ -372,6 +372,21 @@ export default function DashboardPage() {
             <span><span style={{ color: "#e5e7eb" }}>{stats.total}</span> investors</span>
             <span style={{ color: "#475569" }}>·</span>
             <span><span style={{ color: "#10b981" }}>{formatUsd(totalCommitted)}</span> committed</span>
+            {followUps.overdue.length > 0 && (
+              <>
+                <span style={{ color: "#475569" }}>·</span>
+                <button onClick={() => router.push("/investors?overdue=1")}
+                  className="mono cursor-pointer flex items-center gap-1.5"
+                  style={{
+                    background: "transparent", border: 0, padding: 0,
+                    color: "#f87171", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600,
+                    fontSize: 11,
+                  }}>
+                  <span>{followUps.overdue.length} overdue</span>
+                  <RiArrowRightLine size={11} />
+                </button>
+              </>
+            )}
           </div>
           {live && (
             <div className="mono flex items-center gap-1.5" style={{ fontSize: 11, color: "#34d399", letterSpacing: "0.08em", textTransform: "uppercase" }}>
