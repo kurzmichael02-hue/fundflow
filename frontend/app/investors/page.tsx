@@ -5,6 +5,7 @@ import AppNav from "@/components/AppNav"
 import { ToastContainer, useToast } from "@/components/Toast"
 import ConfirmDialog from "@/components/ConfirmDialog"
 import CsvImportDialog from "@/components/CsvImportDialog"
+import FollowUpPill from "@/components/FollowUpPill"
 import {
   RiAddLine, RiSearchLine, RiEditLine, RiDeleteBinLine,
   RiCheckLine, RiCloseLine, RiDownloadLine, RiUploadLine, RiUserLine,
@@ -266,22 +267,31 @@ function InvestorsPage() {
     }
   }
 
-  // Log an outreach touch. Stamps last_contacted_at = now. We deliberately
-  // don't auto-clear the follow-up — the founder might want to keep nudging.
+  // Log an outreach touch. Stamps last_contacted_at = now. If the current
+  // reminder is already in the past (i.e. this is the follow-up you were
+  // supposed to do), we clear it in the same PATCH — otherwise the red
+  // pill would linger after the founder's done the thing. If the reminder
+  // is still in the future we leave it alone: they might be pinging early
+  // and still want the nudge.
   async function handlePanelLogContact() {
     if (!selectedInv) return
     const token = localStorage.getItem("token")!
+    const nextAt = selectedInv.next_follow_up_at
+    const isOverdue = nextAt && new Date(nextAt).getTime() < Date.now()
+    const body: Record<string, unknown> = { last_contacted_at: new Date().toISOString() }
+    if (isOverdue) body.next_follow_up_at = null
+
     try {
       const res = await fetch(`/api/investors?id=${selectedInv.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ last_contacted_at: new Date().toISOString() }),
+        body: JSON.stringify(body),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setInvestors(prev => prev.map(i => i.id === selectedInv.id ? data : i))
       setSelectedInv(data)
-      addToast("Logged as contacted")
+      addToast(isOverdue ? "Logged — reminder cleared" : "Logged as contacted")
     } catch (err) {
       addToast(err instanceof Error ? err.message : "Failed to log touch", "error")
     }
@@ -1120,50 +1130,6 @@ function SortHeader({
         ? <RiArrowUpSLine size={12} />
         : <RiArrowDownSLine size={12} />)}
     </button>
-  )
-}
-
-// Tiny inline marker on a row when a follow-up is set. Three states:
-// overdue (red, "Xd late"), due today (amber, "Today"), upcoming (dim, the
-// short date). Nothing renders if no reminder is set — keeps the table
-// readable for rows that don't need attention.
-function FollowUpPill({ at }: { at: string | null }) {
-  if (!at) return null
-  const t = new Date(at).getTime()
-  if (isNaN(t)) return null
-  const now = Date.now()
-  const endOfToday = new Date()
-  endOfToday.setHours(23, 59, 59, 999)
-
-  let color = "#64748b"
-  let label = ""
-  if (t < now) {
-    color = "#f87171"
-    const h = Math.floor((now - t) / 3_600_000)
-    const d = Math.floor(h / 24)
-    label = d >= 1 ? `${d}d late` : h >= 1 ? `${h}h late` : "Due"
-  } else if (t <= endOfToday.getTime()) {
-    color = "#fbbf24"
-    label = "Today"
-  } else {
-    const d = Math.ceil((t - now) / 86_400_000)
-    label = d <= 7 ? `in ${d}d` : new Date(at).toLocaleDateString("en", { month: "short", day: "numeric" })
-  }
-  return (
-    <span className="mono flex-shrink-0 flex items-center gap-1"
-      title={`Follow-up: ${new Date(at).toLocaleString("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`}
-      style={{
-        fontSize: 9, color,
-        letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600,
-        padding: "2px 6px",
-        background: `${color}12`,
-        border: `1px solid ${color}33`,
-        borderRadius: 2,
-        lineHeight: 1,
-      }}>
-      <RiAlarmLine size={9} />
-      {label}
-    </span>
   )
 }
 

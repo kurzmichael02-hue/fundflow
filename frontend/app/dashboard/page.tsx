@@ -406,11 +406,42 @@ export default function DashboardPage() {
                 )
               })()}
             </h1>
-            <p style={{ fontSize: 16, color: "#94a3b8", marginTop: 20, maxWidth: 520, lineHeight: 1.6 }}>
-              {investors.length === 0
-                ? "Nothing in the pipeline yet. Add your first investor to get moving."
-                : `${stats.active} active leads, ${stats.meetings} meetings scheduled, ${stats.closed} deals closed so far.`}
-            </p>
+            {/* Subtitle leads with urgency when there is any, otherwise
+                falls back to the neutral summary. Overdue beats today,
+                today beats fresh interests — that's the order a founder's
+                eye should move in. */}
+            {(() => {
+              if (investors.length === 0) {
+                return (
+                  <p style={{ fontSize: 16, color: "#94a3b8", marginTop: 20, maxWidth: 520, lineHeight: 1.6 }}>
+                    Nothing in the pipeline yet. Add your first investor to get moving.
+                  </p>
+                )
+              }
+              if (followUps.overdue.length > 0) {
+                const n = followUps.overdue.length
+                return (
+                  <p style={{ fontSize: 16, color: "#cbd5e1", marginTop: 20, maxWidth: 520, lineHeight: 1.6 }}>
+                    <span style={{ color: "#f87171", fontWeight: 600 }}>{n} follow-up{n === 1 ? "" : "s"} overdue.</span>{" "}
+                    Clear them before they get colder — the rest of the pipeline can wait ten minutes.
+                  </p>
+                )
+              }
+              if (followUps.today.length > 0) {
+                const n = followUps.today.length
+                return (
+                  <p style={{ fontSize: 16, color: "#cbd5e1", marginTop: 20, maxWidth: 520, lineHeight: 1.6 }}>
+                    <span style={{ color: "#fbbf24", fontWeight: 600 }}>{n} follow-up{n === 1 ? "" : "s"} due today.</span>{" "}
+                    Get them out of the way while the context is fresh.
+                  </p>
+                )
+              }
+              return (
+                <p style={{ fontSize: 16, color: "#94a3b8", marginTop: 20, maxWidth: 520, lineHeight: 1.6 }}>
+                  {stats.active} active leads, {stats.meetings} meetings scheduled, {stats.closed} deals closed so far.
+                </p>
+              )
+            })()}
           </div>
 
           <div className="md:col-span-5 md:text-right">
