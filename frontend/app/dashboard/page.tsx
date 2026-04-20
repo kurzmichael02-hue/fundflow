@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@supabase/supabase-js"
 import AppNav from "@/components/AppNav"
+import { ApiError } from "@/lib/api"
 import {
   RiArrowRightLine, RiBellLine, RiCheckboxCircleLine,
   RiRocketLine, RiAccountCircleLine, RiUserLine,
@@ -121,6 +122,12 @@ export default function DashboardPage() {
         fetch("/api/interests", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/profile",   { headers: { Authorization: `Bearer ${token}` } }),
       ])
+      // Only treat 401 as a session problem. Anything else (Supabase down,
+      // bad config, server hiccup) leaves the user on the page with empty
+      // data instead of pingponging them back to /login.
+      if (invRes.status === 401 || intRes.status === 401 || profileRes.status === 401) {
+        throw new ApiError("Unauthorized", 401, null)
+      }
       const invData = await invRes.json()
       const intData = await intRes.json()
       const profileData = await profileRes.json()
@@ -128,8 +135,14 @@ export default function DashboardPage() {
       setInterests(Array.isArray(intData) ? intData : [])
       setPlan(profileData?.plan || "free")
       setUserEmail(profileData?.email || "")
-    } catch {
-      router.push("/login")
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        localStorage.removeItem("token")
+        localStorage.removeItem("user_type")
+        router.push("/login")
+      }
+      // Non-401: stay on the page, surface nothing — the empty-state UI
+      // already handles "no investors yet" cleanly.
     } finally {
       setLoading(false)
     }
@@ -257,11 +270,11 @@ export default function DashboardPage() {
           style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <div className="mono flex items-center gap-x-6 gap-y-2 flex-wrap" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
             <span>Dashboard</span>
-            <span style={{ color: "#334155" }}>·</span>
+            <span style={{ color: "#475569" }}>·</span>
             <span>{today}</span>
-            <span style={{ color: "#334155" }}>·</span>
+            <span style={{ color: "#475569" }}>·</span>
             <span><span style={{ color: "#e5e7eb" }}>{stats.total}</span> investors</span>
-            <span style={{ color: "#334155" }}>·</span>
+            <span style={{ color: "#475569" }}>·</span>
             <span><span style={{ color: "#10b981" }}>{formatUsd(totalCommitted)}</span> committed</span>
           </div>
           {live && (
@@ -281,7 +294,21 @@ export default function DashboardPage() {
             <h1 className="serif text-white" style={{
               fontSize: "clamp(40px, 5.5vw, 72px)", lineHeight: 0.95, letterSpacing: "-0.045em", fontWeight: 500,
             }}>
-              Good morning, {userEmail ? <span style={{ fontStyle: "italic", fontWeight: 400 }}>{userEmail.split("@")[0]}</span> : "founder"}.
+              {(() => {
+                // Greeting depends on time of day — easier on a 9pm session
+                // than always reading "good morning" at midnight.
+                const hour = new Date().getHours()
+                const greeting = hour < 5 ? "Still up" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening"
+                // Empty string would fall through `userEmail ?` truthy check
+                // because "" is falsy in JS but split("@")[0] of "" is "" —
+                // so we explicitly require a non-empty handle before showing it.
+                const handle = (userEmail || "").split("@")[0].trim()
+                return (
+                  <>
+                    {greeting}{handle ? <>, <span style={{ fontStyle: "italic", fontWeight: 400 }}>{handle}</span></> : ""}.
+                  </>
+                )
+              })()}
             </h1>
             <p style={{ fontSize: 16, color: "#94a3b8", marginTop: 20, maxWidth: 520, lineHeight: 1.6 }}>
               {investors.length === 0
@@ -291,7 +318,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="md:col-span-5 md:text-right">
-            <p className="mono mb-2" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            <p className="mono mb-2" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
               Committed this round
             </p>
             <div className="serif" style={{ fontSize: "clamp(56px, 7vw, 96px)", lineHeight: 0.9, color: "#fff", fontWeight: 500, letterSpacing: "-0.04em" }}>
@@ -318,7 +345,7 @@ export default function DashboardPage() {
                   padding: "24px 20px",
                   borderLeft: i > 0 ? "1px solid rgba(255,255,255,0.06)" : "none",
                 }}>
-                <div className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>
+                <div className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>
                   {s.label}
                 </div>
                 <div className="serif" style={{ fontSize: 34, color: "#fff", fontWeight: 500, letterSpacing: "-0.02em", lineHeight: 1 }}>
@@ -407,7 +434,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="md:col-span-1 md:text-right">
-                    <RiArrowRightLine size={14} style={{ color: "#475569" }} />
+                    <RiArrowRightLine size={14} style={{ color: "#64748b" }} />
                   </div>
                 </button>
               ))}
@@ -425,7 +452,7 @@ export default function DashboardPage() {
                 <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
                   § Focus today
                 </p>
-                <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                   Ranked by impact
                 </span>
               </div>
@@ -479,7 +506,7 @@ export default function DashboardPage() {
 
                 {pendingTermSheets.length === 0 && freshInterests.length === 0 && stalledOutreach.length === 0 && (
                   <div className="py-14 text-center">
-                    <div className="mono" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                    <div className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                       Nothing urgent
                     </div>
                     <div className="serif mt-2" style={{ fontSize: 22, color: "#cbd5e1", fontWeight: 500, letterSpacing: "-0.01em" }}>
@@ -533,7 +560,7 @@ export default function DashboardPage() {
                     <p className="mono flex items-center gap-2" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
                       <RiBellLine size={12} /> Inbound signals
                     </p>
-                    <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                    <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                       {interests.length} total
                     </span>
                   </div>
@@ -552,7 +579,7 @@ export default function DashboardPage() {
                               </div>
                             </div>
                           </div>
-                          <div className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.04em" }}>
+                          <div className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.04em" }}>
                             {relTime(it.created_at)}
                           </div>
                         </div>

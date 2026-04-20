@@ -82,6 +82,20 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Seed the timeline with a "created" event so the drawer always has at
+  // least one row to show, instead of an empty list on a brand-new investor.
+  try {
+    await supabase.from("investor_events").insert({
+      investor_id: data.id,
+      user_id: user.id,
+      event_type: "created",
+      payload: { status: data.status },
+    })
+  } catch (e) {
+    console.warn("investor_events seed failed:", e)
+  }
+
   return NextResponse.json(data)
 }
 
@@ -98,6 +112,17 @@ export async function PATCH(req: NextRequest) {
   const payload = pickInvestorFields(body)
 
   const supabase = getClient()
+
+  // Read the row before the write so we can diff it for the timeline.
+  // user_id in the WHERE keeps a malicious id from leaking another user's
+  // investor (the update below has the same scoping).
+  const { data: before } = await supabase
+    .from("investors")
+    .select("status, notes, deal_size, name")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .maybeSingle()
+
   const { data, error } = await supabase
     .from("investors")
     .update({ ...payload, updated_at: new Date().toISOString() })
@@ -107,7 +132,68 @@ export async function PATCH(req: NextRequest) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Best-effort timeline write. Wrapped so a missing investor_events
+  // table (fresh env, migration not yet applied) doesn't break the PATCH.
+  if (before) {
+    try {
+      await recordChanges(supabase, id, user.id, before, data)
+    } catch (e) {
+      console.warn("investor_events write failed:", e)
+    }
+  }
+
   return NextResponse.json(data)
+}
+
+// Diff before/after and write one event per meaningful field change. Status
+// and notes get their own event types so the UI can render them differently
+// (icon, copy, payload shape). Deal-size + name updates collapse into a
+// generic "field_updated" so we don't grow the type list forever.
+async function recordChanges(
+  supabase: ReturnType<typeof getClient>,
+  investorId: string,
+  userId: string,
+  before: { status?: string | null; notes?: string | null; deal_size?: string | null; name?: string | null },
+  after:  { status?: string | null; notes?: string | null; deal_size?: string | null; name?: string | null },
+) {
+  const events: Array<{ investor_id: string; user_id: string; event_type: string; payload: Record<string, unknown> }> = []
+
+  if (before.status !== after.status && after.status) {
+    events.push({
+      investor_id: investorId,
+      user_id: userId,
+      event_type: "status_changed",
+      payload: { from: before.status, to: after.status },
+    })
+  }
+  if ((before.notes || "") !== (after.notes || "")) {
+    events.push({
+      investor_id: investorId,
+      user_id: userId,
+      event_type: "notes_updated",
+      payload: { length: (after.notes || "").length },
+    })
+  }
+  if ((before.deal_size || "") !== (after.deal_size || "")) {
+    events.push({
+      investor_id: investorId,
+      user_id: userId,
+      event_type: "deal_size_changed",
+      payload: { from: before.deal_size, to: after.deal_size },
+    })
+  }
+  if ((before.name || "") !== (after.name || "") && after.name) {
+    events.push({
+      investor_id: investorId,
+      user_id: userId,
+      event_type: "renamed",
+      payload: { from: before.name, to: after.name },
+    })
+  }
+
+  if (events.length === 0) return
+  await supabase.from("investor_events").insert(events)
 }
 
 export async function DELETE(req: NextRequest) {

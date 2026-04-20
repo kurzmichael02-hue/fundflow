@@ -73,7 +73,7 @@ export function AuthField({
   return (
     <div>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 10 }}>
-        <label className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+        <label className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
           {label}
         </label>
         {aside}
@@ -90,7 +90,7 @@ export const AUTH_INPUT: React.CSSProperties = {
   width: "100%",
   background: "transparent",
   border: 0,
-  borderBottom: "1px solid rgba(255,255,255,0.14)",
+  borderBottom: "1px solid rgba(255,255,255,0.18)",
   color: "#e5e7eb",
   fontSize: 15,
   outline: "none",

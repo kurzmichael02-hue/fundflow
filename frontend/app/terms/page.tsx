@@ -25,7 +25,7 @@ const SECTIONS: Array<{ num: string; title: string; body: React.ReactNode }> = [
           "We can suspend accounts that abuse the service or other users",
         ].map(i => (
           <li key={i} className="flex items-start gap-3">
-            <span className="mono" style={{ fontSize: 10, color: "#475569", marginTop: 6 }}>—</span>
+            <span className="mono" style={{ fontSize: 10, color: "#64748b", marginTop: 6 }}>—</span>
             <span>{i}</span>
           </li>
         ))}
@@ -46,7 +46,7 @@ const SECTIONS: Array<{ num: string; title: string; body: React.ReactNode }> = [
             "Attempt to bypass the plan caps, rate limits, or authentication",
           ].map(i => (
             <li key={i} className="flex items-start gap-3">
-              <span className="mono" style={{ fontSize: 10, color: "#475569", marginTop: 6 }}>—</span>
+              <span className="mono" style={{ fontSize: 10, color: "#64748b", marginTop: 6 }}>—</span>
               <span>{i}</span>
             </li>
           ))}

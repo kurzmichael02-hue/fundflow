@@ -253,7 +253,7 @@ export default function CommandPalette() {
               fontFamily: "'JetBrains Mono', ui-monospace, monospace",
             }}
           />
-          <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
             ESC
           </span>
         </div>
@@ -264,12 +264,12 @@ export default function CommandPalette() {
           className="max-h-[60vh] overflow-y-auto"
           role="listbox">
           {flat.length === 0 ? (
-            <div className="mono text-center" style={{ padding: "40px 0", fontSize: 11, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            <div className="mono text-center" style={{ padding: "40px 0", fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
               {loadingInvestors ? "Loading..." : "No matches"}
             </div>
           ) : grouped.map(group => (
             <div key={group.section}>
-              <div className="mono px-5 pt-4 pb-2" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+              <div className="mono px-5 pt-4 pb-2" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
                 {group.section === "navigate" ? "Navigate"
                   : group.section === "investor" ? "Investors"
                   : "Actions"}
@@ -321,7 +321,7 @@ export default function CommandPalette() {
 
         {/* Footer hint strip */}
         <div className="mono flex items-center justify-between px-5 py-3"
-          style={{ borderTop: "1px solid rgba(255,255,255,0.06)", fontSize: 10, color: "#475569", letterSpacing: "0.06em" }}>
+          style={{ borderTop: "1px solid rgba(255,255,255,0.06)", fontSize: 10, color: "#64748b", letterSpacing: "0.06em" }}>
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5">
               <RiArrowUpLine size={10} /><RiArrowDownLine size={10} /> Navigate

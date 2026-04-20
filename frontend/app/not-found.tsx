@@ -10,7 +10,7 @@ export default function NotFound() {
       display: "flex", alignItems: "center", justifyContent: "center",
     }}>
       <div style={{ maxWidth: 560, padding: "0 24px", textAlign: "left" }}>
-        <div className="mono" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 24 }}>
+        <div className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 24 }}>
           Error · 404 · Not found
         </div>
         <h1 className="serif" style={{

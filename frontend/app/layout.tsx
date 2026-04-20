@@ -55,8 +55,47 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        {/* Skip-link: invisible until focused via Tab. Lets keyboard /
+            screen-reader users jump past the nav. */}
+        <a href="#main" className="skip-link">Skip to content</a>
         <CookieBanner />
-        {children}
+        <div id="main">{children}</div>
+
+        {/* Organization + SoftwareApplication structured data. Helps search
+            engines render rich results (logo, ratings if we ever have them,
+            sameAs social links). Kept tiny and factual — no inflated stats. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "Organization",
+                  "name": "FundFlow",
+                  "url": SITE_URL,
+                  "logo": `${SITE_URL}/favicon.ico`,
+                  "sameAs": [
+                    "https://twitter.com/fundflow",
+                    "https://t.me/fundflow",
+                  ],
+                },
+                {
+                  "@type": "SoftwareApplication",
+                  "name": "FundFlow",
+                  "applicationCategory": "BusinessApplication",
+                  "operatingSystem": "Web",
+                  "url": SITE_URL,
+                  "offers": [
+                    { "@type": "Offer", "price": "0",  "priceCurrency": "USD", "name": "Starter" },
+                    { "@type": "Offer", "price": "99", "priceCurrency": "USD", "name": "Pro" },
+                  ],
+                  "description": "Investor CRM for Web3 founders — private pipeline plus public deal-flow page.",
+                },
+              ],
+            }),
+          }}
+        />
       </body>
     </html>
   );

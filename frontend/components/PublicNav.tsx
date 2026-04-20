@@ -35,7 +35,7 @@ export default function PublicNav() {
         <div className="max-w-[1180px] mx-auto px-6 md:px-10 flex items-center justify-between" style={{ height: 64 }}>
           <Link href="/" className="flex items-baseline gap-3 no-underline">
             <span className="serif text-white" style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.02em" }}>FundFlow</span>
-            <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>Beta · v0.1</span>
+            <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>Beta · v0.1</span>
           </Link>
 
           <div className="hidden md:flex items-center" style={{ gap: 32 }}>

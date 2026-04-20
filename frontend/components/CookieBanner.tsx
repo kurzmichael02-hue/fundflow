@@ -1,6 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import posthog from "posthog-js"
 import { RiCloseLine } from "react-icons/ri"
 
 export default function CookieBanner() {
@@ -13,11 +14,19 @@ export default function CookieBanner() {
 
   function accept() {
     localStorage.setItem("cookie_consent", "accepted")
+    // Flip PostHog from the opted-out default into capturing mode and
+    // start persisting state so the next page load remembers consent.
+    try {
+      posthog.opt_in_capturing()
+      posthog.set_config({ persistence: "localStorage+cookie" })
+    } catch { /* posthog not initialised — fine */ }
     setVisible(false)
   }
 
   function decline() {
     localStorage.setItem("cookie_consent", "declined")
+    // Hard opt-out — PostHog won't queue events even in memory after this.
+    try { posthog.opt_out_capturing() } catch { /* ignore */ }
     setVisible(false)
   }
 

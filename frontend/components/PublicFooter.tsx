@@ -30,7 +30,7 @@ export default function PublicFooter() {
           <div className="col-span-2">
             <div className="flex items-baseline gap-3 mb-3">
               <span className="serif text-white" style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.02em" }}>FundFlow</span>
-              <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>Beta · v0.1</span>
+              <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>Beta · v0.1</span>
             </div>
             <p style={{ fontSize: 13, color: "#64748b", maxWidth: 280, lineHeight: 1.6 }}>
               The investor CRM for Web3 founders. Built in Berlin, hosted in Frankfurt.
@@ -43,7 +43,7 @@ export default function PublicFooter() {
 
           {COLS.map(col => (
             <div key={col.title}>
-              <p className="mono mb-4" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+              <p className="mono mb-4" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
                 {col.title}
               </p>
               <div className="flex flex-col gap-2.5">
@@ -61,7 +61,7 @@ export default function PublicFooter() {
 
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pt-8"
           style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-          <span className="mono" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.06em" }}>
+          <span className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.06em" }}>
             © 2026 FundFlow · Set in Fraunces, DM Sans, JetBrains Mono
           </span>
           <div className="flex items-center gap-5">

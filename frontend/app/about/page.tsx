@@ -246,7 +246,7 @@ export default function About() {
                   </p>
                 </div>
                 <div className="md:col-span-1 flex md:justify-end">
-                  <span className="mono" style={{ fontSize: 12, color: "#475569", letterSpacing: "0.02em" }}>
+                  <span className="mono" style={{ fontSize: 12, color: "#64748b", letterSpacing: "0.02em" }}>
                     {member.handle}
                   </span>
                 </div>
