@@ -6,6 +6,7 @@ import { api, isUnauthorized, clearSessionAndRedirect } from "@/lib/api"
 import AppNav from "@/components/AppNav"
 import { ToastContainer, useToast } from "@/components/Toast"
 import FollowUpPill from "@/components/FollowUpPill"
+import { useTimeTick } from "@/lib/useTimeTick"
 import { RiArrowRightLine } from "react-icons/ri"
 
 // Pipeline — Kanban of investors by status.
@@ -46,6 +47,9 @@ export default function PipelinePage() {
   // on Firefox so we mirror it in state.
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dragOverCol, setDragOverCol] = useState<Status | null>(null)
+  // Force a minute re-render so the overdue border on cards flips to red
+  // the moment a reminder passes, without waiting for the next interaction.
+  useTimeTick()
 
   useEffect(() => {
     const token = localStorage.getItem("token")
@@ -96,6 +100,22 @@ export default function PipelinePage() {
     setDragOverCol(null)
     if (id) moveInvestor(id, newStatus)
   }
+
+  // Escape while mid-drag resets the ghosted card + column highlight.
+  // Browsers do fire `dragend` on escape but column-level `dragleave`
+  // doesn't always balance the `dragenter` counter cleanly, leaving a
+  // column washed in accent colour. Belt-and-suspenders: clear it here.
+  useEffect(() => {
+    if (!draggingId) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setDraggingId(null)
+        setDragOverCol(null)
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [draggingId])
 
   const stats = useMemo(() => ({
     total: investors.length,

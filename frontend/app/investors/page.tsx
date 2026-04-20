@@ -6,6 +6,7 @@ import { ToastContainer, useToast } from "@/components/Toast"
 import ConfirmDialog from "@/components/ConfirmDialog"
 import CsvImportDialog from "@/components/CsvImportDialog"
 import FollowUpPill from "@/components/FollowUpPill"
+import { useTimeTick } from "@/lib/useTimeTick"
 import {
   RiAddLine, RiSearchLine, RiEditLine, RiDeleteBinLine,
   RiCheckLine, RiCloseLine, RiDownloadLine, RiUploadLine, RiUserLine,
@@ -105,6 +106,8 @@ function InvestorsPage() {
   const [search, setSearch] = useState(initialSearch)
   const [statusFilter, setStatusFilter] = useState<Status | "all">(STATUSES.includes(initialStatus as Status) || initialStatus === "all" ? initialStatus : "all")
   const [reminderFilter, setReminderFilter] = useState<ReminderFilter>(initialReminder)
+  // Keep the overdue/today predicate + row pills in sync with the wall clock.
+  const tick = useTimeTick()
   const [showAdd, setShowAdd] = useState(searchParams.get("new") === "1")
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
@@ -153,6 +156,20 @@ function InvestorsPage() {
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, statusFilter, selectedInv?.id, reminderFilter])
+
+  // Reverse direction — if the URL changes out from under us (e.g. the
+  // command palette router.pushes /investors?overdue=1 while the user is
+  // already on this page), pull the new filter into state. Without this
+  // the deep link silently no-ops because state was seeded once at mount.
+  // Guarded so it doesn't fight the writer effect above.
+  useEffect(() => {
+    const urlReminder: ReminderFilter =
+      searchParams.get("overdue") === "1" ? "overdue"
+      : searchParams.get("today") === "1" ? "today"
+      : null
+    if (urlReminder !== reminderFilter) setReminderFilter(urlReminder)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   // ── Initial fetch ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -536,7 +553,7 @@ function InvestorsPage() {
     })
     return sorted
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [investors, search, statusFilter, reminderFilter, sortKey, sortDir, STATUS_ORDER])
+  }, [investors, search, statusFilter, reminderFilter, sortKey, sortDir, STATUS_ORDER, tick])
 
   function toggleSort(key: SortKey) {
     if (sortKey !== key) {

@@ -10,6 +10,28 @@ function getClient() {
   )
 }
 
+// Capability probe: does this Supabase instance have migration 0003
+// applied? We check once per server process and cache the result, so a
+// founder who hasn't run the migration yet gets a clean 503 instead of
+// a raw Postgres 42703. Flips to `true` the moment the migration lands
+// and never flips back (new process after each deploy anyway).
+let followUpColumnsAvailable: boolean | null = null
+async function probeFollowUpColumns(supabase: ReturnType<typeof getClient>): Promise<boolean> {
+  if (followUpColumnsAvailable !== null) return followUpColumnsAvailable
+  const { error } = await supabase
+    .from("investors")
+    .select("next_follow_up_at")
+    .limit(1)
+  if (error && error.code === "42703") {
+    followUpColumnsAvailable = false
+    return false
+  }
+  // Any other error we treat as "assume available" — the real PATCH/SELECT
+  // will surface its own failure mode rather than locking the feature out.
+  followUpColumnsAvailable = true
+  return true
+}
+
 // Fields a user may write on their own investor rows. Keeps a malicious
 // client from setting `id`, `user_id` or `created_at` through the API.
 // `next_follow_up_at` and `last_contacted_at` accept ISO-8601 strings or
@@ -130,12 +152,32 @@ export async function PATCH(req: NextRequest) {
 
   const supabase = getClient()
 
+  // If the caller is trying to write follow-up fields but the migration
+  // isn't applied yet, fail loud with an actionable message instead of a
+  // raw Postgres 42703 swallowed into a 500.
+  const writingFollowUp = "next_follow_up_at" in payload || "last_contacted_at" in payload
+  if (writingFollowUp) {
+    const available = await probeFollowUpColumns(supabase)
+    if (!available) {
+      return NextResponse.json(
+        {
+          error: "Follow-up reminders need a database migration. Apply supabase/migrations/0003_investor_follow_ups.sql and try again.",
+          migration: "0003_investor_follow_ups",
+        },
+        { status: 503 },
+      )
+    }
+  }
+
   // Read the row before the write so we can diff it for the timeline.
   // user_id in the WHERE keeps a malicious id from leaking another user's
-  // investor (the update below has the same scoping).
+  // investor (the update below has the same scoping). Using `*` instead
+  // of an explicit column list so the SELECT works whether migration 0003
+  // is applied or not — Postgres only returns columns that exist, and
+  // recordChanges handles missing fields as `undefined` via optional props.
   const { data: before } = await supabase
     .from("investors")
-    .select("status, notes, deal_size, name, next_follow_up_at, last_contacted_at")
+    .select("*")
     .eq("id", id)
     .eq("user_id", user.id)
     .maybeSingle()

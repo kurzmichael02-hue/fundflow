@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@supabase/supabase-js"
 import AppNav from "@/components/AppNav"
 import { ApiError } from "@/lib/api"
+import { useTimeTick } from "@/lib/useTimeTick"
 import {
   RiArrowRightLine, RiBellLine, RiCheckboxCircleLine,
   RiRocketLine, RiAccountCircleLine, RiUserLine,
@@ -132,6 +133,9 @@ export default function DashboardPage() {
   const [userEmail, setUserEmail] = useState("")
   const [seeding, setSeeding] = useState(false)
   const channelsRef = useRef<Array<{ unsubscribe: () => void }>>([])
+  // Re-render every minute so the overdue-count ticker, followUps memo
+  // and "Xh late" copy stay fresh without a manual refresh.
+  const tick = useTimeTick()
 
   useEffect(() => {
     const token = localStorage.getItem("token")
@@ -309,8 +313,9 @@ export default function DashboardPage() {
 
   // Follow-ups bucketed into overdue (past) vs today (within 24h). Anything
   // further out doesn't need to hit the dashboard — the investor's own row
-  // badge handles the lookahead. We re-compute on every render because the
-  // boundary moves with wall-clock time; cheap enough for a solo pipeline.
+  // badge handles the lookahead. Tick is a dep on purpose so the buckets
+  // re-sort as wall-clock time passes (today rolls into overdue at midnight,
+  // "due in 2h" becomes "due now", etc).
   const followUps = useMemo(() => {
     const now = Date.now()
     const endOfToday = new Date()
@@ -330,7 +335,8 @@ export default function DashboardPage() {
     // Today: soonest first.
     today.sort((a, b) => new Date(a.next_follow_up_at!).getTime() - new Date(b.next_follow_up_at!).getTime())
     return { overdue, today }
-  }, [investors])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [investors, tick])
   const stalledOutreach = useMemo(() => {
     const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000
     return investors
