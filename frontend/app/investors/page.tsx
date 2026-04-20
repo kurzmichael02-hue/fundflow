@@ -8,6 +8,8 @@ import {
   RiAddLine, RiSearchLine, RiEditLine, RiDeleteBinLine,
   RiCheckLine, RiCloseLine, RiDownloadLine, RiUserLine,
   RiStickyNoteLine, RiTimeLine, RiCheckboxBlankLine, RiCheckboxLine,
+  RiHistoryLine, RiArrowRightLine, RiEditBoxLine, RiAddCircleLine,
+  RiCoinLine,
 } from "react-icons/ri"
 
 // Investors page — editorial CRM with shareable filters and bulk operations.
@@ -956,6 +958,13 @@ function IconBtn({ icon, onClick, color, danger }: {
   )
 }
 
+type InvestorEvent = {
+  id: string
+  event_type: string
+  payload: Record<string, unknown> | null
+  created_at: string
+}
+
 function DetailDrawer({
   inv, onClose, panelNotes, setPanelNotes, savingNotes, onSaveNotes,
   onStatusChange, onDelete,
@@ -970,6 +979,27 @@ function DetailDrawer({
   onDelete: () => void
 }) {
   const color = STATUS_COLOR[inv.status]
+
+  // Lazy-load timeline events whenever the open investor changes. Bounded
+  // to 50 server-side; we don't paginate yet because most pipelines are
+  // months-old and even an active deal won't accumulate 50 events.
+  const [events, setEvents] = useState<InvestorEvent[]>([])
+  const [eventsLoading, setEventsLoading] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    setEventsLoading(true)
+    const token = localStorage.getItem("token")
+    fetch(`/api/investors/${inv.id}/events`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
+      .then(r => r.ok ? r.json() : [])
+      .then(d => { if (!cancelled) setEvents(Array.isArray(d) ? d : []) })
+      .catch(() => { if (!cancelled) setEvents([]) })
+      .finally(() => { if (!cancelled) setEventsLoading(false) })
+    return () => { cancelled = true }
+  }, [inv.id])
+
   return (
     <>
       <div className="md:hidden fixed inset-0 z-30"
@@ -1093,6 +1123,8 @@ function DetailDrawer({
             </button>
           </div>
 
+          <Timeline events={events} loading={eventsLoading} />
+
           <button onClick={onDelete}
             className="mono mt-auto"
             style={{
@@ -1107,5 +1139,134 @@ function DetailDrawer({
         </div>
       </aside>
     </>
+  )
+}
+
+// Render a relative timestamp like "2h ago" or fallback to a date if it's
+// older than a week. Used in the timeline column under each event.
+function relTime(iso: string): string {
+  const diff = Math.max(0, Date.now() - new Date(iso).getTime())
+  const m = Math.floor(diff / 60_000)
+  if (m < 1) return "just now"
+  if (m < 60) return `${m}m ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h ago`
+  const d = Math.floor(h / 24)
+  if (d < 7) return `${d}d ago`
+  return new Date(iso).toLocaleDateString("en", { month: "short", day: "numeric" })
+}
+
+function eventDescriptor(event: InvestorEvent): { icon: React.ReactNode; label: React.ReactNode; color: string } {
+  const payload = (event.payload || {}) as Record<string, unknown>
+  switch (event.event_type) {
+    case "created": {
+      const status = String(payload.status || "outreach") as Status
+      const c = STATUS_COLOR[status] || "#10b981"
+      return {
+        icon: <RiAddCircleLine size={12} />,
+        color: c,
+        label: <>Added to pipeline as <span className="mono" style={{ color: c }}>{STATUS_LABEL[status] || status}</span></>,
+      }
+    }
+    case "status_changed": {
+      const from = String(payload.from || "")
+      const to = String(payload.to || "")
+      const cTo = STATUS_COLOR[to as Status] || "#10b981"
+      const cFrom = STATUS_COLOR[from as Status] || "#64748b"
+      return {
+        icon: <RiArrowRightLine size={12} />,
+        color: cTo,
+        label: (
+          <>
+            Moved from <span className="mono" style={{ color: cFrom }}>{STATUS_LABEL[from as Status] || from || "—"}</span>
+            {" "}→{" "}
+            <span className="mono" style={{ color: cTo }}>{STATUS_LABEL[to as Status] || to}</span>
+          </>
+        ),
+      }
+    }
+    case "notes_updated": {
+      const length = Number(payload.length || 0)
+      return {
+        icon: <RiEditBoxLine size={12} />,
+        color: "#94a3b8",
+        label: <>Notes updated{length > 0 ? <span className="mono" style={{ color: "#475569", marginLeft: 6 }}>{length} chars</span> : ""}</>,
+      }
+    }
+    case "deal_size_changed": {
+      const from = payload.from ? String(payload.from) : "—"
+      const to = payload.to ? String(payload.to) : "—"
+      return {
+        icon: <RiCoinLine size={12} />,
+        color: "#fbbf24",
+        label: (
+          <>
+            Deal size <span className="mono" style={{ color: "#94a3b8" }}>{from}</span>
+            {" "}→{" "}
+            <span className="mono" style={{ color: "#fff" }}>{to}</span>
+          </>
+        ),
+      }
+    }
+    case "renamed": {
+      return {
+        icon: <RiEditLine size={12} />,
+        color: "#94a3b8",
+        label: <>Renamed to <span className="mono" style={{ color: "#fff" }}>{String(payload.to || "")}</span></>,
+      }
+    }
+    default:
+      return {
+        icon: <RiHistoryLine size={12} />,
+        color: "#64748b",
+        label: <>{event.event_type}</>,
+      }
+  }
+}
+
+function Timeline({ events, loading }: { events: InvestorEvent[]; loading: boolean }) {
+  return (
+    <div>
+      <div className="mono flex items-center gap-2 mb-3" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+        <RiHistoryLine size={11} /> Timeline
+      </div>
+      {loading ? (
+        <div className="mono py-4" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.06em" }}>
+          Loading events...
+        </div>
+      ) : events.length === 0 ? (
+        <div className="mono py-4" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.04em" }}>
+          No events yet — changes will appear here as you make them.
+        </div>
+      ) : (
+        <ol style={{ listStyle: "none", padding: 0, margin: 0, position: "relative" }}>
+          {/* Vertical hairline that ties the timeline together visually. */}
+          <div style={{
+            position: "absolute", left: 6, top: 6, bottom: 6, width: 1,
+            background: "rgba(255,255,255,0.06)",
+          }} />
+          {events.map(e => {
+            const d = eventDescriptor(e)
+            return (
+              <li key={e.id} style={{ position: "relative", paddingLeft: 22, paddingBottom: 14 }}>
+                <span style={{
+                  position: "absolute", left: 2, top: 4, width: 9, height: 9,
+                  borderRadius: "50%",
+                  background: "#060608",
+                  border: `1.5px solid ${d.color}`,
+                }} />
+                <div style={{ fontSize: 12, color: "#cbd5e1", lineHeight: 1.5, display: "flex", alignItems: "baseline", gap: 6 }}>
+                  <span style={{ color: d.color, position: "relative", top: 1 }}>{d.icon}</span>
+                  <span>{d.label}</span>
+                </div>
+                <div className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.04em", marginTop: 2 }}>
+                  {relTime(e.created_at)}
+                </div>
+              </li>
+            )
+          })}
+        </ol>
+      )}
+    </div>
   )
 }
