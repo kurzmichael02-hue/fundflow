@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { api, isUnauthorized, clearSessionAndRedirect } from "@/lib/api"
@@ -39,6 +39,14 @@ export default function PipelinePage() {
   const [activeTab, setActiveTab] = useState<Status>("outreach")
   const { toasts, addToast, removeToast } = useToast()
 
+  // Drag state lives at the page level so the column can render a drop
+  // highlight and the origin card can render ghosted. We track the dragged
+  // id and the hovered column separately — dataTransfer carries the id
+  // across the drag, but reading dataTransfer during dragOver is forbidden
+  // on Firefox so we mirror it in state.
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [dragOverCol, setDragOverCol] = useState<Status | null>(null)
+
   useEffect(() => {
     const token = localStorage.getItem("token")
     if (!token) { router.push("/login"); return }
@@ -60,6 +68,8 @@ export default function PipelinePage() {
   }, [])
 
   async function moveInvestor(id: string, newStatus: Status) {
+    const target = investors.find(i => i.id === id)
+    if (target && target.status === newStatus) return // no-op drop onto same column
     const prev = investors
     setInvestors(list => list.map(i => i.id === id ? { ...i, status: newStatus } : i))
     try {
@@ -73,6 +83,18 @@ export default function PipelinePage() {
       }
       addToast(err instanceof Error ? err.message : "Failed to move", "error")
     }
+  }
+
+  // Drop handler — called by the column when the user releases a drag.
+  // Reads the investor id off dataTransfer (belt-and-suspenders: state
+  // is the source of truth but dataTransfer survives an e.stopPropagation
+  // bug elsewhere).
+  function handleDrop(e: React.DragEvent, newStatus: Status) {
+    e.preventDefault()
+    const id = e.dataTransfer.getData("text/plain") || draggingId
+    setDraggingId(null)
+    setDragOverCol(null)
+    if (id) moveInvestor(id, newStatus)
   }
 
   const stats = useMemo(() => ({
@@ -135,7 +157,12 @@ export default function PipelinePage() {
               {COLUMNS.map((col, i) => (
                 <PipelineColumn key={col.key} col={col} investors={investors}
                   moveInvestor={moveInvestor}
-                  leftBorder={i > 0} />
+                  leftBorder={i > 0}
+                  draggingId={draggingId} setDraggingId={setDraggingId}
+                  dragOver={dragOverCol === col.key}
+                  onDragEnterCol={() => setDragOverCol(col.key)}
+                  onDragLeaveCol={() => setDragOverCol(c => c === col.key ? null : c)}
+                  onDrop={handleDrop} />
               ))}
             </section>
 
@@ -161,6 +188,9 @@ export default function PipelinePage() {
                   )
                 })}
               </div>
+              {/* Mobile skips DnD — touch devices don't fire drag events
+                  reliably, so the inline status select on the card is the
+                  primary interaction there. */}
               {COLUMNS.filter(c => c.key === activeTab).map(col => (
                 <PipelineColumn key={col.key} col={col} investors={investors}
                   moveInvestor={moveInvestor} mobile />
@@ -191,9 +221,9 @@ function PipelineEmpty() {
             Nothing in the funnel yet.
           </h2>
           <p style={{ fontSize: 16, color: "#94a3b8", marginTop: 20, maxWidth: 480, lineHeight: 1.65 }}>
-            Add a few investors first — each one lands in a column based on its status,
-            and you can move them between columns from the card. The board mirrors your
-            CRM, so anything you change here lives in the data room too.
+            Add a few investors first — they&apos;ll show up here as cards you can drag from
+            Outreach all the way to Closed. The board mirrors your CRM, so anything you
+            change here lives in the data room too.
           </p>
           <div className="flex flex-wrap gap-3 mt-8">
             <Link href="/investors?new=1" className="mono no-underline flex items-center gap-1.5"
@@ -220,7 +250,7 @@ function PipelineEmpty() {
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
             {[
               "Five columns — Outreach to Closed",
-              "Change status from the card, pipeline re-shuffles live",
+              "Drag cards between columns, or change status from the card",
               "Optimistic moves, rolls back if the server says no",
               "Overdue follow-ups show a red border so you can't miss them",
               "Mobile collapses to one column with tabs",
@@ -242,21 +272,54 @@ function PipelineEmpty() {
 
 function PipelineColumn({
   col, investors, moveInvestor, leftBorder, mobile,
+  draggingId, setDraggingId, dragOver, onDragEnterCol, onDragLeaveCol, onDrop,
 }: {
   col: { key: Status; label: string; color: string }
   investors: Investor[]
   moveInvestor: (id: string, s: Status) => void
   leftBorder?: boolean
   mobile?: boolean
+  // DnD plumbing — undefined on mobile to skip DnD entirely.
+  draggingId?: string | null
+  setDraggingId?: (id: string | null) => void
+  dragOver?: boolean
+  onDragEnterCol?: () => void
+  onDragLeaveCol?: () => void
+  onDrop?: (e: React.DragEvent, col: Status) => void
 }) {
   const rows = investors.filter(i => i.status === col.key)
+
+  // Counter ref — dragEnter/Leave fire per child element, so we count
+  // entries vs. leaves and only drop the highlight when they balance. Much
+  // more reliable than relatedTarget checks on the raw event.
+  const enterCountRef = useRef(0)
+
+  const isDroppable = !mobile && typeof onDrop === "function"
+
   return (
-    <div style={{
-      borderLeft: leftBorder ? "1px solid rgba(255,255,255,0.06)" : "none",
-      padding: mobile ? "16px 0" : "20px 16px",
-      minHeight: mobile ? "auto" : 360,
-      borderTop: `2px solid ${col.color}`,
-    }}>
+    <div
+      onDragOver={isDroppable ? e => { e.preventDefault(); e.dataTransfer.dropEffect = "move" } : undefined}
+      onDragEnter={isDroppable ? e => {
+        e.preventDefault()
+        enterCountRef.current += 1
+        onDragEnterCol?.()
+      } : undefined}
+      onDragLeave={isDroppable ? () => {
+        enterCountRef.current = Math.max(0, enterCountRef.current - 1)
+        if (enterCountRef.current === 0) onDragLeaveCol?.()
+      } : undefined}
+      onDrop={isDroppable ? e => {
+        enterCountRef.current = 0
+        onDrop!(e, col.key)
+      } : undefined}
+      style={{
+        borderLeft: leftBorder ? "1px solid rgba(255,255,255,0.06)" : "none",
+        padding: mobile ? "16px 0" : "20px 16px",
+        minHeight: mobile ? "auto" : 360,
+        borderTop: `2px solid ${col.color}`,
+        background: dragOver ? `${col.color}0A` : "transparent",
+        transition: "background 120ms",
+      }}>
       {!mobile && (
         <div className="flex items-center justify-between mb-5">
           <span className="mono" style={{ fontSize: 10, color: col.color, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 600 }}>
@@ -269,11 +332,28 @@ function PipelineColumn({
       )}
       <div className="flex flex-col gap-2">
         {rows.map(inv => (
-          <PipelineCard key={inv.id} inv={inv} color={col.color} moveInvestor={moveInvestor} />
+          <PipelineCard key={inv.id} inv={inv} color={col.color}
+            moveInvestor={moveInvestor}
+            draggable={isDroppable}
+            isDragging={draggingId === inv.id}
+            onDragStart={isDroppable ? (e) => {
+              e.dataTransfer.setData("text/plain", inv.id)
+              e.dataTransfer.effectAllowed = "move"
+              setDraggingId?.(inv.id)
+            } : undefined}
+            onDragEnd={isDroppable ? () => setDraggingId?.(null) : undefined}
+          />
         ))}
         {rows.length === 0 && !mobile && (
-          <div className="mono text-center py-10" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-            Empty
+          <div className="mono text-center py-10"
+            style={{
+              fontSize: 10, color: dragOver ? col.color : "#475569",
+              letterSpacing: "0.08em", textTransform: "uppercase",
+              border: dragOver ? `1px dashed ${col.color}` : "1px dashed transparent",
+              borderRadius: 2,
+              transition: "border-color 120ms, color 120ms",
+            }}>
+            {dragOver ? "Drop here" : "Empty"}
           </div>
         )}
       </div>
@@ -283,10 +363,15 @@ function PipelineColumn({
 
 function PipelineCard({
   inv, color, moveInvestor,
+  draggable, isDragging, onDragStart, onDragEnd,
 }: {
   inv: Investor
   color: string
   moveInvestor: (id: string, s: Status) => void
+  draggable?: boolean
+  isDragging?: boolean
+  onDragStart?: (e: React.DragEvent) => void
+  onDragEnd?: () => void
 }) {
   // Overdue reminder gets a visual nudge on the whole card — thin red
   // left border — so it's impossible to miss when you're scanning a full
@@ -296,13 +381,23 @@ function PipelineCard({
     && new Date(inv.next_follow_up_at).getTime() < Date.now()
 
   return (
-    <div style={{
-      background: "#0a0a0d",
-      border: "1px solid rgba(255,255,255,0.06)",
-      borderLeft: overdue ? "2px solid #f87171" : "1px solid rgba(255,255,255,0.06)",
-      padding: "12px 14px",
-      borderRadius: 2,
-    }}>
+    <div
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      style={{
+        background: "#0a0a0d",
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderLeft: overdue ? "2px solid #f87171" : "1px solid rgba(255,255,255,0.06)",
+        padding: "12px 14px",
+        borderRadius: 2,
+        // While dragging, the origin card ghosts to 40%. The browser
+        // already renders a system preview that follows the cursor — we
+        // don't need to duplicate it, just dim the source.
+        opacity: isDragging ? 0.4 : 1,
+        cursor: draggable ? "grab" : "default",
+        transition: "opacity 120ms",
+      }}>
       <div className="flex items-start justify-between gap-2">
         <div style={{ fontSize: 13, color: "#e5e7eb", fontWeight: 500, lineHeight: 1.3 }}>
           {inv.name}
@@ -319,6 +414,7 @@ function PipelineCard({
       )}
       <select value={inv.status}
         onChange={e => moveInvestor(inv.id, e.target.value as Status)}
+        onMouseDown={e => e.stopPropagation()}
         className="mono mt-3 cursor-pointer"
         style={{
           width: "100%",
