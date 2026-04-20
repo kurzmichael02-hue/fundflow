@@ -91,7 +91,13 @@ export default function CsvImportDialog({ open, onClose, onImported }: Props) {
       return
     }
     const text = await file.text()
-    const parsed = parseCsv(text)
+    let parsed: string[][]
+    try {
+      parsed = parseCsv(text)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't parse the CSV file.")
+      return
+    }
     if (parsed.length < 2) {
       setError("No rows found. Make sure the first line is the header.")
       return
@@ -123,13 +129,18 @@ export default function CsvImportDialog({ open, onClose, onImported }: Props) {
 
     let done = 0
     let failed = 0
+    // Shared abort signal — any worker that sees a 401 or plan-cap flips
+    // this and the others drain their queues without firing more requests.
+    // Before, workers kept pounding the API after auth expired and the
+    // user saw a bogus "10 imported" when really the session had died.
+    let aborted: null | "auth" | "limit" = null
 
     // Throttle to 4-at-a-time so we don't blast the API. Free plan caps at
     // 25 rows total anyway, but a Pro user importing 500 at once would
     // otherwise open 500 sockets and probably 429.
     const queue = [...rows]
     async function worker() {
-      while (queue.length) {
+      while (queue.length && !aborted) {
         const row = queue.shift()
         if (!row) break
 
@@ -154,7 +165,15 @@ export default function CsvImportDialog({ open, onClose, onImported }: Props) {
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
           })
-          if (!res.ok) failed++
+          if (!res.ok) {
+            failed++
+            if (res.status === 401) { aborted = "auth"; break }
+            // Plan cap — the server already returns { limit: true }. Bail
+            // so the user isn't staring at "Importing 40/500" that never
+            // actually imports anything.
+            const data = await res.json().catch(() => null)
+            if (data?.limit) { aborted = "limit"; break }
+          }
         } catch {
           failed++
         }
@@ -163,6 +182,13 @@ export default function CsvImportDialog({ open, onClose, onImported }: Props) {
       }
     }
     await Promise.all([worker(), worker(), worker(), worker()])
+    // Surface the reason the batch stopped early so the user knows why
+    // numbers might not match the file they picked.
+    if (aborted === "auth") {
+      setError("Session expired mid-import. Sign in again and re-run the import.")
+    } else if (aborted === "limit") {
+      setError(`Hit the free-plan cap after ${done - failed} rows. Upgrade to Pro for unlimited imports.`)
+    }
     setStage("done")
     onImported(done - failed)
   }
@@ -422,8 +448,10 @@ export default function CsvImportDialog({ open, onClose, onImported }: Props) {
 //   · quoted cells with embedded commas, newlines, and `""` escapes
 //   · CRLF or LF row separators
 //   · trailing comma cells
-// Doesn't handle: BOM stripping (we strip it manually), unbalanced quotes
-// (will read until EOF — caller validates).
+//   · BOM stripping
+//   · unbalanced quotes — throws instead of silently eating the rest of
+//     the file as one giant cell. The caller catches and surfaces the
+//     error so the user knows their CSV is malformed.
 function parseCsv(input: string): string[][] {
   const text = input.replace(/^\uFEFF/, "")
   const rows: string[][] = []
@@ -453,6 +481,11 @@ function parseCsv(input: string): string[][] {
         cell += c
       }
     }
+  }
+  // If we reached EOF still inside a quoted cell, the file's quotes are
+  // unbalanced — don't pretend the trailing garbage is real data.
+  if (inQuotes) {
+    throw new Error("CSV has an unclosed quote — check for a missing \" in your file.")
   }
   if (cell.length > 0 || row.length > 0) {
     row.push(cell)

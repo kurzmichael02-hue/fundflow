@@ -6,6 +6,8 @@ import { ToastContainer, useToast } from "@/components/Toast"
 import ConfirmDialog from "@/components/ConfirmDialog"
 import CsvImportDialog from "@/components/CsvImportDialog"
 import FollowUpPill from "@/components/FollowUpPill"
+import { useTimeTick } from "@/lib/useTimeTick"
+import { requireToken } from "@/lib/api"
 import {
   RiAddLine, RiSearchLine, RiEditLine, RiDeleteBinLine,
   RiCheckLine, RiCloseLine, RiDownloadLine, RiUploadLine, RiUserLine,
@@ -92,11 +94,21 @@ function InvestorsPage() {
   const initialSearch = searchParams.get("q") || ""
   const initialStatus = (searchParams.get("status") || "all") as Status | "all"
   const initialOpenId = searchParams.get("inv") || null
+  // Reminder filter: null = off, "overdue" = next_follow_up_at in the past,
+  // "today" = within end-of-day. Deep-linked from the dashboard Focus blocks.
+  type ReminderFilter = null | "overdue" | "today"
+  const initialReminder: ReminderFilter =
+    searchParams.get("overdue") === "1" ? "overdue"
+    : searchParams.get("today") === "1" ? "today"
+    : null
 
   const [investors, setInvestors] = useState<Investor[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState(initialSearch)
   const [statusFilter, setStatusFilter] = useState<Status | "all">(STATUSES.includes(initialStatus as Status) || initialStatus === "all" ? initialStatus : "all")
+  const [reminderFilter, setReminderFilter] = useState<ReminderFilter>(initialReminder)
+  // Keep the overdue/today predicate + row pills in sync with the wall clock.
+  const tick = useTimeTick()
   const [showAdd, setShowAdd] = useState(searchParams.get("new") === "1")
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
@@ -134,15 +146,31 @@ function InvestorsPage() {
     router.replace(qs ? `?${qs}` : "?", { scroll: false })
   }, [router, searchParams])
 
-  // Whenever search / status / open-id change locally, push to the URL.
+  // Whenever search / status / open-id / reminder change locally, push to the URL.
   useEffect(() => {
     writeUrl({
       q: search || null,
       status: statusFilter === "all" ? null : statusFilter,
       inv: selectedInv?.id || null,
+      overdue: reminderFilter === "overdue" ? "1" : null,
+      today:   reminderFilter === "today"   ? "1" : null,
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, statusFilter, selectedInv?.id])
+  }, [search, statusFilter, selectedInv?.id, reminderFilter])
+
+  // Reverse direction — if the URL changes out from under us (e.g. the
+  // command palette router.pushes /investors?overdue=1 while the user is
+  // already on this page), pull the new filter into state. Without this
+  // the deep link silently no-ops because state was seeded once at mount.
+  // Guarded so it doesn't fight the writer effect above.
+  useEffect(() => {
+    const urlReminder: ReminderFilter =
+      searchParams.get("overdue") === "1" ? "overdue"
+      : searchParams.get("today") === "1" ? "today"
+      : null
+    if (urlReminder !== reminderFilter) setReminderFilter(urlReminder)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   // ── Initial fetch ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -208,7 +236,8 @@ function InvestorsPage() {
   async function handleSaveNotes() {
     if (!selectedInv) return
     setSavingNotes(true)
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) { setSavingNotes(false); return }
     try {
       const res = await fetch(`/api/investors?id=${selectedInv.id}`, {
         method: "PATCH",
@@ -229,7 +258,8 @@ function InvestorsPage() {
 
   async function handlePanelStatusChange(newStatus: Status) {
     if (!selectedInv) return
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) return
     try {
       const res = await fetch(`/api/investors?id=${selectedInv.id}`, {
         method: "PATCH",
@@ -250,7 +280,8 @@ function InvestorsPage() {
   // Works for both quick-set ("in 3 days") and the custom date picker.
   async function handlePanelFollowUp(iso: string | null) {
     if (!selectedInv) return
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) return
     try {
       const res = await fetch(`/api/investors?id=${selectedInv.id}`, {
         method: "PATCH",
@@ -275,7 +306,8 @@ function InvestorsPage() {
   // and still want the nudge.
   async function handlePanelLogContact() {
     if (!selectedInv) return
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) return
     const nextAt = selectedInv.next_follow_up_at
     const isOverdue = nextAt && new Date(nextAt).getTime() < Date.now()
     const body: Record<string, unknown> = { last_contacted_at: new Date().toISOString() }
@@ -300,7 +332,8 @@ function InvestorsPage() {
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) { setSaving(false); return }
     try {
       const res = await fetch("/api/investors", {
         method: "POST",
@@ -341,7 +374,8 @@ function InvestorsPage() {
   }
 
   async function handleSaveEdit(id: string) {
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) return
     try {
       const res = await fetch(`/api/investors?id=${id}`, {
         method: "PATCH",
@@ -373,7 +407,8 @@ function InvestorsPage() {
     if (!pendingDelete) return
     const { ids } = pendingDelete
     setDeleting(true)
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) { setDeleting(false); return }
     try {
       // Parallel DELETE for the bulk case. If a single one fails we show
       // a toast but still drop the successes from local state.
@@ -413,7 +448,8 @@ function InvestorsPage() {
     if (selectedIds.size === 0) return
     setBulkBusy(true)
     setBulkStatusOpen(false)
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) { setBulkBusy(false); return }
     const ids = Array.from(selectedIds)
     try {
       const results = await Promise.allSettled(ids.map(id =>
@@ -492,6 +528,12 @@ function InvestorsPage() {
 
   // ── Filtering + sorting ───────────────────────────────────────────────
   const filtered = useMemo(() => {
+    // Compute the end-of-today boundary once per render, not per row.
+    const now = Date.now()
+    const endOfToday = new Date()
+    endOfToday.setHours(23, 59, 59, 999)
+    const todayMax = endOfToday.getTime()
+
     const matched = investors.filter(inv => {
       const q = search.toLowerCase()
       const matchSearch = !q ||
@@ -499,7 +541,16 @@ function InvestorsPage() {
         inv.company?.toLowerCase().includes(q) ||
         inv.email?.toLowerCase().includes(q)
       const matchStatus = statusFilter === "all" || inv.status === statusFilter
-      return matchSearch && matchStatus
+
+      let matchReminder = true
+      if (reminderFilter) {
+        const t = inv.next_follow_up_at ? new Date(inv.next_follow_up_at).getTime() : NaN
+        if (isNaN(t)) matchReminder = false
+        else if (reminderFilter === "overdue") matchReminder = t < now
+        else if (reminderFilter === "today")   matchReminder = t >= now && t <= todayMax
+      }
+
+      return matchSearch && matchStatus && matchReminder
     })
     if (!sortKey) return matched
     const sorted = [...matched].sort((a, b) => {
@@ -511,7 +562,7 @@ function InvestorsPage() {
     })
     return sorted
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [investors, search, statusFilter, sortKey, sortDir, STATUS_ORDER])
+  }, [investors, search, statusFilter, reminderFilter, sortKey, sortDir, STATUS_ORDER, tick])
 
   function toggleSort(key: SortKey) {
     if (sortKey !== key) {
@@ -606,6 +657,14 @@ function InvestorsPage() {
             <span><span style={{ color: "#e5e7eb" }}>{investors.length}</span> total</span>
             <span style={{ color: "#475569" }}>·</span>
             <span>{filtered.length} shown</span>
+            {reminderFilter && (
+              <>
+                <span style={{ color: "#475569" }}>·</span>
+                <span style={{ color: reminderFilter === "overdue" ? "#f87171" : "#fbbf24" }}>
+                  Filter: {reminderFilter === "overdue" ? "Overdue" : "Due today"}
+                </span>
+              </>
+            )}
             {selectionCount > 0 && (
               <>
                 <span style={{ color: "#475569" }}>·</span>
@@ -675,7 +734,7 @@ function InvestorsPage() {
                 fontFamily: "inherit",
               }} />
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5 items-center">
             {(["all", ...STATUSES] as const).map(s => {
               const active = statusFilter === s
               const color = s === "all" ? "#10b981" : STATUS_COLOR[s as Status]
@@ -692,6 +751,29 @@ function InvestorsPage() {
                     borderRadius: 2,
                   }}>
                   {label}
+                </button>
+              )
+            })}
+            {/* Separator — reminder chips are conceptually a second axis,
+                so a hair of whitespace makes the grouping read correctly. */}
+            <span style={{ width: 8 }} />
+            {([
+              { key: "overdue" as const, label: "Overdue",   color: "#f87171" },
+              { key: "today"   as const, label: "Due today", color: "#fbbf24" },
+            ]).map(r => {
+              const active = reminderFilter === r.key
+              return (
+                <button key={r.key} onClick={() => setReminderFilter(active ? null : r.key)}
+                  className="mono cursor-pointer flex items-center gap-1.5"
+                  style={{
+                    padding: "6px 12px",
+                    fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500,
+                    color: active ? r.color : "#64748b",
+                    background: active ? `${r.color}12` : "transparent",
+                    border: `1px solid ${active ? r.color + "40" : "rgba(255,255,255,0.08)"}`,
+                    borderRadius: 2,
+                  }}>
+                  <RiAlarmLine size={10} /> {r.label}
                 </button>
               )
             })}

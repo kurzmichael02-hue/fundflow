@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import AppNav from "@/components/AppNav"
 import { ToastContainer, useToast } from "@/components/Toast"
+import { requireToken } from "@/lib/api"
 import {
   RiSearchLine, RiAddLine, RiCheckLine,
   RiExternalLinkLine, RiFlashlightLine,
@@ -64,7 +65,8 @@ export default function InvestorDatabasePage() {
 
   async function handleAddToPipeline(inv: Directory) {
     setAddingId(inv.id)
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) { setAddingId(null); return }
     try {
       const res = await fetch("/api/investors", {
         method: "POST",

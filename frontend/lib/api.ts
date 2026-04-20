@@ -69,6 +69,24 @@ export function clearSessionAndRedirect(redirect: (path: string) => void) {
   }
 }
 
+/**
+ * Read the auth token from localStorage, or kick the caller to /login.
+ * Returns null when the token is missing — caller should early-return.
+ *
+ * Replaces the `localStorage.getItem("token")!` non-null assertion pattern
+ * that crashes with "Cannot read properties of null" if the tab is left
+ * open, another tab signs out, or localStorage is cleared externally.
+ */
+export function requireToken(redirect: (path: string) => void): string | null {
+  if (typeof window === "undefined") return null
+  const token = localStorage.getItem("token")
+  if (!token) {
+    clearSessionAndRedirect(redirect)
+    return null
+  }
+  return token
+}
+
 export const api = {
   login: (email: string, password: string, portal: "founder" | "investor" = "founder") =>
     apiRequest("/auth/login", {

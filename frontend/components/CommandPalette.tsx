@@ -6,6 +6,7 @@ import {
   RiAccountCircleLine, RiDatabase2Line, RiListCheck2,
   RiAddLine, RiDownloadLine, RiLogoutBoxLine, RiSearchLine,
   RiCornerDownLeftLine, RiArrowUpLine, RiArrowDownLine,
+  RiAlarmLine,
 } from "react-icons/ri"
 
 // ⌘K command palette. The goal is a Linear/Raycast-style pane that lets
@@ -88,11 +89,26 @@ export default function CommandPalette() {
     if (!token) return
     setLoadingInvestors(true)
     fetch("/api/investors", { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : [])
-      .then(data => setInvestors(Array.isArray(data) ? data : []))
+      .then(r => {
+        // 401 = session expired. Don't silently render "no investors" —
+        // that's been the wrong answer for years in other CRMs. Bounce
+        // to the right login page and close the palette.
+        if (r.status === 401) {
+          setOpen(false)
+          localStorage.removeItem("token")
+          localStorage.removeItem("user_type")
+          router.push("/login")
+          return null
+        }
+        return r.ok ? r.json() : []
+      })
+      .then(data => {
+        if (data === null) return
+        setInvestors(Array.isArray(data) ? data : [])
+      })
       .catch(() => setInvestors([]))
       .finally(() => setLoadingInvestors(false))
-  }, [open])
+  }, [open, router])
 
   // Body scroll lock while the palette is open.
   useEffect(() => {
@@ -129,6 +145,14 @@ export default function CommandPalette() {
     { id: "action:add-investor", section: "action", label: "Add investor",
       hint: "Opens /investors", icon: <RiAddLine size={14} />,
       run: () => router.push("/investors?new=1"), keywords: "new create" },
+    { id: "action:jump-overdue", section: "action", label: "Jump to overdue follow-ups",
+      hint: "Filtered investors view", icon: <RiAlarmLine size={14} />,
+      run: () => router.push("/investors?overdue=1"),
+      keywords: "reminder overdue late chase follow up" },
+    { id: "action:jump-today", section: "action", label: "Jump to follow-ups due today",
+      hint: "Filtered investors view", icon: <RiAlarmLine size={14} />,
+      run: () => router.push("/investors?today=1"),
+      keywords: "reminder today due follow up" },
     { id: "action:export-csv", section: "action", label: "Export investors CSV",
       hint: "Opens /investors", icon: <RiDownloadLine size={14} />,
       run: () => router.push("/investors?export=1"), keywords: "csv download export" },

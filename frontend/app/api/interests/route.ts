@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
                 <td style="padding: 14px 0; font-size: 15px; color: #ffffff;">${safeProjectName}</td>
               </tr>
             </table>
-            <a href="https://fundflow-omega.vercel.app/dashboard" style="display: inline-block; background: #10b981; color: #ffffff; text-decoration: none; padding: 12px 20px; font-family: Courier, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600;">
+            <a href="${process.env.NEXT_PUBLIC_SITE_URL || "https://fundflow-omega.vercel.app"}/dashboard" style="display: inline-block; background: #10b981; color: #ffffff; text-decoration: none; padding: 12px 20px; font-family: Courier, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600;">
               Open dashboard &rarr;
             </a>
             <p style="font-family: Courier, monospace; font-size: 10px; color: #64748b; letter-spacing: 0.06em; margin: 40px 0 0; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06);">

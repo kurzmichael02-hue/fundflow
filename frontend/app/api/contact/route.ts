@@ -77,9 +77,19 @@ export async function POST(req: NextRequest) {
     // Editorial template to match the rest of the product. Web-safe fonts
     // only (Georgia / Courier / Arial) since Resend-delivered emails get
     // rendered by every mail client under the sun.
+    // Recipient lives in an env var — keeps a personal inbox out of git
+    // history, and lets staging/prod route to different addresses.
+    const supportInbox = process.env.CONTACT_EMAIL || process.env.SUPPORT_EMAIL
+    if (!supportInbox) {
+      console.error("CONTACT_EMAIL/SUPPORT_EMAIL not set — contact form submission dropped on the floor")
+      // Still save to DB (already happened above) and tell the user we
+      // got it. Better than surfacing the config mistake to the sender.
+      return NextResponse.json({ success: true })
+    }
+
     await getResend().emails.send({
       from: "FundFlow Contact <onboarding@resend.dev>",
-      to: "kurzmichael02@gmail.com",
+      to: supportInbox,
       replyTo: email,
       subject: safeSubject,
       html: `

@@ -3,7 +3,8 @@ import { useState, useEffect, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@supabase/supabase-js"
 import AppNav from "@/components/AppNav"
-import { ApiError } from "@/lib/api"
+import { ApiError, requireToken } from "@/lib/api"
+import { useTimeTick } from "@/lib/useTimeTick"
 import {
   RiArrowRightLine, RiBellLine, RiCheckboxCircleLine,
   RiRocketLine, RiAccountCircleLine, RiUserLine,
@@ -132,6 +133,9 @@ export default function DashboardPage() {
   const [userEmail, setUserEmail] = useState("")
   const [seeding, setSeeding] = useState(false)
   const channelsRef = useRef<Array<{ unsubscribe: () => void }>>([])
+  // Re-render every minute so the overdue-count ticker, followUps memo
+  // and "Xh late" copy stay fresh without a manual refresh.
+  const tick = useTimeTick()
 
   useEffect(() => {
     const token = localStorage.getItem("token")
@@ -177,7 +181,8 @@ export default function DashboardPage() {
 
   async function handleUpgrade() {
     setUpgrading(true)
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) { setUpgrading(false); return }
     try {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
@@ -195,7 +200,8 @@ export default function DashboardPage() {
   // Capital") so nobody's confused about which rows are real.
   async function handleSeedDemo() {
     setSeeding(true)
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) { setSeeding(false); return }
     const samples: Array<{ name: string; company: string; email: string; status: string; deal_size: string; notes: string }> = [
       { name: "Sarah K.",         company: "Lighthouse Capital", email: "sarah@lighthouse.demo",  status: "outreach",   deal_size: "$500k",  notes: "Met at ETHBerlin. Following up." },
       { name: "Apollo Cap.",      company: "Apollo Capital",     email: "team@apollo.demo",       status: "term_sheet", deal_size: "$3M",    notes: "Term sheet draft sent. Waiting on legal." },
@@ -209,6 +215,7 @@ export default function DashboardPage() {
     try {
       // Sequential so we can stop early when the free plan limit kicks in.
       let imported = 0
+      let hitCap = false
       for (const s of samples) {
         const res = await fetch("/api/investors", {
           method: "POST",
@@ -217,17 +224,27 @@ export default function DashboardPage() {
         })
         if (!res.ok) {
           const data = await res.json().catch(() => null)
-          if (data?.limit) break
+          if (data?.limit) { hitCap = true; break }
         } else {
           imported++
         }
       }
       // Refetch the world so dashboard, focus column, ticker — all update.
       await fetchAll(token)
-      if (imported === 0) {
-        // Most likely cause: the free plan cap. The error message from the
-        // route already explains it, but we don't have it in scope here.
-        alert("Couldn't seed demo data. You may have hit the free-plan cap.")
+      // Report clearly: fully done, hit cap mid-seed, or nothing imported.
+      if (imported === samples.length) {
+        // All 8 landed — no toast, the dashboard filling up is its own signal.
+      } else if (imported > 0 && hitCap) {
+        const skipped = samples.length - imported
+        alert(`Seeded ${imported} — hit the free plan cap after that (${skipped} skipped). Upgrade to Pro to seed the rest.`)
+      } else if (imported === 0 && hitCap) {
+        alert("Couldn't seed — you're already at the free plan cap. Upgrade to Pro for unlimited.")
+      } else if (imported === 0) {
+        alert("Couldn't seed demo data. Check the console, or refresh and try again.")
+      } else {
+        // Partial success without hitting the cap — some other failure we
+        // couldn't explain from here (server hiccup, network).
+        alert(`Seeded ${imported} of ${samples.length}. Refresh if anything looks off.`)
       }
     } finally {
       setSeeding(false)
@@ -236,7 +253,8 @@ export default function DashboardPage() {
 
   async function handleManageBilling() {
     setUpgrading(true)
-    const token = localStorage.getItem("token")!
+    const token = requireToken(router.push)
+    if (!token) { setUpgrading(false); return }
     try {
       const res = await fetch("/api/stripe/portal", {
         method: "POST",
@@ -277,7 +295,11 @@ export default function DashboardPage() {
     const intChannel = supabase
       .channel("interests-realtime")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "interests" }, async () => {
-        const t = localStorage.getItem("token")!
+        // Realtime callback — if the session died mid-subscription, there's
+        // no UX benefit to redirecting from inside a WebSocket handler, so
+        // we just bail silently. The next page nav will handle the 401.
+        const t = localStorage.getItem("token")
+        if (!t) return
         const res = await fetch("/api/interests", { headers: { Authorization: `Bearer ${t}` } })
         const data = await res.json()
         if (Array.isArray(data)) setInterests(data)
@@ -309,8 +331,9 @@ export default function DashboardPage() {
 
   // Follow-ups bucketed into overdue (past) vs today (within 24h). Anything
   // further out doesn't need to hit the dashboard — the investor's own row
-  // badge handles the lookahead. We re-compute on every render because the
-  // boundary moves with wall-clock time; cheap enough for a solo pipeline.
+  // badge handles the lookahead. Tick is a dep on purpose so the buckets
+  // re-sort as wall-clock time passes (today rolls into overdue at midnight,
+  // "due in 2h" becomes "due now", etc).
   const followUps = useMemo(() => {
     const now = Date.now()
     const endOfToday = new Date()
@@ -330,7 +353,8 @@ export default function DashboardPage() {
     // Today: soonest first.
     today.sort((a, b) => new Date(a.next_follow_up_at!).getTime() - new Date(b.next_follow_up_at!).getTime())
     return { overdue, today }
-  }, [investors])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [investors, tick])
   const stalledOutreach = useMemo(() => {
     const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000
     return investors
@@ -372,6 +396,21 @@ export default function DashboardPage() {
             <span><span style={{ color: "#e5e7eb" }}>{stats.total}</span> investors</span>
             <span style={{ color: "#475569" }}>·</span>
             <span><span style={{ color: "#10b981" }}>{formatUsd(totalCommitted)}</span> committed</span>
+            {followUps.overdue.length > 0 && (
+              <>
+                <span style={{ color: "#475569" }}>·</span>
+                <button onClick={() => router.push("/investors?overdue=1")}
+                  className="mono cursor-pointer flex items-center gap-1.5"
+                  style={{
+                    background: "transparent", border: 0, padding: 0,
+                    color: "#f87171", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600,
+                    fontSize: 11,
+                  }}>
+                  <span>{followUps.overdue.length} overdue</span>
+                  <RiArrowRightLine size={11} />
+                </button>
+              </>
+            )}
           </div>
           {live && (
             <div className="mono flex items-center gap-1.5" style={{ fontSize: 11, color: "#34d399", letterSpacing: "0.08em", textTransform: "uppercase" }}>
@@ -623,7 +662,7 @@ export default function DashboardPage() {
                       sub: i.company || i.email || "—",
                       meta: overdueMeta(i.next_follow_up_at!),
                     }))}
-                    href="/investors"
+                    href="/investors?overdue=1"
                   />
                 )}
 
@@ -638,7 +677,7 @@ export default function DashboardPage() {
                       sub: i.company || i.email || "—",
                       meta: todayMeta(i.next_follow_up_at!),
                     }))}
-                    href="/investors"
+                    href="/investors?today=1"
                   />
                 )}
 

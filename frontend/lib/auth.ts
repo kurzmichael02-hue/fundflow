@@ -40,6 +40,7 @@ type RawPayload = {
   email?: unknown
   role?: unknown
   exp?: unknown
+  iat?: unknown
 }
 
 function shapePayload(payload: RawPayload): AuthedUser | null {
@@ -49,6 +50,15 @@ function shapePayload(payload: RawPayload): AuthedUser | null {
   // doesn't validate this for us — Supabase tokens default to 1h, so
   // ignoring it would let stale tokens stick around indefinitely.
   if (typeof payload.exp === "number" && payload.exp * 1000 < Date.now()) {
+    return null
+  }
+  // Reject tokens claiming to be issued in the future — with a small skew
+  // window so legit tokens from a clock-drifted server still pass. Without
+  // this, a manipulated iat could be used to side-step exp calculations
+  // on the fallback path. jwtVerify handles this in strict mode, but the
+  // manual decode path above didn't.
+  const SKEW_MS = 60_000
+  if (typeof payload.iat === "number" && payload.iat * 1000 > Date.now() + SKEW_MS) {
     return null
   }
   return {

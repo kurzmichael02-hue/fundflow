@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
@@ -19,6 +19,13 @@ export default function ResetPasswordPage() {
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  // Track the "about to redirect" timeout so we can cancel it if the user
+  // navigates away before it fires. Without this the user could click into
+  // another page, then get bounced to /login 2s later.
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => {
+    if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -66,7 +73,7 @@ export default function ResetPasswordPage() {
       const { error: upErr } = await supabase.auth.updateUser({ password })
       if (upErr) throw upErr
       setPhase("done")
-      setTimeout(() => router.push("/login"), 2500)
+      redirectTimerRef.current = setTimeout(() => router.push("/login"), 2500)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update password")
     } finally {
