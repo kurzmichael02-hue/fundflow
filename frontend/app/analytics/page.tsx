@@ -73,12 +73,18 @@ export default function AnalyticsPage() {
         fetch("/api/investors", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/interests", { headers: { Authorization: `Bearer ${token}` } }),
       ])
+      if (invRes.status === 401 || intRes.status === 401) {
+        localStorage.removeItem("token")
+        localStorage.removeItem("user_type")
+        router.push("/login")
+        return
+      }
       const invData = await invRes.json()
       const intData = await intRes.json()
       setInvestors(Array.isArray(invData) ? invData : [])
       setInterests(Array.isArray(intData) ? intData : [])
     } catch {
-      router.push("/login")
+      // Network or parse error — leave the page empty, don't redirect.
     } finally {
       setLoading(false)
     }

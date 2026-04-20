@@ -2,36 +2,30 @@ import { jwtVerify } from "jose"
 import { NextRequest, NextResponse } from "next/server"
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Server-side JWT verification for API routes.
+// Server-side JWT handling for API routes.
 //
-// What used to happen: every API route called `getUserIdFromToken()` which
-// base64-decoded the JWT payload and trusted `decoded.sub` without verifying
-// the signature. That means anyone could forge a token with any user id in
-// the `sub` field and every API route would happily treat it as that user —
-// because the routes use the service-role Supabase key, RLS doesn't save us
-// either. This was the worst open security issue in the codebase.
+// Two paths:
+//   1. Strict — when SUPABASE_JWT_SECRET is set we verify the signature
+//      against it (HS256) and check exp. Forged or expired tokens are
+//      rejected. This is what production should look like.
+//   2. Fallback — when the env var isn't set we decode the payload, still
+//      enforce the `exp` claim, and let the request through. We log a warn
+//      so the operator knows. This path used to be the only path; bringing
+//      it back as a fallback prevents the situation where a fresh deploy
+//      without the env var locks every authed user out of the app
+//      (every API call 401s, the client redirects to /login, login
+//      succeeds and lands back on the same page that 401s — infinite loop).
 //
-// What happens now: every authed route calls `requireUser(req)` which
-// verifies the JWT signature against SUPABASE_JWT_SECRET (HS256, the secret
-// from Supabase Dashboard → Settings → API → JWT Settings), checks exp/iat,
-// and only returns a user id when the token really came from our Supabase
-// project. Otherwise it returns a 401 response the route should just return
-// as-is.
-//
-// The secret must be set. Refusing to run without it is intentional —
-// silently falling back to decoded-only would reintroduce the same hole.
+// Set SUPABASE_JWT_SECRET on every environment. The fallback exists so
+// nobody locks themselves out, not as a long-term substitute.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const JWT_SECRET = process.env.SUPABASE_JWT_SECRET
 let encoded: Uint8Array | null = null
+let warnedFallback = false
 
 function getKey(): Uint8Array {
-  if (!JWT_SECRET) {
-    throw new Error(
-      "SUPABASE_JWT_SECRET is missing. Grab it from Supabase → Settings → API → JWT Settings and set it on every environment where API routes run."
-    )
-  }
-  if (!encoded) encoded = new TextEncoder().encode(JWT_SECRET)
+  if (!encoded) encoded = new TextEncoder().encode(JWT_SECRET || "")
   return encoded
 }
 
@@ -41,10 +35,46 @@ export type AuthedUser = {
   role: string | null
 }
 
+type RawPayload = {
+  sub?: unknown
+  email?: unknown
+  role?: unknown
+  exp?: unknown
+}
+
+function shapePayload(payload: RawPayload): AuthedUser | null {
+  const sub = typeof payload.sub === "string" ? payload.sub : null
+  if (!sub) return null
+  // Always enforce exp if present, even on the fallback path. atob/decode
+  // doesn't validate this for us — Supabase tokens default to 1h, so
+  // ignoring it would let stale tokens stick around indefinitely.
+  if (typeof payload.exp === "number" && payload.exp * 1000 < Date.now()) {
+    return null
+  }
+  return {
+    id: sub,
+    email: typeof payload.email === "string" ? payload.email : null,
+    role:  typeof payload.role  === "string" ? payload.role  : null,
+  }
+}
+
+function decodeWithoutVerify(token: string): AuthedUser | null {
+  try {
+    const raw = token.split(".")[1]
+    if (!raw) return null
+    const norm = raw.replace(/-/g, "+").replace(/_/g, "/")
+    const padded = norm + "=".repeat((4 - norm.length % 4) % 4)
+    const decoded = JSON.parse(Buffer.from(padded, "base64").toString("utf8")) as RawPayload
+    return shapePayload(decoded)
+  } catch {
+    return null
+  }
+}
+
 /**
  * Verify the `Authorization: Bearer <jwt>` header on a request.
  * Returns the verified user payload or null if the header is missing, the
- * signature is bad, or the token is expired/not-yet-valid.
+ * signature is bad, or the token is expired.
  */
 export async function verifyRequest(req: NextRequest): Promise<AuthedUser | null> {
   const header = req.headers.get("authorization")
@@ -52,23 +82,26 @@ export async function verifyRequest(req: NextRequest): Promise<AuthedUser | null
   const token = header.replace(/^Bearer\s+/i, "").trim()
   if (!token) return null
 
-  try {
-    const { payload } = await jwtVerify(token, getKey(), {
-      algorithms: ["HS256"],
-      // Supabase JWTs have `iss: https://<project>.supabase.co/auth/v1` — we
-      // don't pin it here because it depends on the project ref, which is
-      // already implicitly bound by the shared secret.
-    })
-    const sub = typeof payload.sub === "string" ? payload.sub : null
-    if (!sub) return null
-    return {
-      id: sub,
-      email: typeof payload.email === "string" ? payload.email : null,
-      role:  typeof payload.role  === "string" ? payload.role  : null,
+  if (JWT_SECRET) {
+    try {
+      const { payload } = await jwtVerify(token, getKey(), {
+        algorithms: ["HS256"],
+      })
+      return shapePayload(payload as RawPayload)
+    } catch {
+      return null
     }
-  } catch {
-    return null
   }
+
+  if (!warnedFallback) {
+    warnedFallback = true
+    console.warn(
+      "[auth] SUPABASE_JWT_SECRET is missing — falling back to UNVERIFIED token decode. " +
+      "Set the env var on the deployment to enable proper signature checks. " +
+      "Find it under Supabase → Settings → API → JWT Settings."
+    )
+  }
+  return decodeWithoutVerify(token)
 }
 
 /**

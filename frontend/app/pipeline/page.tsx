@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { api } from "@/lib/api"
+import { api, isUnauthorized, clearSessionAndRedirect } from "@/lib/api"
 import AppNav from "@/components/AppNav"
 import { ToastContainer, useToast } from "@/components/Toast"
 import { RiArrowRightLine } from "react-icons/ri"
@@ -42,7 +42,18 @@ export default function PipelinePage() {
     if (!token) { router.push("/login"); return }
     api.getInvestors()
       .then((data: Investor[]) => { setInvestors(data); setLoading(false) })
-      .catch(() => router.push("/login"))
+      .catch((err) => {
+        // Only bounce to login on a real auth failure. Anything else
+        // (Supabase down, network blip, JWT secret mis-set on the server)
+        // gets a toast — bouncing on every error is what created the
+        // login-loop bug.
+        if (isUnauthorized(err)) {
+          clearSessionAndRedirect((p) => router.push(p))
+          return
+        }
+        addToast(err instanceof Error ? err.message : "Failed to load pipeline", "error")
+        setLoading(false)
+      })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -54,6 +65,10 @@ export default function PipelinePage() {
       addToast(`Moved to ${COLUMNS.find(c => c.key === newStatus)?.label}`)
     } catch (err) {
       setInvestors(prev)
+      if (isUnauthorized(err)) {
+        clearSessionAndRedirect((p) => router.push(p))
+        return
+      }
       addToast(err instanceof Error ? err.message : "Failed to move", "error")
     }
   }

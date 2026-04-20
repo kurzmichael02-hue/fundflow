@@ -1,13 +1,13 @@
-import { createClient } from '@supabase/supabase-js'
-import { NextRequest, NextResponse } from 'next/server'
-import { rateLimit } from '@/lib/ratelimit'
+import { createClient, PostgrestError } from "@supabase/supabase-js"
+import { NextRequest, NextResponse } from "next/server"
+import { rateLimit } from "@/lib/ratelimit"
 
 // anon client for the signUp call — lazy so the module can be loaded during
 // Next.js page-data collection without env vars blowing up.
 function getAnonClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   )
 }
 
@@ -18,71 +18,114 @@ function getServiceClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
+    { auth: { autoRefreshToken: false, persistSession: false } },
   )
 }
 
 const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-const ALLOWED_USER_TYPES = ['founder', 'investor'] as const
+const ALLOWED_USER_TYPES = ["founder", "investor"] as const
 type UserType = typeof ALLOWED_USER_TYPES[number]
 
+const PG_FOREIGN_KEY_VIOLATION = "23503"
+const PG_UNIQUE_VIOLATION = "23505"
+
 export async function POST(req: NextRequest) {
-  // Registrations are cheap to create but scrapers use open signup endpoints
-  // to find email-enumeration and bulk-account flaws. 5 per IP per hour
-  // keeps legit signups unaffected while killing automated fuzzing.
   const limited = await rateLimit(req, "auth-register", 5, "1 h")
   if (limited) return limited
 
   const body = await req.json()
-  const name = String(body.name || '').trim()
-  const email = String(body.email || '').trim().toLowerCase()
-  const password = String(body.password || '')
-  // user_type comes from the client — default to founder for the legacy
-  // /register page, but /investor/register now correctly sets "investor"
-  // so investors actually land in the right portal on login.
-  const rawType = String(body.user_type || 'founder').toLowerCase()
+  const name = String(body.name || "").trim()
+  const email = String(body.email || "").trim().toLowerCase()
+  const password = String(body.password || "")
+  const rawType = String(body.user_type || "founder").toLowerCase()
   const user_type: UserType = (ALLOWED_USER_TYPES as readonly string[]).includes(rawType)
     ? (rawType as UserType)
-    : 'founder'
+    : "founder"
 
   if (!name || !email || !password) {
-    return NextResponse.json({ error: 'Name, email and password are required' }, { status: 400 })
+    return NextResponse.json({ error: "Name, email and password are required" }, { status: 400 })
   }
   if (!EMAIL_RX.test(email)) {
-    return NextResponse.json({ error: 'Invalid email address' }, { status: 400 })
+    return NextResponse.json({ error: "Invalid email address" }, { status: 400 })
   }
   if (password.length < 8) {
-    return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
+    return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 })
   }
 
   const { data, error } = await getAnonClient().auth.signUp({
     email,
     password,
-    options: { data: { name } }
+    options: { data: { name } },
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
-  if (!data.user) return NextResponse.json({ error: 'Sign up failed' }, { status: 500 })
+  if (!data.user) return NextResponse.json({ error: "Sign up failed" }, { status: 500 })
 
-  // Create the profile row. If this fails, we roll back the auth user —
-  // otherwise a duplicate or flaky insert leaves an orphan user that can log
-  // in but has no profile row, which breaks every downstream /api/* call.
+  // Supabase signal for "this email is already registered (and confirmed)":
+  // signUp succeeds but returns a user object with an empty identities array
+  // and no fresh session. Catch it explicitly so the user gets a useful
+  // message instead of running into the FK violation a few lines down.
+  const identities = data.user.identities
+  if (Array.isArray(identities) && identities.length === 0) {
+    return NextResponse.json(
+      { error: "An account with this email already exists. Sign in instead." },
+      { status: 409 },
+    )
+  }
+
   const service = getServiceClient()
-  const { error: profileError } = await service.from('profiles').insert({
+
+  // Idempotency: if a profile row already exists for this auth user, we're
+  // in the "user clicked Register a second time after a successful one"
+  // case. Treat it as success rather than throwing a unique-key error.
+  const { data: existingProfile } = await service
+    .from("profiles")
+    .select("id")
+    .eq("id", data.user.id)
+    .maybeSingle()
+  if (existingProfile) {
+    return NextResponse.json({ message: "Success" })
+  }
+
+  // Create the profile row. If this fails for an unexpected reason, we roll
+  // back the auth user — otherwise a duplicate or flaky insert leaves an
+  // orphan auth user that can log in but has no profile row.
+  const { error: profileError } = await service.from("profiles").insert({
     id: data.user.id,
     name,
     email,
     user_type,
-    plan: 'free',
+    plan: "free",
   })
 
   if (profileError) {
-    // best-effort rollback — if the deleteUser itself fails we still surface
-    // the original profile error so the user at least sees the real problem
+    const pgErr = profileError as PostgrestError
+    // Two specific failures we can give a clear, actionable message for:
+    if (pgErr.code === PG_UNIQUE_VIOLATION) {
+      // Profile already there — same idempotency case as above, but raced.
+      return NextResponse.json({ message: "Success" })
+    }
+    if (pgErr.code === PG_FOREIGN_KEY_VIOLATION) {
+      // The auth user we just created (or thought we did) isn't in
+      // auth.users when the FK lookup runs. Usually means an earlier
+      // rollback removed it but Supabase's signUp returned the cached
+      // identity, or a replication delay between auth and the public
+      // schema. Best response is to ask the user to try again — a fresh
+      // signUp call will mint a new id.
+      console.warn("Register FK violation for", data.user.id, pgErr.details)
+      return NextResponse.json(
+        {
+          error: "Couldn't link that account yet — try signing in. If that fails, register again in a moment.",
+        },
+        { status: 409 },
+      )
+    }
+    // Unknown failure: best-effort rollback so we don't leave an orphan
+    // auth user behind.
     await service.auth.admin.deleteUser(data.user.id).catch(() => {})
-    return NextResponse.json({ error: profileError.message }, { status: 500 })
+    return NextResponse.json({ error: pgErr.message }, { status: 500 })
   }
 
-  return NextResponse.json({ message: 'Success' })
+  return NextResponse.json({ message: "Success" })
 }

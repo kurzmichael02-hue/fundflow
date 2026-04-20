@@ -47,6 +47,12 @@ export default function InvestorDatabasePage() {
   async function fetchDirectory() {
     try {
       const res = await fetch("/api/investor-directory")
+      if (res.status === 401) {
+        localStorage.removeItem("token")
+        localStorage.removeItem("user_type")
+        router.push("/login")
+        return
+      }
       const data = await res.json()
       setDirectory(Array.isArray(data) ? data : [])
     } catch {

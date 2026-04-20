@@ -79,6 +79,12 @@ export default function ProfilePage() {
         fetch("/api/profile",  { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/projects", { method: "PATCH", headers: { Authorization: `Bearer ${token}` } }),
       ])
+      if (pRes.status === 401 || projRes.status === 401) {
+        localStorage.removeItem("token")
+        localStorage.removeItem("user_type")
+        router.push("/login")
+        return
+      }
       const pData: Profile = await pRes.json()
       setProfile(pData)
       setProfileForm(pData)
@@ -96,8 +102,9 @@ export default function ProfilePage() {
           published: projData.published || false,
         })
       }
-    } catch { router.push("/login") }
-    finally { setLoading(false) }
+    } catch {
+      // Non-401 — leave the page in its blank state; the user can refresh.
+    } finally { setLoading(false) }
   }
 
   async function saveWalletAddress(address: string) {
@@ -161,10 +168,17 @@ export default function ProfilePage() {
   }
 
   async function handleSaveManual() {
-    if (!manualAddress.trim()) return
+    const trimmed = manualAddress.trim()
+    if (!trimmed) return
+    // EVM addresses are 0x followed by 40 hex chars. Reject anything else
+    // up front rather than letting users save typos that look correct.
+    if (!/^0x[a-fA-F0-9]{40}$/.test(trimmed)) {
+      addToast("That doesn't look like a wallet address (0x + 40 hex chars)", "error")
+      return
+    }
     setConnectingWallet(true)
     try {
-      await saveWalletAddress(manualAddress.trim())
+      await saveWalletAddress(trimmed)
       addToast("Wallet address saved")
       setWalletMode("idle")
       setManualAddress("")
@@ -187,7 +201,15 @@ export default function ProfilePage() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
+      if (!res.ok) {
+        if (res.status === 401) {
+          localStorage.removeItem("token")
+          localStorage.removeItem("user_type")
+          router.push("/login")
+          return
+        }
+        throw new Error(data.error)
+      }
       setProfile(data)
       setEditProfile(false)
       addToast("Profile updated")
@@ -202,18 +224,38 @@ export default function ProfilePage() {
     const token = localStorage.getItem("token")!
     try {
       const tagsArray = projectForm.tags.split(",").map(t => t.trim()).filter(Boolean)
+      // Number("") is 0, Number("abc") is NaN — guard both. We also clamp
+      // negatives because nobody raises -$1M.
+      const safeNumber = (v: string) => {
+        const n = Number(v)
+        return Number.isFinite(n) && n >= 0 ? n : 0
+      }
+      const trimmedName = projectForm.name.trim()
+      if (!trimmedName) {
+        addToast("Project name is required", "error")
+        return
+      }
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           ...projectForm,
-          goal: Number(projectForm.goal) || 0,
-          raised: Number(projectForm.raised) || 0,
+          name: trimmedName,
+          goal: safeNumber(projectForm.goal),
+          raised: safeNumber(projectForm.raised),
           tags: tagsArray,
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
+      if (!res.ok) {
+        if (res.status === 401) {
+          localStorage.removeItem("token")
+          localStorage.removeItem("user_type")
+          router.push("/login")
+          return
+        }
+        throw new Error(data.error)
+      }
       setProject(data)
       setEditProject(false)
       addToast(data.published ? "Project published" : "Project saved as draft")

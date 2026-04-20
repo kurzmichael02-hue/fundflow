@@ -24,6 +24,9 @@ export default function InvestorLoginPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Login failed")
+      if (!data?.token) {
+        throw new Error("No session returned. If you just registered, confirm your email first.")
+      }
       localStorage.setItem("token", data.token)
       localStorage.setItem("user_type", data.user_type || "investor")
       router.push("/investor/discover")

@@ -20,7 +20,16 @@ export default function LoginPage() {
     setError("")
     try {
       const data = await api.login(email, password)
+      // Defensive: don't write "undefined" into localStorage when the
+      // server somehow comes back without a token (email-confirmation
+      // pending, etc). Otherwise every authed call sends `Bearer undefined`
+      // and the user is stuck in an immediate 401 loop.
+      if (!data?.token) {
+        setError("No session returned. If you just registered, confirm your email first.")
+        return
+      }
       localStorage.setItem("token", data.token)
+      localStorage.setItem("user_type", data.user_type || "founder")
       router.push("/dashboard")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed")

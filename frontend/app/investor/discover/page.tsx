@@ -77,6 +77,15 @@ export default function InvestorDiscoverPage() {
   async function fetchProjects() {
     try {
       const res = await fetch("/api/projects")
+      // /api/projects GET is public — 401 here would be unexpected, but if
+      // it does happen treat it as "session is broken" and bounce so the
+      // user can re-auth instead of staring at an empty deal flow.
+      if (res.status === 401) {
+        localStorage.removeItem("token")
+        localStorage.removeItem("user_type")
+        router.push("/investor")
+        return
+      }
       const data = await res.json()
       setProjects(Array.isArray(data) ? data : [])
     } catch {

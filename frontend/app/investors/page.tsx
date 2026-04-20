@@ -154,6 +154,12 @@ function InvestorsPage() {
   async function fetchInvestors(token: string) {
     try {
       const res = await fetch("/api/investors", { headers: { Authorization: `Bearer ${token}` } })
+      if (res.status === 401) {
+        localStorage.removeItem("token")
+        localStorage.removeItem("user_type")
+        router.push("/login")
+        return
+      }
       const data = await res.json()
       setInvestors(Array.isArray(data) ? data : [])
     } catch {

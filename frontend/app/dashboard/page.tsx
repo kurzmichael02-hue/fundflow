@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@supabase/supabase-js"
 import AppNav from "@/components/AppNav"
+import { ApiError } from "@/lib/api"
 import {
   RiArrowRightLine, RiBellLine, RiCheckboxCircleLine,
   RiRocketLine, RiAccountCircleLine, RiUserLine,
@@ -121,6 +122,12 @@ export default function DashboardPage() {
         fetch("/api/interests", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/profile",   { headers: { Authorization: `Bearer ${token}` } }),
       ])
+      // Only treat 401 as a session problem. Anything else (Supabase down,
+      // bad config, server hiccup) leaves the user on the page with empty
+      // data instead of pingponging them back to /login.
+      if (invRes.status === 401 || intRes.status === 401 || profileRes.status === 401) {
+        throw new ApiError("Unauthorized", 401, null)
+      }
       const invData = await invRes.json()
       const intData = await intRes.json()
       const profileData = await profileRes.json()
@@ -128,8 +135,14 @@ export default function DashboardPage() {
       setInterests(Array.isArray(intData) ? intData : [])
       setPlan(profileData?.plan || "free")
       setUserEmail(profileData?.email || "")
-    } catch {
-      router.push("/login")
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        localStorage.removeItem("token")
+        localStorage.removeItem("user_type")
+        router.push("/login")
+      }
+      // Non-401: stay on the page, surface nothing — the empty-state UI
+      // already handles "no investors yet" cleanly.
     } finally {
       setLoading(false)
     }
