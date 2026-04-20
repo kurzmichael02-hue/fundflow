@@ -294,7 +294,21 @@ export default function DashboardPage() {
             <h1 className="serif text-white" style={{
               fontSize: "clamp(40px, 5.5vw, 72px)", lineHeight: 0.95, letterSpacing: "-0.045em", fontWeight: 500,
             }}>
-              Good morning, {userEmail ? <span style={{ fontStyle: "italic", fontWeight: 400 }}>{userEmail.split("@")[0]}</span> : "founder"}.
+              {(() => {
+                // Greeting depends on time of day — easier on a 9pm session
+                // than always reading "good morning" at midnight.
+                const hour = new Date().getHours()
+                const greeting = hour < 5 ? "Still up" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening"
+                // Empty string would fall through `userEmail ?` truthy check
+                // because "" is falsy in JS but split("@")[0] of "" is "" —
+                // so we explicitly require a non-empty handle before showing it.
+                const handle = (userEmail || "").split("@")[0].trim()
+                return (
+                  <>
+                    {greeting}{handle ? <>, <span style={{ fontStyle: "italic", fontWeight: 400 }}>{handle}</span></> : ""}.
+                  </>
+                )
+              })()}
             </h1>
             <p style={{ fontSize: 16, color: "#94a3b8", marginTop: 20, maxWidth: 520, lineHeight: 1.6 }}>
               {investors.length === 0

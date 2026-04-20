@@ -8,6 +8,7 @@ import {
   RiDatabase2Line, RiListCheck2, RiArrowDownSLine, RiSearchLine,
 } from "react-icons/ri"
 import CommandPalette from "@/components/CommandPalette"
+import ShortcutsCheatsheet from "@/components/ShortcutsCheatsheet"
 
 // AppNav — the masthead shown to authenticated users across /dashboard,
 // /investors, /pipeline, /analytics, /profile.
@@ -105,17 +106,29 @@ export default function AppNav() {
   }, [router])
 
   // Pull plan + email once so the badge and user menu can render.
+  // If the token is rejected (401) we sign the user out — otherwise the
+  // nav shows a logged-in shell with no real session and every other
+  // page would 401 right after.
   useEffect(() => {
     const token = localStorage.getItem("token")
     if (!token) return
     fetch("/api/profile", { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
+      .then(async r => {
+        if (r.status === 401) {
+          localStorage.removeItem("token")
+          localStorage.removeItem("user_type")
+          router.push("/login")
+          return null
+        }
+        return r.ok ? r.json() : null
+      })
       .then(d => {
-        setPlan(d?.plan || "free")
-        setEmail(d?.email || null)
+        if (!d) return
+        setPlan(d.plan || "free")
+        setEmail(d.email || null)
       })
       .catch(() => {})
-  }, [])
+  }, [router])
 
   const investorsActive = pathname === "/investors" || pathname === "/investors/database"
 
@@ -322,6 +335,7 @@ export default function AppNav() {
       </nav>
 
       <CommandPalette />
+      <ShortcutsCheatsheet />
 
       {menuOpen && (
         <div className="md:hidden" style={{ background: "#060608", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>

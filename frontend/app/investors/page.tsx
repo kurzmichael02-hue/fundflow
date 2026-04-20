@@ -62,9 +62,18 @@ export default function InvestorsPageWrapper() {
 }
 
 function InitialShell() {
+  // Same loader the page uses for its real loading state, so the Suspense
+  // boundary doesn't flash a blank page while useSearchParams hydrates.
   return (
     <div style={{ minHeight: "100vh", background: "#060608" }}>
       <AppNav />
+      <div className="max-w-[1280px] mx-auto px-6 md:px-10 py-20 flex items-center gap-3">
+        <div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid #10b981", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
+        <span className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          Loading investors...
+        </span>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
     </div>
   )
 }
@@ -141,6 +150,13 @@ function InvestorsPage() {
       if (target && !selectedInv) {
         setSelectedInv(target)
         setPanelNotes(target.notes || "")
+      } else if (!target) {
+        // Deep link points at an investor that no longer exists (deleted,
+        // or someone else's id pasted). Surface it instead of just silently
+        // opening nothing — and clear the param so a refresh doesn't keep
+        // showing the toast.
+        addToast("That investor isn't in your pipeline anymore", "info")
+        writeUrl({ inv: null })
       }
     }
     if (searchParams.get("export") === "1") {

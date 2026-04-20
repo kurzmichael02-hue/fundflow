@@ -67,3 +67,50 @@ body {
   opacity: 1;
   transform: translateY(0);
 }
+
+/* Honour the user's reduced-motion preference. The reveal animations and
+   any other transitions become instant — important for users with
+   vestibular disorders. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+}
+
+/* Focus rings — the browser default is a thin outline that's easy to lose
+   on a near-black background. Switch to a 2px emerald ring with a slight
+   offset and apply only on keyboard navigation (focus-visible). Mouse
+   clicks still don't get rings, so the visual stays clean. */
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Skip-link target — appears only when focused via Tab from the very top
+   of the page so a screen reader / keyboard user can jump past the nav
+   straight into the main content. */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  padding: 8px 14px;
+  background: #10b981;
+  color: #fff;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  transform: translateY(-200%);
+  transition: transform 120ms;
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
