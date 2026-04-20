@@ -60,76 +60,80 @@ export default function Home() {
     <main style={{ background: "#060608", color: "#e5e7eb", fontFamily: "'DM Sans', sans-serif" }}>
       <PublicNav />
 
-      {/* ─── HERO ─── editorial masthead + asymmetric split */}
+      {/* ─── HERO ─── product-led: big claim, supporting line, real visual */}
       <section>
         <div className="max-w-[1180px] mx-auto px-6 md:px-10">
-          {/* Issue strip */}
-          <div className="flex items-center justify-between pt-10 md:pt-14 pb-8 md:pb-12"
+
+          {/* Trust strip — concrete, not a magazine masthead. */}
+          <div className="flex items-center justify-between gap-3 pt-8 md:pt-10 pb-6 flex-wrap"
             style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <span className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-              Issue 01 · Spring 2026
-            </span>
-            <span className="mono hidden sm:inline" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-              Investor CRM · Built for Web3
+            <span className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              Built for Web3 founders raising pre-seed → Series A
             </span>
             <span className="mono flex items-center gap-1.5" style={{ fontSize: 11, color: "#34d399", letterSpacing: "0.08em", textTransform: "uppercase" }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981" }} />
-              Live
+              Live · Beta
             </span>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] gap-10 lg:gap-20 pt-12 md:pt-20 pb-16 md:pb-24 items-start">
-            {/* Left column — editorial block */}
-            <div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 pt-12 md:pt-16 pb-16 md:pb-20 items-center">
+            {/* Left column — claim + CTAs. No italic gimmick anymore. */}
+            <div className="lg:col-span-5">
               <h1 className="serif text-white" style={{
-                fontSize: "clamp(56px, 8.5vw, 120px)",
-                lineHeight: 0.92,
+                fontSize: "clamp(48px, 7.5vw, 96px)",
+                lineHeight: 0.95,
                 letterSpacing: "-0.045em",
                 fontWeight: 500,
               }}>
-                Raise the<br />
-                <span style={{ fontStyle: "italic", fontWeight: 400 }}>round.</span>
+                Track every investor. Close your round.
               </h1>
               <p style={{
-                fontSize: 18, lineHeight: 1.55, color: "#94a3b8",
-                marginTop: 28, maxWidth: 480, fontWeight: 300,
+                fontSize: 17, lineHeight: 1.6, color: "#94a3b8",
+                marginTop: 24, maxWidth: 460, fontWeight: 400,
               }}>
-                FundFlow is a private pipeline for every investor you're talking to, and a public
-                page where the rest of them can find you. Drop the spreadsheet, stop losing
-                deals to bad tracking.
+                The CRM Web3 founders use to manage their pipeline, get found by VCs,
+                and know exactly where the round stands. Free up to 25 investors.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-3 mt-10">
+              <div className="flex flex-col sm:flex-row gap-3 mt-8">
                 <Link href="/register" className="no-underline flex items-center justify-center gap-2"
                   style={{
                     background: "#10b981", color: "#fff",
                     padding: "14px 22px", borderRadius: 2,
                     fontSize: 14, fontWeight: 600,
+                    boxShadow: "0 0 0 1px #10b981, 0 8px 24px rgba(16,185,129,0.18)",
                   }}>
                   Start for free <RiArrowRightLine size={14} />
                 </Link>
                 <Link href="/investor" className="no-underline flex items-center justify-center gap-2"
                   style={{
                     color: "#e5e7eb", padding: "14px 22px",
-                    border: "1px solid rgba(255,255,255,0.12)", borderRadius: 2,
+                    border: "1px solid rgba(255,255,255,0.18)", borderRadius: 2,
                     fontSize: 14, fontWeight: 500,
                   }}>
-                  Investor portal →
+                  I'm an investor →
                 </Link>
               </div>
 
-              <div className="mono flex flex-wrap gap-x-8 gap-y-2 mt-10"
-                style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                <span>Free up to 25 investors</span>
-                <span>·</span>
-                <span>No credit card</span>
-                <span>·</span>
-                <span>EU-hosted</span>
+              <div className="mono flex flex-wrap gap-x-6 gap-y-2 mt-8"
+                style={{ fontSize: 11, color: "#94a3b8", letterSpacing: "0.04em" }}>
+                <span className="flex items-center gap-1.5">
+                  <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#10b981" }} />
+                  No credit card
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#10b981" }} />
+                  EU-hosted (Frankfurt)
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#10b981" }} />
+                  Wallet login
+                </span>
               </div>
             </div>
 
-            {/* Right column — pipeline visual, subtler than before */}
-            <div className="reveal">
+            {/* Right column — bigger product visual, more screen real estate. */}
+            <div className="lg:col-span-7 reveal">
               <HeroPipeline />
             </div>
           </div>
@@ -158,20 +162,19 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
             <div className="md:col-span-3">
               <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                § The product
+                The product
               </p>
             </div>
             <div className="md:col-span-9">
               <h2 className="serif text-white" style={{
                 fontSize: "clamp(36px, 5vw, 64px)", lineHeight: 1, letterSpacing: "-0.04em", fontWeight: 500,
               }}>
-                Four surfaces.<br />
-                <span style={{ fontStyle: "italic", fontWeight: 400, color: "#cbd5e1" }}>One round.</span>
+                What&apos;s inside FundFlow.
               </h2>
-              <p style={{ fontSize: 17, lineHeight: 1.6, color: "#94a3b8", marginTop: 24, maxWidth: 560, fontWeight: 300 }}>
-                Not a generic CRM with a crypto sticker on it. Each of these is a distinct
-                view with its own job — the private side for tracking, the public side for
-                getting found, and the numbers to tell you if the round is actually moving.
+              <p style={{ fontSize: 17, lineHeight: 1.6, color: "#94a3b8", marginTop: 24, maxWidth: 560, fontWeight: 400 }}>
+                Not a generic CRM with a crypto sticker on it. Each surface has its own job —
+                the private side for tracking deals, the public side for getting found, and
+                the numbers to tell you if the round is actually moving.
               </p>
             </div>
           </div>
@@ -182,7 +185,7 @@ export default function Home() {
       <DeepDive
         number="01"
         kicker="Pipeline"
-        headline={<>Drag a deal<br /><em style={{ fontWeight: 400 }}>through every stage.</em></>}
+        headline="Drag a deal through every stage."
         body="The Kanban view of every investor you've talked to, grouped by status. Optimistic drag-and-drop, notes stay attached, nothing gets lost in a spreadsheet named final_v3_FINAL.xlsx."
         bullets={[
           "Outreach → Closed in five moves",
@@ -196,7 +199,7 @@ export default function Home() {
         number="02"
         kicker="Deal room"
         reverse
-        headline={<>A public page<br /><em style={{ fontWeight: 400 }}>investors can find you on.</em></>}
+        headline="A public page investors can find you on."
         body="Publish your project once. It shows up on the investor side where VCs filter by stage, chain, and sector. When someone taps Express Interest you get an email, a realtime badge on the dashboard, and a row in the interests table."
         bullets={[
           "Stage · chain · tags · goal · raised",
@@ -209,7 +212,7 @@ export default function Home() {
       <DeepDive
         number="03"
         kicker="Signal"
-        headline={<>Know where<br /><em style={{ fontWeight: 400 }}>the round actually stands.</em></>}
+        headline="Know where the round actually stands."
         body="The analytics page turns your pipeline into a funnel with real percentages — not vanity metrics. Conversion from outreach to close, response rate, total committed, and the top cheques ranked by size."
         bullets={[
           "Outreach → Closed conversion funnel",
@@ -223,7 +226,7 @@ export default function Home() {
         number="04"
         kicker="Identity"
         reverse
-        headline={<>Web3-native<br /><em style={{ fontWeight: 400 }}>from day one.</em></>}
+        headline="Web3-native from day one."
         body="Wallet connect is a first-class login method, not a retrofit. Pair your address to your profile via MetaMask, WalletConnect, or paste. Then browse the curated investor directory — 30+ funds tagged by sector, stage, check size, and Web3 focus."
         bullets={[
           "MetaMask + WalletConnect v2 + manual paste",
@@ -262,26 +265,31 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-14">
             <div className="md:col-span-3">
               <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                § Pricing
+                Pricing
               </p>
             </div>
             <div className="md:col-span-9">
               <h2 className="serif text-white" style={{
                 fontSize: "clamp(36px, 5vw, 64px)", lineHeight: 1, letterSpacing: "-0.04em", fontWeight: 500,
               }}>
-                Free until<br />
-                <span style={{ fontStyle: "italic", fontWeight: 400, color: "#cbd5e1" }}>you're serious.</span>
+                Free until you&apos;re serious.
               </h2>
+              <p style={{ fontSize: 16, color: "#94a3b8", marginTop: 18, maxWidth: 460, lineHeight: 1.6 }}>
+                Up to 25 investors free, forever. Pro unlocks unlimited and the curated
+                investor directory. Cancel any time, no contracts.
+              </p>
             </div>
           </div>
 
-          {/* Pricing grid — two plans as rows in a shared table, not twin cards */}
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+          {/* Pricing grid — two side-by-side cards, Pro highlighted with
+              an emerald accent border + popular ribbon. Reads more like
+              a real comparison than the previous full-width strips. */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-2">
             {[
               {
                 name: "Starter",
                 price: "$0",
-                cadence: "Forever",
+                cadence: "Free forever",
                 desc: "Everything you need to run a first round.",
                 featured: false,
                 features: [
@@ -290,6 +298,7 @@ export default function Home() {
                   "Public deal-flow page",
                   "Basic analytics",
                   "Email notifications",
+                  "CSV export",
                 ],
                 cta: "Start free",
               },
@@ -303,54 +312,71 @@ export default function Home() {
                   "Unlimited investors",
                   "Advanced analytics + funnel",
                   "Curated investor directory",
-                  "API access (coming soon)",
+                  "Investor timeline (history)",
                   "Priority support",
+                  "API access (coming soon)",
                 ],
                 cta: "Upgrade to Pro",
               },
             ].map((plan) => (
               <div key={plan.name}
-                className="grid grid-cols-1 md:grid-cols-12 gap-6 py-10"
-                style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                <div className="md:col-span-3 flex flex-col gap-2">
-                  <p className="mono" style={{
-                    fontSize: 11, color: plan.featured ? "#10b981" : "#64748b",
-                    letterSpacing: "0.12em", textTransform: "uppercase",
+                style={{
+                  position: "relative",
+                  background: plan.featured ? "rgba(16,185,129,0.04)" : "transparent",
+                  border: plan.featured ? "1px solid rgba(16,185,129,0.35)" : "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: 2,
+                  padding: "32px 28px 28px",
+                }}>
+                {plan.featured && (
+                  <span className="mono" style={{
+                    position: "absolute", top: -10, left: 24,
+                    background: "#10b981", color: "#fff",
+                    padding: "3px 10px", fontSize: 10, fontWeight: 600,
+                    letterSpacing: "0.1em", textTransform: "uppercase",
+                    borderRadius: 2,
                   }}>
-                    {plan.name}{plan.featured && " · Recommended"}
-                  </p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="serif text-white" style={{ fontSize: 56, fontWeight: 500, letterSpacing: "-0.03em", lineHeight: 1 }}>
-                      {plan.price}
-                    </span>
-                    <span className="mono" style={{ fontSize: 12, color: "#64748b", letterSpacing: "0.04em", textTransform: "uppercase" }}>
-                      {plan.cadence}
-                    </span>
-                  </div>
-                  <p style={{ fontSize: 14, color: "#94a3b8", maxWidth: 240, marginTop: 4 }}>{plan.desc}</p>
+                    Most popular
+                  </span>
+                )}
+                <p className="mono mb-3" style={{
+                  fontSize: 11, color: plan.featured ? "#10b981" : "#64748b",
+                  letterSpacing: "0.12em", textTransform: "uppercase",
+                }}>
+                  {plan.name}
+                </p>
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="serif text-white" style={{ fontSize: 64, fontWeight: 500, letterSpacing: "-0.03em", lineHeight: 1 }}>
+                    {plan.price}
+                  </span>
+                  <span className="mono" style={{ fontSize: 12, color: "#64748b", letterSpacing: "0.04em" }}>
+                    {plan.cadence}
+                  </span>
                 </div>
-                <div className="md:col-span-6">
-                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-                    {plan.features.map(f => (
-                      <li key={f} className="flex items-start gap-2.5" style={{ fontSize: 14, color: "#cbd5e1" }}>
-                        <RiCheckLine size={14} style={{ color: "#10b981", marginTop: 4, flexShrink: 0 }} />
-                        <span>{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="md:col-span-3 flex md:justify-end items-start">
-                  <Link href="/register" className="no-underline flex items-center justify-center gap-2 w-full md:w-auto"
-                    style={{
-                      background: plan.featured ? "#10b981" : "transparent",
-                      color: plan.featured ? "#fff" : "#e5e7eb",
-                      border: plan.featured ? "1px solid #10b981" : "1px solid rgba(255,255,255,0.14)",
-                      padding: "12px 20px", borderRadius: 2,
-                      fontSize: 13, fontWeight: 600,
-                    }}>
-                    {plan.cta} <RiArrowRightLine size={13} />
-                  </Link>
-                </div>
+                <p style={{ fontSize: 14, color: "#94a3b8", marginBottom: 24, lineHeight: 1.5 }}>
+                  {plan.desc}
+                </p>
+
+                <Link href="/register" className="no-underline flex items-center justify-center gap-2 w-full mb-7"
+                  style={{
+                    background: plan.featured ? "#10b981" : "transparent",
+                    color: plan.featured ? "#fff" : "#e5e7eb",
+                    border: plan.featured ? "1px solid #10b981" : "1px solid rgba(255,255,255,0.18)",
+                    padding: "12px 20px", borderRadius: 2,
+                    fontSize: 13, fontWeight: 600,
+                    boxShadow: plan.featured ? "0 6px 18px rgba(16,185,129,0.18)" : "none",
+                  }}>
+                  {plan.cta} <RiArrowRightLine size={13} />
+                </Link>
+
+                <ul className="flex flex-col gap-3 pt-6"
+                  style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                  {plan.features.map(f => (
+                    <li key={f} className="flex items-start gap-2.5" style={{ fontSize: 14, color: "#cbd5e1" }}>
+                      <RiCheckLine size={14} style={{ color: plan.featured ? "#10b981" : "#94a3b8", marginTop: 4, flexShrink: 0 }} />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             ))}
           </div>
@@ -363,15 +389,14 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-14">
             <div className="md:col-span-3">
               <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                § FAQ
+                Common questions
               </p>
             </div>
             <div className="md:col-span-9">
               <h2 className="serif text-white" style={{
                 fontSize: "clamp(36px, 5vw, 64px)", lineHeight: 1, letterSpacing: "-0.04em", fontWeight: 500,
               }}>
-                Questions,<br />
-                <span style={{ fontStyle: "italic", fontWeight: 400, color: "#cbd5e1" }}>honestly answered.</span>
+                Frequently asked.
               </h2>
             </div>
           </div>
@@ -416,14 +441,16 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-10 items-end">
             <div className="md:col-span-8">
               <p className="mono mb-5" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                § Ready when you are
+                Ready when you are
               </p>
               <h2 className="serif text-white" style={{
                 fontSize: "clamp(48px, 7vw, 96px)", lineHeight: 0.95, letterSpacing: "-0.045em", fontWeight: 500,
               }}>
-                Start tracking<br />
-                <span style={{ fontStyle: "italic", fontWeight: 400, color: "#cbd5e1" }}>your round today.</span>
+                Start your round today.
               </h2>
+              <p style={{ fontSize: 16, color: "#94a3b8", marginTop: 18, maxWidth: 480, lineHeight: 1.6 }}>
+                Free up to 25 investors, no credit card. Be set up before your next investor meeting.
+              </p>
             </div>
             <div className="md:col-span-4 flex flex-col gap-3">
               <Link href="/register" className="no-underline flex items-center justify-center gap-2"
@@ -546,7 +573,7 @@ function DeepDive({
                 {number}
               </span>
               <span className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                § {kicker}
+                {kicker}
               </span>
             </div>
             <h3 className="serif text-white" style={{
