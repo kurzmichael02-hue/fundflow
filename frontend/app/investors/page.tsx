@@ -11,6 +11,7 @@ import {
   RiStickyNoteLine, RiTimeLine, RiCheckboxBlankLine, RiCheckboxLine,
   RiHistoryLine, RiArrowRightLine, RiEditBoxLine, RiAddCircleLine,
   RiCoinLine, RiArrowUpSLine, RiArrowDownSLine,
+  RiAlarmLine, RiMailSendLine, RiCalendarScheduleLine,
 } from "react-icons/ri"
 
 // Investors page — editorial CRM with shareable filters and bulk operations.
@@ -32,6 +33,8 @@ type Investor = {
   deal_size?: string | null
   notes?: string | null
   updated_at?: string | null
+  next_follow_up_at?: string | null
+  last_contacted_at?: string | null
 }
 
 const STATUSES: Status[] = ["outreach", "interested", "meeting", "term_sheet", "closed"]
@@ -239,6 +242,48 @@ function InvestorsPage() {
       addToast(`Moved to ${STATUS_LABEL[newStatus]}`)
     } catch (err) {
       addToast(err instanceof Error ? err.message : "Failed to update", "error")
+    }
+  }
+
+  // Follow-up reminder — `iso` is the target timestamp, or null to clear.
+  // Works for both quick-set ("in 3 days") and the custom date picker.
+  async function handlePanelFollowUp(iso: string | null) {
+    if (!selectedInv) return
+    const token = localStorage.getItem("token")!
+    try {
+      const res = await fetch(`/api/investors?id=${selectedInv.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ next_follow_up_at: iso }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setInvestors(prev => prev.map(i => i.id === selectedInv.id ? data : i))
+      setSelectedInv(data)
+      addToast(iso ? "Reminder set" : "Reminder cleared")
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : "Failed to update", "error")
+    }
+  }
+
+  // Log an outreach touch. Stamps last_contacted_at = now. We deliberately
+  // don't auto-clear the follow-up — the founder might want to keep nudging.
+  async function handlePanelLogContact() {
+    if (!selectedInv) return
+    const token = localStorage.getItem("token")!
+    try {
+      const res = await fetch(`/api/investors?id=${selectedInv.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ last_contacted_at: new Date().toISOString() }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setInvestors(prev => prev.map(i => i.id === selectedInv.id ? data : i))
+      setSelectedInv(data)
+      addToast("Logged as contacted")
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : "Failed to log touch", "error")
     }
   }
 
@@ -871,7 +916,10 @@ function InvestorsPage() {
                         <input value={editData.name || ""} onChange={e => setEditData({ ...editData, name: e.target.value })}
                           onClick={e => e.stopPropagation()} style={ROW_INPUT} />
                       ) : (
-                        <div style={{ fontSize: 14, color: "#e5e7eb", fontWeight: 500 }} className="truncate">{inv.name}</div>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span style={{ fontSize: 14, color: "#e5e7eb", fontWeight: 500 }} className="truncate">{inv.name}</span>
+                          <FollowUpPill at={inv.next_follow_up_at || null} />
+                        </div>
                       )}
                       {isEditing ? (
                         <input value={editData.company || ""} onChange={e => setEditData({ ...editData, company: e.target.value })}
@@ -963,7 +1011,10 @@ function InvestorsPage() {
                 <div onClick={() => openPanel(inv)} className="flex items-center gap-3 min-w-0">
                   <span style={{ width: 6, height: 6, borderRadius: "50%", background: color, flexShrink: 0 }} />
                   <div className="min-w-0">
-                    <div style={{ fontSize: 14, color: "#e5e7eb", fontWeight: 500 }} className="truncate">{inv.name}</div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span style={{ fontSize: 14, color: "#e5e7eb", fontWeight: 500 }} className="truncate">{inv.name}</span>
+                      <FollowUpPill at={inv.next_follow_up_at || null} />
+                    </div>
                     <div className="mono truncate" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.04em", marginTop: 2 }}>
                       {inv.company || inv.email || "—"}
                     </div>
@@ -985,6 +1036,8 @@ function InvestorsPage() {
         panelNotes={panelNotes} setPanelNotes={setPanelNotes}
         savingNotes={savingNotes} onSaveNotes={handleSaveNotes}
         onStatusChange={handlePanelStatusChange}
+        onFollowUpSet={handlePanelFollowUp}
+        onLogContact={handlePanelLogContact}
         onDelete={() => requestDelete(selectedInv.id, selectedInv.name)} />}
 
       <ConfirmDialog
@@ -1070,6 +1123,50 @@ function SortHeader({
   )
 }
 
+// Tiny inline marker on a row when a follow-up is set. Three states:
+// overdue (red, "Xd late"), due today (amber, "Today"), upcoming (dim, the
+// short date). Nothing renders if no reminder is set — keeps the table
+// readable for rows that don't need attention.
+function FollowUpPill({ at }: { at: string | null }) {
+  if (!at) return null
+  const t = new Date(at).getTime()
+  if (isNaN(t)) return null
+  const now = Date.now()
+  const endOfToday = new Date()
+  endOfToday.setHours(23, 59, 59, 999)
+
+  let color = "#64748b"
+  let label = ""
+  if (t < now) {
+    color = "#f87171"
+    const h = Math.floor((now - t) / 3_600_000)
+    const d = Math.floor(h / 24)
+    label = d >= 1 ? `${d}d late` : h >= 1 ? `${h}h late` : "Due"
+  } else if (t <= endOfToday.getTime()) {
+    color = "#fbbf24"
+    label = "Today"
+  } else {
+    const d = Math.ceil((t - now) / 86_400_000)
+    label = d <= 7 ? `in ${d}d` : new Date(at).toLocaleDateString("en", { month: "short", day: "numeric" })
+  }
+  return (
+    <span className="mono flex-shrink-0 flex items-center gap-1"
+      title={`Follow-up: ${new Date(at).toLocaleString("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`}
+      style={{
+        fontSize: 9, color,
+        letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600,
+        padding: "2px 6px",
+        background: `${color}12`,
+        border: `1px solid ${color}33`,
+        borderRadius: 2,
+        lineHeight: 1,
+      }}>
+      <RiAlarmLine size={9} />
+      {label}
+    </span>
+  )
+}
+
 function IconBtn({ icon, onClick, color, danger }: {
   icon: React.ReactNode; onClick: () => void; color: string; danger?: boolean
 }) {
@@ -1099,7 +1196,7 @@ type InvestorEvent = {
 
 function DetailDrawer({
   inv, onClose, panelNotes, setPanelNotes, savingNotes, onSaveNotes,
-  onStatusChange, onDelete,
+  onStatusChange, onFollowUpSet, onLogContact, onDelete,
 }: {
   inv: Investor
   onClose: () => void
@@ -1108,6 +1205,8 @@ function DetailDrawer({
   savingNotes: boolean
   onSaveNotes: () => void
   onStatusChange: (s: Status) => void
+  onFollowUpSet: (iso: string | null) => void
+  onLogContact: () => void
   onDelete: () => void
 }) {
   const color = STATUS_COLOR[inv.status]
@@ -1218,8 +1317,20 @@ function DetailDrawer({
             <div className="mono flex items-center gap-2" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase" }}>
               <RiTimeLine size={11} />
               Last updated {new Date(inv.updated_at).toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })}
+              {inv.last_contacted_at && (
+                <>
+                  <span style={{ color: "#475569" }}>·</span>
+                  Pinged {relTime(inv.last_contacted_at)}
+                </>
+              )}
             </div>
           )}
+
+          <FollowUpBlock
+            nextAt={inv.next_follow_up_at || null}
+            onSet={onFollowUpSet}
+            onLogContact={onLogContact}
+          />
 
           <div>
             <div className="mono flex items-center gap-2 mb-3" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
@@ -1271,6 +1382,145 @@ function DetailDrawer({
         </div>
       </aside>
     </>
+  )
+}
+
+// Follow-up reminder block. Shows the current reminder state (if any),
+// a row of quick-set presets, a native date picker for arbitrary dates,
+// and a "log a touch" button that stamps last_contacted_at = now.
+// The presets drop the user into the same PATCH the date picker uses.
+function FollowUpBlock({
+  nextAt, onSet, onLogContact,
+}: {
+  nextAt: string | null
+  onSet: (iso: string | null) => void
+  onLogContact: () => void
+}) {
+  const [showPicker, setShowPicker] = useState(false)
+  const [customVal, setCustomVal] = useState("")
+
+  // "+N days at 9am" — 9am local reads as a human-friendly "first thing
+  // tomorrow" default instead of the current second.
+  function atNineAm(offsetDays: number): string {
+    const d = new Date()
+    d.setDate(d.getDate() + offsetDays)
+    d.setHours(9, 0, 0, 0)
+    return d.toISOString()
+  }
+
+  // Current-state copy — color-coded so overdue pops red.
+  const stateMeta = (() => {
+    if (!nextAt) return null
+    const t = new Date(nextAt).getTime()
+    if (isNaN(t)) return null
+    const diff = t - Date.now()
+    if (diff < 0) {
+      const h = Math.floor(-diff / 3_600_000)
+      const d = Math.floor(h / 24)
+      return {
+        color: "#f87171",
+        copy: d >= 1 ? `Overdue · ${d}d late` : h >= 1 ? `Overdue · ${h}h late` : "Overdue",
+      }
+    }
+    const h = Math.floor(diff / 3_600_000)
+    const d = Math.floor(h / 24)
+    if (d >= 1) return { color: "#cbd5e1", copy: `In ${d}d` }
+    if (h >= 1) return { color: "#fbbf24", copy: `In ${h}h` }
+    const m = Math.max(1, Math.floor(diff / 60_000))
+    return { color: "#fbbf24", copy: `In ${m}m` }
+  })()
+
+  const PRESET_STYLE: React.CSSProperties = {
+    padding: "6px 10px", fontSize: 10,
+    color: "#cbd5e1", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500,
+    background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 2,
+    cursor: "pointer",
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <div className="mono flex items-center gap-2" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+          <RiAlarmLine size={11} /> Follow-up
+        </div>
+        {stateMeta && (
+          <div className="mono flex items-center gap-2" style={{ fontSize: 10, color: stateMeta.color, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            <span>{stateMeta.copy}</span>
+            <button onClick={() => onSet(null)}
+              aria-label="Clear reminder"
+              style={{
+                background: "transparent", border: 0, cursor: "pointer",
+                color: "#64748b", padding: 0,
+              }}>
+              <RiCloseLine size={12} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {nextAt && (
+        <div className="mb-3" style={{ fontSize: 12, color: "#cbd5e1" }}>
+          Reminder set for{" "}
+          <span className="mono" style={{ color: "#e5e7eb" }}>
+            {new Date(nextAt).toLocaleString("en", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+          </span>
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-1.5">
+        <button onClick={() => onSet(atNineAm(1))} style={PRESET_STYLE}>Tomorrow</button>
+        <button onClick={() => onSet(atNineAm(3))} style={PRESET_STYLE}>In 3 days</button>
+        <button onClick={() => onSet(atNineAm(7))} style={PRESET_STYLE}>Next week</button>
+        <button onClick={() => setShowPicker(v => !v)}
+          style={{ ...PRESET_STYLE, color: showPicker ? "#10b981" : "#cbd5e1", borderColor: showPicker ? "rgba(16,185,129,0.3)" : "rgba(255,255,255,0.1)" }}>
+          <RiCalendarScheduleLine size={11} style={{ display: "inline", marginRight: 4, verticalAlign: "-2px" }} />
+          Custom
+        </button>
+      </div>
+
+      {showPicker && (
+        <div className="mt-3 flex items-center gap-2">
+          <input type="datetime-local"
+            value={customVal}
+            onChange={e => setCustomVal(e.target.value)}
+            style={{
+              flex: 1,
+              background: "transparent", color: "#e5e7eb",
+              border: "1px solid rgba(255,255,255,0.12)", borderRadius: 2,
+              padding: "6px 8px", fontSize: 12,
+              fontFamily: "inherit",
+              colorScheme: "dark",
+            }} />
+          <button onClick={() => {
+            if (!customVal) return
+            const d = new Date(customVal)
+            if (isNaN(d.getTime())) return
+            onSet(d.toISOString())
+            setShowPicker(false)
+            setCustomVal("")
+          }}
+            className="mono"
+            style={{
+              padding: "7px 12px", fontSize: 10,
+              color: "#fff", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600,
+              background: "#10b981", border: 0, borderRadius: 2, cursor: "pointer",
+            }}>
+            Set
+          </button>
+        </div>
+      )}
+
+      <button onClick={onLogContact}
+        className="mono mt-3 flex items-center gap-1.5"
+        style={{
+          padding: "7px 12px", fontSize: 10,
+          color: "#94a3b8", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500,
+          background: "transparent", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 2,
+          cursor: "pointer",
+        }}>
+        <RiMailSendLine size={11} /> Log a touch
+      </button>
+    </div>
   )
 }
 
@@ -1345,6 +1595,54 @@ function eventDescriptor(event: InvestorEvent): { icon: React.ReactNode; label: 
         icon: <RiEditLine size={12} />,
         color: "#94a3b8",
         label: <>Renamed to <span className="mono" style={{ color: "#fff" }}>{String(payload.to || "")}</span></>,
+      }
+    }
+    case "follow_up_set": {
+      const at = payload.at ? new Date(String(payload.at)) : null
+      return {
+        icon: <RiAlarmLine size={12} />,
+        color: "#fbbf24",
+        label: (
+          <>
+            Reminder set for{" "}
+            <span className="mono" style={{ color: "#fff" }}>
+              {at ? at.toLocaleDateString("en", { month: "short", day: "numeric" }) : "—"}
+            </span>
+          </>
+        ),
+      }
+    }
+    case "follow_up_rescheduled": {
+      const from = payload.from ? new Date(String(payload.from)) : null
+      const to   = payload.to   ? new Date(String(payload.to))   : null
+      return {
+        icon: <RiAlarmLine size={12} />,
+        color: "#fbbf24",
+        label: (
+          <>
+            Reminder moved{" "}
+            <span className="mono" style={{ color: "#94a3b8" }}>
+              {from ? from.toLocaleDateString("en", { month: "short", day: "numeric" }) : "—"}
+            </span>{" "}→{" "}
+            <span className="mono" style={{ color: "#fff" }}>
+              {to ? to.toLocaleDateString("en", { month: "short", day: "numeric" }) : "—"}
+            </span>
+          </>
+        ),
+      }
+    }
+    case "follow_up_cleared": {
+      return {
+        icon: <RiCloseLine size={12} />,
+        color: "#64748b",
+        label: <>Reminder cleared</>,
+      }
+    }
+    case "contacted": {
+      return {
+        icon: <RiMailSendLine size={12} />,
+        color: "#34d399",
+        label: <>Logged a touch</>,
       }
     }
     default:

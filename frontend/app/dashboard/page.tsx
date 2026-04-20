@@ -27,6 +27,8 @@ type Investor = {
   status: Status
   deal_size?: string | null
   updated_at?: string | null
+  next_follow_up_at?: string | null
+  last_contacted_at?: string | null
 }
 type Interest = {
   id: string
@@ -93,6 +95,30 @@ function relTime(iso: string): string {
   const d = Math.floor(h / 24)
   if (d < 7) return `${d}d ago`
   return new Date(iso).toLocaleDateString("en", { month: "short", day: "numeric" })
+}
+
+// How far overdue a follow-up is, one-line copy. Separate from relTime so
+// we can say "2d late" instead of "2d ago" — different verb in the user's
+// head. Anything more than two weeks just says "stale" because the exact
+// number stops mattering.
+function overdueMeta(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  if (diff < 0) return "Due"
+  const h = Math.floor(diff / 3_600_000)
+  if (h < 24) return h <= 1 ? "Just slipped" : `${h}h late`
+  const d = Math.floor(h / 24)
+  if (d <= 14) return `${d}d late`
+  return "Stale"
+}
+
+// Minute/hour precision for a follow-up due today.
+function todayMeta(iso: string): string {
+  const diff = new Date(iso).getTime() - Date.now()
+  if (diff <= 0) return "Now"
+  const m = Math.floor(diff / 60_000)
+  if (m < 60) return `in ${m}m`
+  const h = Math.floor(m / 60)
+  return `in ${h}h`
 }
 
 export default function DashboardPage() {
@@ -280,6 +306,31 @@ export default function DashboardPage() {
     investors.filter(i => i.status === "term_sheet"),
     [investors]
   )
+
+  // Follow-ups bucketed into overdue (past) vs today (within 24h). Anything
+  // further out doesn't need to hit the dashboard — the investor's own row
+  // badge handles the lookahead. We re-compute on every render because the
+  // boundary moves with wall-clock time; cheap enough for a solo pipeline.
+  const followUps = useMemo(() => {
+    const now = Date.now()
+    const endOfToday = new Date()
+    endOfToday.setHours(23, 59, 59, 999)
+    const todayMax = endOfToday.getTime()
+    const overdue: Investor[] = []
+    const today: Investor[] = []
+    for (const inv of investors) {
+      if (!inv.next_follow_up_at) continue
+      const t = new Date(inv.next_follow_up_at).getTime()
+      if (isNaN(t)) continue
+      if (t < now) overdue.push(inv)
+      else if (t <= todayMax) today.push(inv)
+    }
+    // Overdue: oldest first (the one you've been dodging longest at the top).
+    overdue.sort((a, b) => new Date(a.next_follow_up_at!).getTime() - new Date(b.next_follow_up_at!).getTime())
+    // Today: soonest first.
+    today.sort((a, b) => new Date(a.next_follow_up_at!).getTime() - new Date(b.next_follow_up_at!).getTime())
+    return { overdue, today }
+  }, [investors])
   const stalledOutreach = useMemo(() => {
     const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000
     return investors
@@ -528,6 +579,38 @@ export default function DashboardPage() {
               </div>
 
               <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                {followUps.overdue.length > 0 && (
+                  <FocusBlock
+                    kicker={`${followUps.overdue.length} overdue`}
+                    title={followUps.overdue.length === 1
+                      ? "You owe one investor a follow-up."
+                      : `${followUps.overdue.length} follow-ups slipped.`}
+                    body="Reminders you set and missed. Either ping them now or reschedule so the number doesn't keep climbing."
+                    accent="#f87171"
+                    items={followUps.overdue.slice(0, 3).map(i => ({
+                      label: i.name,
+                      sub: i.company || i.email || "—",
+                      meta: overdueMeta(i.next_follow_up_at!),
+                    }))}
+                    href="/investors"
+                  />
+                )}
+
+                {followUps.today.length > 0 && (
+                  <FocusBlock
+                    kicker={`${followUps.today.length} due today`}
+                    title="Follow up before end of day."
+                    body="You flagged these for today. Knock them out while the context is fresh."
+                    accent="#fbbf24"
+                    items={followUps.today.slice(0, 3).map(i => ({
+                      label: i.name,
+                      sub: i.company || i.email || "—",
+                      meta: todayMeta(i.next_follow_up_at!),
+                    }))}
+                    href="/investors"
+                  />
+                )}
+
                 {pendingTermSheets.length > 0 && (
                   <FocusBlock
                     kicker={`${pendingTermSheets.length} on term sheet`}
@@ -574,7 +657,7 @@ export default function DashboardPage() {
                   />
                 )}
 
-                {pendingTermSheets.length === 0 && freshInterests.length === 0 && stalledOutreach.length === 0 && (
+                {pendingTermSheets.length === 0 && freshInterests.length === 0 && stalledOutreach.length === 0 && followUps.overdue.length === 0 && followUps.today.length === 0 && (
                   <div className="py-14 text-center">
                     <div className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                       Nothing urgent
