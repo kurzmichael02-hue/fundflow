@@ -104,6 +104,7 @@ export default function DashboardPage() {
   const [plan, setPlan] = useState("free")
   const [upgrading, setUpgrading] = useState(false)
   const [userEmail, setUserEmail] = useState("")
+  const [seeding, setSeeding] = useState(false)
   const channelsRef = useRef<Array<{ unsubscribe: () => void }>>([])
 
   useEffect(() => {
@@ -161,6 +162,50 @@ export default function DashboardPage() {
       if (data.url) window.location.href = data.url
       else setUpgrading(false)
     } catch { setUpgrading(false) }
+  }
+
+  // Seed 8 demo investors so a fresh user sees the dashboard with content.
+  // Names + companies are obviously fictional ("Sarah K.", "Lighthouse
+  // Capital") so nobody's confused about which rows are real.
+  async function handleSeedDemo() {
+    setSeeding(true)
+    const token = localStorage.getItem("token")!
+    const samples: Array<{ name: string; company: string; email: string; status: string; deal_size: string; notes: string }> = [
+      { name: "Sarah K.",         company: "Lighthouse Capital", email: "sarah@lighthouse.demo",  status: "outreach",   deal_size: "$500k",  notes: "Met at ETHBerlin. Following up." },
+      { name: "Apollo Cap.",      company: "Apollo Capital",     email: "team@apollo.demo",       status: "term_sheet", deal_size: "$3M",    notes: "Term sheet draft sent. Waiting on legal." },
+      { name: "Atlas Mint",       company: "Atlas Mint",         email: "intros@atlas.demo",      status: "meeting",    deal_size: "$1M",    notes: "Pitch booked Friday 3pm." },
+      { name: "Forge Labs",       company: "Forge Labs",         email: "deals@forge.demo",       status: "interested", deal_size: "$2M",    notes: "Replied yes to deck." },
+      { name: "Helix Studio",     company: "Helix Studio",       email: "hi@helix.demo",          status: "closed",     deal_size: "$2.5M",  notes: "Closed first cheque." },
+      { name: "Solenya Ventures", company: "Solenya Ventures",   email: "sol@solenya.demo",       status: "interested", deal_size: "$800k",  notes: "Wants follow-up call." },
+      { name: "Dovetail",         company: "Dovetail",           email: "info@dovetail.demo",     status: "outreach",   deal_size: "",       notes: "Cold intro from David." },
+      { name: "Meridian Crypto",  company: "Meridian Crypto",    email: "alex@meridian.demo",     status: "meeting",    deal_size: "$1.5M",  notes: "Demo went well. Following up Monday." },
+    ]
+    try {
+      // Sequential so we can stop early when the free plan limit kicks in.
+      let imported = 0
+      for (const s of samples) {
+        const res = await fetch("/api/investors", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify(s),
+        })
+        if (!res.ok) {
+          const data = await res.json().catch(() => null)
+          if (data?.limit) break
+        } else {
+          imported++
+        }
+      }
+      // Refetch the world so dashboard, focus column, ticker — all update.
+      await fetchAll(token)
+      if (imported === 0) {
+        // Most likely cause: the free plan cap. The error message from the
+        // route already explains it, but we don't have it in scope here.
+        alert("Couldn't seed demo data. You may have hit the free-plan cap.")
+      }
+    } finally {
+      setSeeding(false)
+    }
   }
 
   async function handleManageBilling() {
@@ -412,11 +457,11 @@ export default function DashboardPage() {
         {investors.length === 0 && (
           <section className="py-10">
             <div className="mono mb-6" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-              § First moves
+              First moves
             </div>
             <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
               {[
-                { n: "01", title: "Add your first investor",   sub: "Start building your pipeline",                        icon: <RiUserLine size={14} />,           href: "/investors" },
+                { n: "01", title: "Add your first investor",   sub: "Start building your pipeline",                        icon: <RiUserLine size={14} />,           href: "/investors?new=1" },
                 { n: "02", title: "Complete your profile",     sub: "Company info and wallet address",                     icon: <RiAccountCircleLine size={14} />,  href: "/profile" },
                 { n: "03", title: "Publish your project",      sub: "Let VCs find you on the deal flow",                   icon: <RiRocketLine size={14} />,         href: "/profile" },
               ].map(s => (
@@ -438,6 +483,31 @@ export default function DashboardPage() {
                   </div>
                 </button>
               ))}
+            </div>
+
+            {/* Demo data — lets a fresh user see the dashboard with content
+                instead of zero-state. Clearly labelled "demo" so they know
+                to delete it before going live. */}
+            <div className="mt-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 py-5"
+              style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+              <div>
+                <div className="mono mb-1" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                  Just kicking the tyres?
+                </div>
+                <p style={{ fontSize: 14, color: "#cbd5e1" }}>
+                  Drop in 8 sample investors so the dashboard, pipeline and analytics actually have something to show. Delete them whenever.
+                </p>
+              </div>
+              <button onClick={handleSeedDemo} disabled={seeding}
+                className="mono cursor-pointer flex items-center gap-1.5 flex-shrink-0"
+                style={{
+                  padding: "10px 16px", fontSize: 11,
+                  color: "#cbd5e1", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500,
+                  background: "transparent", border: "1px solid rgba(255,255,255,0.18)", borderRadius: 2,
+                  opacity: seeding ? 0.6 : 1,
+                }}>
+                {seeding ? "Seeding..." : "Seed demo data →"}
+              </button>
             </div>
           </section>
         )}

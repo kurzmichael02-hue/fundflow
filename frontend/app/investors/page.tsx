@@ -4,12 +4,13 @@ import { useRouter, useSearchParams } from "next/navigation"
 import AppNav from "@/components/AppNav"
 import { ToastContainer, useToast } from "@/components/Toast"
 import ConfirmDialog from "@/components/ConfirmDialog"
+import CsvImportDialog from "@/components/CsvImportDialog"
 import {
   RiAddLine, RiSearchLine, RiEditLine, RiDeleteBinLine,
-  RiCheckLine, RiCloseLine, RiDownloadLine, RiUserLine,
+  RiCheckLine, RiCloseLine, RiDownloadLine, RiUploadLine, RiUserLine,
   RiStickyNoteLine, RiTimeLine, RiCheckboxBlankLine, RiCheckboxLine,
   RiHistoryLine, RiArrowRightLine, RiEditBoxLine, RiAddCircleLine,
-  RiCoinLine,
+  RiCoinLine, RiArrowUpSLine, RiArrowDownSLine,
 } from "react-icons/ri"
 
 // Investors page — editorial CRM with shareable filters and bulk operations.
@@ -111,6 +112,12 @@ function InvestorsPage() {
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null)
   const [bulkStatusOpen, setBulkStatusOpen] = useState(false)
   const [bulkBusy, setBulkBusy] = useState(false)
+
+  // CSV import + table sort
+  const [csvOpen, setCsvOpen] = useState(false)
+  type SortKey = "name" | "status" | "deal_size" | "updated_at"
+  const [sortKey, setSortKey] = useState<SortKey | null>(null)
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
 
   // ── Sync state into the URL (replace, don't push, so back button works) ─
   const writeUrl = useCallback((next: Record<string, string | null>) => {
@@ -402,16 +409,67 @@ function InvestorsPage() {
     addToast(`CSV exported (${rows.length})`)
   }
 
-  // ── Filtering ─────────────────────────────────────────────────────────
-  const filtered = useMemo(() => investors.filter(inv => {
-    const q = search.toLowerCase()
-    const matchSearch = !q ||
-      inv.name?.toLowerCase().includes(q) ||
-      inv.company?.toLowerCase().includes(q) ||
-      inv.email?.toLowerCase().includes(q)
-    const matchStatus = statusFilter === "all" || inv.status === statusFilter
-    return matchSearch && matchStatus
-  }), [investors, search, statusFilter])
+  // Status order so a sort by status reads outreach → closed in ascending,
+  // not alphabetical (which would sort interested before meeting etc).
+  const STATUS_ORDER: Record<Status, number> = useMemo(() => ({
+    outreach: 0, interested: 1, meeting: 2, term_sheet: 3, closed: 4,
+  }), [])
+
+  // Free-form deal_size string ("$5M", "500k") gets coerced to a number for
+  // sorting only — same parser idea as analytics, lighter touch here.
+  function sortValue(inv: Investor, key: SortKey): string | number {
+    switch (key) {
+      case "name":       return (inv.name || "").toLowerCase()
+      case "status":     return STATUS_ORDER[inv.status]
+      case "deal_size": {
+        const s = String(inv.deal_size || "").toLowerCase()
+        if (!s) return -1
+        let mult = 1
+        if (/\bb\b|billion/.test(s))      mult = 1e9
+        else if (/\bm\b|million/.test(s)) mult = 1e6
+        else if (/\bk\b|thousand/.test(s)) mult = 1e3
+        const n = parseFloat(s.replace(/[^0-9.]/g, ""))
+        return isNaN(n) ? -1 : n * mult
+      }
+      case "updated_at": return inv.updated_at ? new Date(inv.updated_at).getTime() : 0
+    }
+  }
+
+  // ── Filtering + sorting ───────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    const matched = investors.filter(inv => {
+      const q = search.toLowerCase()
+      const matchSearch = !q ||
+        inv.name?.toLowerCase().includes(q) ||
+        inv.company?.toLowerCase().includes(q) ||
+        inv.email?.toLowerCase().includes(q)
+      const matchStatus = statusFilter === "all" || inv.status === statusFilter
+      return matchSearch && matchStatus
+    })
+    if (!sortKey) return matched
+    const sorted = [...matched].sort((a, b) => {
+      const va = sortValue(a, sortKey)
+      const vb = sortValue(b, sortKey)
+      if (va < vb) return sortDir === "asc" ? -1 : 1
+      if (va > vb) return sortDir === "asc" ? 1 : -1
+      return 0
+    })
+    return sorted
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [investors, search, statusFilter, sortKey, sortDir, STATUS_ORDER])
+
+  function toggleSort(key: SortKey) {
+    if (sortKey !== key) {
+      setSortKey(key)
+      setSortDir("asc")
+    } else if (sortDir === "asc") {
+      setSortDir("desc")
+    } else {
+      // Third click clears the sort and goes back to insertion order.
+      setSortKey(null)
+      setSortDir("asc")
+    }
+  }
 
   // ── Selection helpers ────────────────────────────────────────────────
   const allFilteredSelected = filtered.length > 0 && filtered.every(i => selectedIds.has(i.id))
@@ -501,6 +559,15 @@ function InvestorsPage() {
             )}
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={() => setCsvOpen(true)}
+              className="mono flex items-center gap-1.5 cursor-pointer"
+              style={{
+                fontSize: 11, color: "#94a3b8", letterSpacing: "0.08em", textTransform: "uppercase",
+                padding: "8px 14px",
+                background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 2,
+              }}>
+              <RiUploadLine size={12} /> Import CSV
+            </button>
             <button onClick={handleExportCSV}
               className="mono flex items-center gap-1.5 cursor-pointer"
               style={{
@@ -753,11 +820,11 @@ function InvestorsPage() {
                     ? <PartialCheckboxIcon />
                     : <RiCheckboxBlankLine size={14} />}
               </button>
-              <span>Investor</span>
-              <span>Status</span>
-              <span>Deal size</span>
+              <SortHeader label="Investor"  active={sortKey === "name"}       dir={sortDir} onClick={() => toggleSort("name")} />
+              <SortHeader label="Status"    active={sortKey === "status"}     dir={sortDir} onClick={() => toggleSort("status")} />
+              <SortHeader label="Deal size" active={sortKey === "deal_size"}  dir={sortDir} onClick={() => toggleSort("deal_size")} />
               <span>Notes</span>
-              <span />
+              <SortHeader label="Updated"   active={sortKey === "updated_at"} dir={sortDir} onClick={() => toggleSort("updated_at")} alignRight />
             </div>
 
             {filtered.length === 0 ? (
@@ -933,6 +1000,21 @@ function InvestorsPage() {
         onConfirm={confirmDelete}
         onCancel={() => !deleting && setPendingDelete(null)}
       />
+
+      <CsvImportDialog
+        open={csvOpen}
+        onClose={() => setCsvOpen(false)}
+        onImported={(count) => {
+          // Reload the list so the new rows appear without a manual refresh.
+          // Cheaper than refetching during the import — we just do it once
+          // when the dialog finishes, then the user can dismiss when ready.
+          if (count > 0) {
+            const token = localStorage.getItem("token")
+            if (token) fetchInvestors(token)
+            addToast(`${count} investor${count === 1 ? "" : "s"} imported`)
+          }
+        }}
+      />
     </main>
   )
 }
@@ -957,6 +1039,34 @@ function PartialCheckboxIcon() {
     }}>
       <span style={{ width: 8, height: 1.5, background: "currentColor" }} />
     </span>
+  )
+}
+
+// Column header that doubles as a sort toggle. Cycle is asc → desc → off,
+// matching how every linear/airtable-style table behaves.
+function SortHeader({
+  label, active, dir, onClick, alignRight,
+}: {
+  label: string
+  active: boolean
+  dir: "asc" | "desc"
+  onClick: () => void
+  alignRight?: boolean
+}) {
+  return (
+    <button onClick={onClick}
+      className="mono cursor-pointer flex items-center gap-1.5"
+      style={{
+        background: "transparent", border: 0, padding: 0,
+        color: active ? "#10b981" : "#64748b",
+        fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase",
+        justifyContent: alignRight ? "flex-end" : "flex-start",
+      }}>
+      {label}
+      {active && (dir === "asc"
+        ? <RiArrowUpSLine size={12} />
+        : <RiArrowDownSLine size={12} />)}
+    </button>
   )
 }
 
