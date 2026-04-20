@@ -119,7 +119,7 @@ export default function Home() {
               </div>
 
               <div className="mono flex flex-wrap gap-x-8 gap-y-2 mt-10"
-                style={{ fontSize: 11, color: "#475569", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase" }}>
                 <span>Free up to 25 investors</span>
                 <span>·</span>
                 <span>No credit card</span>
@@ -139,14 +139,14 @@ export default function Home() {
       {/* ─── TRUST LINE ─── single mono row, no logo wall ─── */}
       <section style={{ borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <div className="max-w-[1180px] mx-auto px-6 md:px-10 py-5 flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-10">
-          <span className="mono" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+          <span className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
             In use
           </span>
           <div className="mono flex flex-wrap gap-x-7 gap-y-2" style={{ fontSize: 12, color: "#94a3b8" }}>
             <span>Web3 founders raising pre-seed through Series A</span>
-            <span style={{ color: "#334155" }}>·</span>
+            <span style={{ color: "#475569" }}>·</span>
             <span>Solo GPs</span>
-            <span style={{ color: "#334155" }}>·</span>
+            <span style={{ color: "#475569" }}>·</span>
             <span>Emerging fund managers</span>
           </div>
         </div>
@@ -238,7 +238,7 @@ export default function Home() {
         <div className="max-w-[1180px] mx-auto px-6 md:px-10">
           <div className="py-6 flex flex-wrap gap-x-10 gap-y-3 items-center"
             style={{ borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <span className="mono" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            <span className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
               Also included
             </span>
             {[
@@ -384,7 +384,7 @@ export default function Home() {
                   <button onClick={() => setOpenFaq(open ? null : i)}
                     className="w-full flex items-start gap-6 text-left cursor-pointer"
                     style={{ background: "transparent", border: 0, padding: "28px 0" }}>
-                    <span className="mono" style={{ fontSize: 12, color: "#475569", letterSpacing: "0.08em", marginTop: 6, minWidth: 32 }}>
+                    <span className="mono" style={{ fontSize: 12, color: "#64748b", letterSpacing: "0.08em", marginTop: 6, minWidth: 32 }}>
                       {String(i + 1).padStart(2, "0")}
                     </span>
                     <span className="serif flex-1" style={{ fontSize: 22, fontWeight: 500, letterSpacing: "-0.02em", color: open ? "#fff" : "#e5e7eb", lineHeight: 1.3 }}>
@@ -484,7 +484,7 @@ function HeroPipeline() {
                 <span className="mono" style={{ fontSize: 10, color: col.color, letterSpacing: "0.06em", textTransform: "uppercase" }}>
                   {col.label}
                 </span>
-                <span className="mono" style={{ fontSize: 10, color: "#475569" }}>{col.items.length}</span>
+                <span className="mono" style={{ fontSize: 10, color: "#64748b" }}>{col.items.length}</span>
               </div>
               <div className="flex flex-col gap-1.5">
                 {col.items.map(c => (
@@ -510,7 +510,7 @@ function HeroPipeline() {
             { label: "Closed", value: "4" },
           ].map(s => (
             <div key={s.label}>
-              <div className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>{s.label}</div>
+              <div className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>{s.label}</div>
               <div className="serif" style={{ fontSize: 24, color: "#fff", fontWeight: 500, letterSpacing: "-0.02em", marginTop: 2 }}>{s.value}</div>
             </div>
           ))}
@@ -596,7 +596,7 @@ function MockFrame({ subtitle, children }: { subtitle: string; children: React.R
             <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: c, opacity: 0.5 }} />
           ))}
         </div>
-        <p className="mono text-center flex-1" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.04em" }}>{subtitle}</p>
+        <p className="mono text-center flex-1" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.04em" }}>{subtitle}</p>
       </div>
       <div className="p-5">{children}</div>
     </div>
@@ -616,7 +616,7 @@ function KanbanMock() {
     <MockFrame subtitle="app.fundflow.io/pipeline">
       <div className="flex items-center justify-between mb-4">
         <span className="mono" style={{ fontSize: 11, color: "#cbd5e1", letterSpacing: "0.08em", textTransform: "uppercase" }}>Deal pipeline</span>
-        <span className="mono" style={{ fontSize: 10, color: "#475569" }}>7 deals · $23.5M ACV</span>
+        <span className="mono" style={{ fontSize: 10, color: "#64748b" }}>7 deals · $23.5M ACV</span>
       </div>
       <div className="grid grid-cols-5 gap-2">
         {cols.map(col => (
@@ -625,7 +625,7 @@ function KanbanMock() {
               <span className="mono truncate" style={{ fontSize: 9, color: col.color, letterSpacing: "0.06em", textTransform: "uppercase" }}>
                 {col.label}
               </span>
-              <span className="mono" style={{ fontSize: 9, color: "#475569" }}>{col.cards.length}</span>
+              <span className="mono" style={{ fontSize: 9, color: "#64748b" }}>{col.cards.length}</span>
             </div>
             <div className="flex flex-col gap-1.5">
               {col.cards.map(card => (
@@ -662,7 +662,7 @@ function DealRoomMock() {
     <MockFrame subtitle="app.fundflow.io/investor/discover">
       <div className="flex items-center justify-between mb-4">
         <span className="mono" style={{ fontSize: 11, color: "#cbd5e1", letterSpacing: "0.08em", textTransform: "uppercase" }}>Deal flow</span>
-        <span className="mono" style={{ fontSize: 10, color: "#475569" }}>30 founders raising</span>
+        <span className="mono" style={{ fontSize: 10, color: "#64748b" }}>30 founders raising</span>
       </div>
       <div style={{ background: "#0d0d10", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 2 }}>
         <div style={{ height: 1, background: "linear-gradient(90deg, #10b981 0%, transparent 100%)" }} />
@@ -695,13 +695,13 @@ function DealRoomMock() {
               <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.04em", textTransform: "uppercase" }}>Raised</span>
               <div className="flex items-baseline gap-1.5">
                 <span className="serif" style={{ fontSize: 16, color: "#fff", fontWeight: 500, letterSpacing: "-0.02em" }}>$1.6M</span>
-                <span className="mono" style={{ fontSize: 10, color: "#475569" }}>/ $2.5M</span>
+                <span className="mono" style={{ fontSize: 10, color: "#64748b" }}>/ $2.5M</span>
               </div>
             </div>
             <div style={{ height: 2, background: "rgba(255,255,255,0.06)" }}>
               <div style={{ height: "100%", width: `${pct}%`, background: "#10b981" }} />
             </div>
-            <div className="mono" style={{ fontSize: 9, color: "#334155", marginTop: 4, textAlign: "right", letterSpacing: "0.04em" }}>{pct}% funded</div>
+            <div className="mono" style={{ fontSize: 9, color: "#475569", marginTop: 4, textAlign: "right", letterSpacing: "0.04em" }}>{pct}% funded</div>
           </div>
           <button style={{
             width: "100%", padding: "10px 0", cursor: "default",
@@ -735,7 +735,7 @@ function SignalMock() {
     <MockFrame subtitle="app.fundflow.io/analytics">
       <div className="flex items-center justify-between mb-4">
         <span className="mono" style={{ fontSize: 11, color: "#cbd5e1", letterSpacing: "0.08em", textTransform: "uppercase" }}>Pipeline funnel</span>
-        <span className="mono flex items-baseline gap-1.5" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.04em" }}>
+        <span className="mono flex items-baseline gap-1.5" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.04em" }}>
           Conversion <span className="serif" style={{ fontSize: 14, color: "#10b981", fontWeight: 500 }}>8.5%</span>
         </span>
       </div>
@@ -744,7 +744,7 @@ function SignalMock() {
           <div key={s.label}>
             <div className="flex items-baseline justify-between mb-1">
               <div className="flex items-baseline gap-3">
-                <span className="mono" style={{ fontSize: 10, color: "#334155" }}>{String(i + 1).padStart(2, "0")}</span>
+                <span className="mono" style={{ fontSize: 10, color: "#475569" }}>{String(i + 1).padStart(2, "0")}</span>
                 <span style={{ fontSize: 12, color: "#cbd5e1" }}>{s.label}</span>
               </div>
               <span className="serif" style={{ fontSize: 15, color: s.color, fontWeight: 500, letterSpacing: "-0.02em" }}>{s.count}</span>
@@ -756,7 +756,7 @@ function SignalMock() {
         ))}
       </div>
       <div className="pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-        <div className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>Total committed</div>
+        <div className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>Total committed</div>
         <div className="flex items-baseline gap-3">
           <span className="serif" style={{ fontSize: 28, color: "#fff", fontWeight: 500, letterSpacing: "-0.02em", lineHeight: 1 }}>$12.5M</span>
           <span className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.02em" }}>+$4.2M this month</span>
@@ -770,7 +770,7 @@ function SignalMock() {
 function IdentityMock() {
   return (
     <MockFrame subtitle="app.fundflow.io/profile">
-      <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>Connect wallet</span>
+      <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>Connect wallet</span>
       <div className="flex flex-col gap-1.5 mt-3 mb-6">
         {[
           { icon: <RiWallet3Line size={14} />, label: "MetaMask",      hint: "Browser extension",  color: "#fbbf24" },
@@ -783,12 +783,12 @@ function IdentityMock() {
           }}>
             {w.icon}
             <span style={{ fontSize: 12, fontWeight: 500 }}>{w.label}</span>
-            <span className="mono ml-auto" style={{ fontSize: 9, color: "#475569", letterSpacing: "0.04em" }}>{w.hint}</span>
+            <span className="mono ml-auto" style={{ fontSize: 9, color: "#64748b", letterSpacing: "0.04em" }}>{w.hint}</span>
           </div>
         ))}
       </div>
 
-      <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>From the directory</span>
+      <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>From the directory</span>
       <div className="mt-2" style={{ padding: 12, background: "#0d0d10", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 2 }}>
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -807,7 +807,7 @@ function IdentityMock() {
           </span>
         </div>
         <div className="flex items-baseline gap-2 mb-3">
-          <span className="mono" style={{ fontSize: 9, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>Check</span>
+          <span className="mono" style={{ fontSize: 9, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>Check</span>
           <span className="serif" style={{ fontSize: 13, color: "#fff", fontWeight: 500 }}>$250k — $5M</span>
         </div>
         <div className="flex items-center justify-between">

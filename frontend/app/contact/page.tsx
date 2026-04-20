@@ -56,7 +56,7 @@ export default function ContactPage() {
     width: "100%",
     background: "transparent",
     border: 0,
-    borderBottom: "1px solid rgba(255,255,255,0.14)",
+    borderBottom: "1px solid rgba(255,255,255,0.18)",
     color: "#e5e7eb",
     fontSize: 15,
     outline: "none",
@@ -65,7 +65,7 @@ export default function ContactPage() {
     fontFamily: "inherit",
   }
   const labelStyle: React.CSSProperties = {
-    fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase",
+    fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase",
     display: "block", marginBottom: 10,
   }
 
@@ -107,7 +107,7 @@ export default function ContactPage() {
               </p>
 
               <div className="mt-10 pt-8" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-                <p className="mono mb-3" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                <p className="mono mb-3" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
                   Or email us directly
                 </p>
                 <a href="mailto:hello@fundflow.io" className="no-underline"
@@ -117,7 +117,7 @@ export default function ContactPage() {
               </div>
 
               <div className="mt-10 pt-8 flex flex-col gap-2" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-                <p className="mono mb-2" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                <p className="mono mb-2" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
                   What you can write about
                 </p>
                 {[
@@ -127,7 +127,7 @@ export default function ContactPage() {
                   "Anything else that doesn't fit the inbox",
                 ].map(t => (
                   <div key={t} className="flex items-start gap-3" style={{ fontSize: 14, color: "#cbd5e1", padding: "4px 0" }}>
-                    <span className="mono" style={{ fontSize: 10, color: "#475569", marginTop: 4 }}>—</span>
+                    <span className="mono" style={{ fontSize: 10, color: "#64748b", marginTop: 4 }}>—</span>
                     <span>{t}</span>
                   </div>
                 ))}
@@ -188,7 +188,7 @@ export default function ContactPage() {
                         style={{
                           ...inputStyle,
                           background: "#060608",
-                          color: form.category ? "#e5e7eb" : "#475569",
+                          color: form.category ? "#e5e7eb" : "#64748b",
                           cursor: "pointer",
                           appearance: "none",
                           WebkitAppearance: "none",

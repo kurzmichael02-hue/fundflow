@@ -121,9 +121,9 @@ export default function InvestorDatabasePage() {
           style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <div className="mono flex items-center gap-x-5 gap-y-2 flex-wrap" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
             <span>Directory</span>
-            <span style={{ color: "#334155" }}>·</span>
+            <span style={{ color: "#475569" }}>·</span>
             <span><span style={{ color: "#e5e7eb" }}>{directory.length}</span> funds</span>
-            <span style={{ color: "#334155" }}>·</span>
+            <span style={{ color: "#475569" }}>·</span>
             <span>{filtered.length} shown</span>
           </div>
         </div>
@@ -148,19 +148,19 @@ export default function InvestorDatabasePage() {
         <section className="pb-5 flex flex-col gap-4"
           style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <div style={{ position: "relative" }}>
-            <RiSearchLine size={14} style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", color: "#475569" }} />
+            <RiSearchLine size={14} style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", color: "#64748b" }} />
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Search by name or firm..."
               style={{
                 width: "100%",
                 background: "transparent", border: 0,
-                borderBottom: "1px solid rgba(255,255,255,0.12)",
+                borderBottom: "1px solid rgba(255,255,255,0.18)",
                 color: "#e5e7eb", fontSize: 14, outline: "none",
                 padding: "10px 0 10px 22px", fontFamily: "inherit",
               }} />
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>Stage</span>
+            <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>Stage</span>
             {STAGE_FILTERS.map(s => {
               const active = stageFilter === s
               return (
@@ -178,7 +178,7 @@ export default function InvestorDatabasePage() {
                 </button>
               )
             })}
-            <span className="mono ml-4" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>Sector</span>
+            <span className="mono ml-4" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>Sector</span>
             {SECTOR_FILTERS.map(s => {
               const active = sectorFilter === s
               return (
@@ -215,7 +215,7 @@ export default function InvestorDatabasePage() {
         <section className="py-2 pb-20">
           {filtered.length === 0 ? (
             <div className="py-20 text-center">
-              <p className="mono" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              <p className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 No investors match
               </p>
             </div>
@@ -239,19 +239,19 @@ export default function InvestorDatabasePage() {
                   </div>
                   <div className="mono flex items-center gap-2 flex-wrap" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.04em" }}>
                     <span>{inv.firm}</span>
-                    {inv.location && <><span style={{ color: "#334155" }}>·</span><span>{inv.location}</span></>}
+                    {inv.location && <><span style={{ color: "#475569" }}>·</span><span>{inv.location}</span></>}
                   </div>
                 </div>
 
                 <div className="md:col-span-3">
-                  <div className="mono mb-1.5" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>Check size</div>
+                  <div className="mono mb-1.5" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>Check size</div>
                   <div className="serif" style={{ fontSize: 18, color: "#fff", fontWeight: 500, letterSpacing: "-0.01em" }}>
                     ${Number(inv.check_size_min || 0).toLocaleString()} – ${Number(inv.check_size_max || 0).toLocaleString()}
                   </div>
                 </div>
 
                 <div className="md:col-span-3">
-                  <div className="mono mb-1.5" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                  <div className="mono mb-1.5" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
                     Sector · Stage
                   </div>
                   <div className="flex flex-wrap gap-1">

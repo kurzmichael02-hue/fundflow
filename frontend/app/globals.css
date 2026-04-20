@@ -32,6 +32,20 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* ── Editorial colour scale
+   Tokens we use everywhere on the dark surface. Each ratio against the
+   #060608 background is noted so future tweaks don't accidentally drop
+   below WCAG AA (4.5:1 for normal text, 3:1 for large text and UI).
+
+     #ffffff  white          21.0 : 1   display headlines
+     #e5e7eb  text-strong    16.5 : 1   body, primary
+     #cbd5e1  text-body      11.7 : 1   secondary, list items
+     #94a3b8  text-muted      7.4 : 1   captions, hint
+     #64748b  text-faint      5.0 : 1   mono kickers, labels
+     #475569  text-dim        3.4 : 1   only for very-large text or punctuation
+     #10b981  emerald         5.9 : 1   primary accent
+     #34d399  emerald-light   8.9 : 1   accent on small text
+*/
 /* ── Editorial type helpers used across every public page.
    Keeping them global means every page can write `className="serif"` or
    `className="mono"` without each one needing its own <style> block. */

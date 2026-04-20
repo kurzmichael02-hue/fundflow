@@ -41,7 +41,7 @@ export default async function TwitterImage() {
             <span style={{ fontFamily: "Serif", fontSize: 36, color: "#fff", letterSpacing: "-0.02em", fontWeight: 500 }}>
               FundFlow
             </span>
-            <span style={{ fontSize: 14, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            <span style={{ fontSize: 14, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
               Beta · v0.1
             </span>
           </div>

@@ -102,11 +102,11 @@ export default function PipelinePage() {
           style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <div className="mono flex items-center gap-x-5 gap-y-2 flex-wrap" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
             <span>Pipeline</span>
-            <span style={{ color: "#334155" }}>·</span>
+            <span style={{ color: "#475569" }}>·</span>
             <span><span style={{ color: "#e5e7eb" }}>{stats.total}</span> total</span>
-            <span style={{ color: "#334155" }}>·</span>
+            <span style={{ color: "#475569" }}>·</span>
             <span><span style={{ color: "#a78bfa" }}>{stats.active}</span> active</span>
-            <span style={{ color: "#334155" }}>·</span>
+            <span style={{ color: "#475569" }}>·</span>
             <span><span style={{ color: "#34d399" }}>{stats.closed}</span> closed</span>
           </div>
         </div>
@@ -212,7 +212,7 @@ function PipelineEmpty() {
           </div>
         </div>
         <div className="md:col-span-5">
-          <div className="mono mb-3" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+          <div className="mono mb-3" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
             What this view does
           </div>
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
@@ -226,7 +226,7 @@ function PipelineEmpty() {
                 fontSize: 14, color: "#cbd5e1",
                 borderTop: "1px solid rgba(255,255,255,0.06)",
               }}>
-                <span className="mono" style={{ fontSize: 10, color: "#475569", marginTop: 4 }}>—</span>
+                <span className="mono" style={{ fontSize: 10, color: "#64748b", marginTop: 4 }}>—</span>
                 <span>{t}</span>
               </li>
             ))}
@@ -259,7 +259,7 @@ function PipelineColumn({
           <span className="mono" style={{ fontSize: 10, color: col.color, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 600 }}>
             {col.label}
           </span>
-          <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.04em" }}>
+          <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.04em" }}>
             {rows.length}
           </span>
         </div>
@@ -269,7 +269,7 @@ function PipelineColumn({
           <PipelineCard key={inv.id} inv={inv} color={col.color} moveInvestor={moveInvestor} />
         ))}
         {rows.length === 0 && !mobile && (
-          <div className="mono text-center py-10" style={{ fontSize: 10, color: "#334155", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          <div className="mono text-center py-10" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
             Empty
           </div>
         )}

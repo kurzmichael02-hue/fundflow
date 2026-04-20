@@ -473,13 +473,13 @@ function InvestorsPage() {
           style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <div className="mono flex items-center gap-x-5 gap-y-2 flex-wrap" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
             <span>Investors</span>
-            <span style={{ color: "#334155" }}>·</span>
+            <span style={{ color: "#475569" }}>·</span>
             <span><span style={{ color: "#e5e7eb" }}>{investors.length}</span> total</span>
-            <span style={{ color: "#334155" }}>·</span>
+            <span style={{ color: "#475569" }}>·</span>
             <span>{filtered.length} shown</span>
             {selectionCount > 0 && (
               <>
-                <span style={{ color: "#334155" }}>·</span>
+                <span style={{ color: "#475569" }}>·</span>
                 <span><span style={{ color: "#10b981" }}>{selectionCount}</span> selected</span>
               </>
             )}
@@ -522,14 +522,14 @@ function InvestorsPage() {
         <section className="flex flex-col md:flex-row items-stretch md:items-center gap-4 pb-6"
           style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <div style={{ position: "relative", flex: 1 }}>
-            <RiSearchLine size={14} style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", color: "#475569" }} />
+            <RiSearchLine size={14} style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", color: "#64748b" }} />
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Search by name, company, or email..."
               style={{
                 width: "100%",
                 background: "transparent",
                 border: 0,
-                borderBottom: "1px solid rgba(255,255,255,0.12)",
+                borderBottom: "1px solid rgba(255,255,255,0.18)",
                 color: "#e5e7eb",
                 fontSize: 14,
                 outline: "none",
@@ -574,7 +574,7 @@ function InvestorsPage() {
                 { label: "Deal size",   value: form.deal_size,  key: "deal_size",  required: false, placeholder: "$500k" },
               ].map(f => (
                 <div key={f.key}>
-                  <label className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>
+                  <label className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>
                     {f.label}
                   </label>
                   <input required={f.required} type={f.type || "text"}
@@ -583,20 +583,20 @@ function InvestorsPage() {
                     placeholder={f.placeholder}
                     style={{
                       width: "100%", background: "transparent",
-                      border: 0, borderBottom: "1px solid rgba(255,255,255,0.12)",
+                      border: 0, borderBottom: "1px solid rgba(255,255,255,0.18)",
                       color: "#e5e7eb", fontSize: 14, outline: "none",
                       padding: "8px 0", fontFamily: "inherit",
                     }} />
                 </div>
               ))}
               <div>
-                <label className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>
+                <label className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>
                   Status
                 </label>
                 <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value as Status })}
                   style={{
                     width: "100%", background: "#060608",
-                    border: 0, borderBottom: "1px solid rgba(255,255,255,0.12)",
+                    border: 0, borderBottom: "1px solid rgba(255,255,255,0.18)",
                     color: "#e5e7eb", fontSize: 14, outline: "none",
                     padding: "8px 0", fontFamily: "inherit", cursor: "pointer",
                   }}>
@@ -604,14 +604,14 @@ function InvestorsPage() {
                 </select>
               </div>
               <div>
-                <label className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>
+                <label className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>
                   Notes
                 </label>
                 <input value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
                   placeholder="Met at ETH Berlin, interested in DeFi"
                   style={{
                     width: "100%", background: "transparent",
-                    border: 0, borderBottom: "1px solid rgba(255,255,255,0.12)",
+                    border: 0, borderBottom: "1px solid rgba(255,255,255,0.18)",
                     color: "#e5e7eb", fontSize: 14, outline: "none",
                     padding: "8px 0", fontFamily: "inherit",
                   }} />
@@ -655,7 +655,7 @@ function InvestorsPage() {
               <span style={{ color: "#10b981", fontWeight: 600 }}>{selectionCount}</span> selected
               <button onClick={clearSelection}
                 className="mono"
-                style={{ fontSize: 10, color: "#475569", background: "transparent", border: 0, cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                style={{ fontSize: 10, color: "#64748b", background: "transparent", border: 0, cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 Clear
               </button>
             </div>
@@ -719,7 +719,7 @@ function InvestorsPage() {
             <div className="grid gap-4 items-center py-3 mono"
               style={{
                 gridTemplateColumns: "32px 2fr 1fr 1fr 2fr 100px",
-                fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase",
+                fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase",
                 borderBottom: "1px solid rgba(255,255,255,0.08)",
                 paddingLeft: 0, paddingRight: 16,
               }}>
@@ -728,7 +728,7 @@ function InvestorsPage() {
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "flex-start",
                   background: "transparent", border: 0, cursor: "pointer",
-                  color: allFilteredSelected || someFilteredSelected ? "#10b981" : "#475569",
+                  color: allFilteredSelected || someFilteredSelected ? "#10b981" : "#64748b",
                   paddingLeft: 16,
                 }}>
                 {allFilteredSelected
@@ -746,8 +746,8 @@ function InvestorsPage() {
 
             {filtered.length === 0 ? (
               <div className="py-20 text-center">
-                <RiUserLine size={18} style={{ color: "#334155" }} />
-                <p className="mono mt-4" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                <RiUserLine size={18} style={{ color: "#475569" }} />
+                <p className="mono mt-4" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                   No investors found
                 </p>
               </div>
@@ -775,7 +775,7 @@ function InvestorsPage() {
                     style={{
                       display: "flex", alignItems: "center", justifyContent: "flex-start",
                       background: "transparent", border: 0, cursor: "pointer",
-                      color: isChecked ? "#10b981" : "#475569",
+                      color: isChecked ? "#10b981" : "#64748b",
                       paddingLeft: 0,
                     }}>
                     {isChecked ? <RiCheckboxLine size={14} /> : <RiCheckboxBlankLine size={14} />}
@@ -856,8 +856,8 @@ function InvestorsPage() {
         <section className="md:hidden py-6 flex flex-col gap-1">
           {filtered.length === 0 ? (
             <div className="py-20 text-center">
-              <RiUserLine size={18} style={{ color: "#334155" }} />
-              <p className="mono mt-4" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              <RiUserLine size={18} style={{ color: "#475569" }} />
+              <p className="mono mt-4" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 No investors found
               </p>
             </div>
@@ -873,7 +873,7 @@ function InvestorsPage() {
                   style={{
                     display: "flex", alignItems: "center",
                     background: "transparent", border: 0, cursor: "pointer",
-                    color: isChecked ? "#10b981" : "#475569",
+                    color: isChecked ? "#10b981" : "#64748b",
                   }}>
                   {isChecked ? <RiCheckboxLine size={14} /> : <RiCheckboxBlankLine size={14} />}
                 </button>
@@ -1049,7 +1049,7 @@ function DetailDrawer({
 
         <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-7">
           <div>
-            <div className="mono mb-3" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            <div className="mono mb-3" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
               Pipeline stage
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -1080,7 +1080,7 @@ function DetailDrawer({
               { label: "Deal size", value: inv.deal_size || "—" },
             ].map(f => (
               <div key={f.label}>
-                <div className="mono mb-1.5" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                <div className="mono mb-1.5" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
                   {f.label}
                 </div>
                 <div style={{ fontSize: 13, color: "#e5e7eb" }} className="truncate">{f.value}</div>
@@ -1089,14 +1089,14 @@ function DetailDrawer({
           </div>
 
           {inv.updated_at && (
-            <div className="mono flex items-center gap-2" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            <div className="mono flex items-center gap-2" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase" }}>
               <RiTimeLine size={11} />
               Last updated {new Date(inv.updated_at).toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })}
             </div>
           )}
 
           <div>
-            <div className="mono flex items-center gap-2 mb-3" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            <div className="mono flex items-center gap-2 mb-3" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
               <RiStickyNoteLine size={11} /> Notes
             </div>
             <textarea value={panelNotes} onChange={e => setPanelNotes(e.target.value)}
@@ -1196,7 +1196,7 @@ function eventDescriptor(event: InvestorEvent): { icon: React.ReactNode; label: 
       return {
         icon: <RiEditBoxLine size={12} />,
         color: "#94a3b8",
-        label: <>Notes updated{length > 0 ? <span className="mono" style={{ color: "#475569", marginLeft: 6 }}>{length} chars</span> : ""}</>,
+        label: <>Notes updated{length > 0 ? <span className="mono" style={{ color: "#64748b", marginLeft: 6 }}>{length} chars</span> : ""}</>,
       }
     }
     case "deal_size_changed": {
@@ -1233,15 +1233,15 @@ function eventDescriptor(event: InvestorEvent): { icon: React.ReactNode; label: 
 function Timeline({ events, loading }: { events: InvestorEvent[]; loading: boolean }) {
   return (
     <div>
-      <div className="mono flex items-center gap-2 mb-3" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+      <div className="mono flex items-center gap-2 mb-3" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
         <RiHistoryLine size={11} /> Timeline
       </div>
       {loading ? (
-        <div className="mono py-4" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.06em" }}>
+        <div className="mono py-4" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.06em" }}>
           Loading events...
         </div>
       ) : events.length === 0 ? (
-        <div className="mono py-4" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.04em" }}>
+        <div className="mono py-4" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.04em" }}>
           No events yet — changes will appear here as you make them.
         </div>
       ) : (
@@ -1265,7 +1265,7 @@ function Timeline({ events, loading }: { events: InvestorEvent[]; loading: boole
                   <span style={{ color: d.color, position: "relative", top: 1 }}>{d.icon}</span>
                   <span>{d.label}</span>
                 </div>
-                <div className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.04em", marginTop: 2 }}>
+                <div className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.04em", marginTop: 2 }}>
                   {relTime(e.created_at)}
                 </div>
               </li>

@@ -270,11 +270,11 @@ export default function DashboardPage() {
           style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <div className="mono flex items-center gap-x-6 gap-y-2 flex-wrap" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
             <span>Dashboard</span>
-            <span style={{ color: "#334155" }}>·</span>
+            <span style={{ color: "#475569" }}>·</span>
             <span>{today}</span>
-            <span style={{ color: "#334155" }}>·</span>
+            <span style={{ color: "#475569" }}>·</span>
             <span><span style={{ color: "#e5e7eb" }}>{stats.total}</span> investors</span>
-            <span style={{ color: "#334155" }}>·</span>
+            <span style={{ color: "#475569" }}>·</span>
             <span><span style={{ color: "#10b981" }}>{formatUsd(totalCommitted)}</span> committed</span>
           </div>
           {live && (
@@ -304,7 +304,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="md:col-span-5 md:text-right">
-            <p className="mono mb-2" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            <p className="mono mb-2" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
               Committed this round
             </p>
             <div className="serif" style={{ fontSize: "clamp(56px, 7vw, 96px)", lineHeight: 0.9, color: "#fff", fontWeight: 500, letterSpacing: "-0.04em" }}>
@@ -331,7 +331,7 @@ export default function DashboardPage() {
                   padding: "24px 20px",
                   borderLeft: i > 0 ? "1px solid rgba(255,255,255,0.06)" : "none",
                 }}>
-                <div className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>
+                <div className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>
                   {s.label}
                 </div>
                 <div className="serif" style={{ fontSize: 34, color: "#fff", fontWeight: 500, letterSpacing: "-0.02em", lineHeight: 1 }}>
@@ -420,7 +420,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="md:col-span-1 md:text-right">
-                    <RiArrowRightLine size={14} style={{ color: "#475569" }} />
+                    <RiArrowRightLine size={14} style={{ color: "#64748b" }} />
                   </div>
                 </button>
               ))}
@@ -438,7 +438,7 @@ export default function DashboardPage() {
                 <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
                   § Focus today
                 </p>
-                <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                   Ranked by impact
                 </span>
               </div>
@@ -492,7 +492,7 @@ export default function DashboardPage() {
 
                 {pendingTermSheets.length === 0 && freshInterests.length === 0 && stalledOutreach.length === 0 && (
                   <div className="py-14 text-center">
-                    <div className="mono" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                    <div className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                       Nothing urgent
                     </div>
                     <div className="serif mt-2" style={{ fontSize: 22, color: "#cbd5e1", fontWeight: 500, letterSpacing: "-0.01em" }}>
@@ -546,7 +546,7 @@ export default function DashboardPage() {
                     <p className="mono flex items-center gap-2" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
                       <RiBellLine size={12} /> Inbound signals
                     </p>
-                    <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                    <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                       {interests.length} total
                     </span>
                   </div>
@@ -565,7 +565,7 @@ export default function DashboardPage() {
                               </div>
                             </div>
                           </div>
-                          <div className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.04em" }}>
+                          <div className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.04em" }}>
                             {relTime(it.created_at)}
                           </div>
                         </div>

@@ -155,7 +155,7 @@ export default function AppNav() {
             <span className="serif text-white" style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.02em" }}>
               FundFlow
             </span>
-            <span className="mono" style={{ fontSize: 10, color: plan === "pro" ? "#10b981" : "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            <span className="mono" style={{ fontSize: 10, color: plan === "pro" ? "#10b981" : "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
               {plan === "pro" ? "Pro" : "Free"}
             </span>
           </Link>
@@ -246,7 +246,7 @@ export default function AppNav() {
                 Search
               </span>
               <kbd className="mono" style={{
-                fontSize: 10, color: "#475569", letterSpacing: "0.04em",
+                fontSize: 10, color: "#64748b", letterSpacing: "0.04em",
                 padding: "1px 5px",
                 background: "rgba(255,255,255,0.04)",
                 border: "1px solid rgba(255,255,255,0.06)",
@@ -283,7 +283,7 @@ export default function AppNav() {
                   boxShadow: "0 24px 48px rgba(0,0,0,0.6)",
                 }}>
                   <div style={{ padding: "14px 14px 12px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                    <div className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>
+                    <div className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>
                       Signed in as
                     </div>
                     <div style={{ fontSize: 13, color: "#e5e7eb", wordBreak: "break-all" }}>{email || "—"}</div>

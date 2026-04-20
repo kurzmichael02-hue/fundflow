@@ -149,9 +149,9 @@ export default function AnalyticsPage() {
           style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <div className="mono flex items-center gap-x-5 gap-y-2 flex-wrap" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
             <span>Analytics</span>
-            <span style={{ color: "#334155" }}>·</span>
+            <span style={{ color: "#475569" }}>·</span>
             <span>{new Date().toLocaleDateString("en", { month: "short", day: "numeric" })}</span>
-            <span style={{ color: "#334155" }}>·</span>
+            <span style={{ color: "#475569" }}>·</span>
             <span><span style={{ color: "#34d399" }}>{conversionRate}%</span> conversion</span>
           </div>
         </div>
@@ -186,7 +186,7 @@ export default function AnalyticsPage() {
             <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
               § Funnel
             </p>
-            <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
               Stage → next stage
             </span>
           </div>
@@ -201,7 +201,7 @@ export default function AnalyticsPage() {
               return (
                 <div key={s.key} className="grid grid-cols-[60px_1fr_80px_140px] md:grid-cols-[80px_1fr_100px_180px] gap-4 items-center py-4"
                   style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                  <span className="mono" style={{ fontSize: 11, color: "#334155", letterSpacing: "0.08em" }}>
+                  <span className="mono" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.08em" }}>
                     {String(idx + 1).padStart(2, "0")}
                   </span>
                   <div>
@@ -213,7 +213,7 @@ export default function AnalyticsPage() {
                   <span className="serif text-right md:text-left" style={{ fontSize: 26, color: s.color, fontWeight: 500, letterSpacing: "-0.02em", lineHeight: 1 }}>
                     {s.count}
                   </span>
-                  <span className="mono text-right" style={{ fontSize: 10, color: conv != null ? "#94a3b8" : "#334155", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                  <span className="mono text-right" style={{ fontSize: 10, color: conv != null ? "#94a3b8" : "#475569", letterSpacing: "0.06em", textTransform: "uppercase" }}>
                     {conv != null ? `${conv}% → next` : "—"}
                   </span>
                 </div>
@@ -222,7 +222,7 @@ export default function AnalyticsPage() {
           </div>
 
           {total === 0 && (
-            <div className="py-12 text-center mono" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            <div className="py-12 text-center mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
               Nothing in the pipeline yet
             </div>
           )}
@@ -237,7 +237,7 @@ export default function AnalyticsPage() {
               <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
                 § Inbound signal
               </p>
-              <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 Last 7 days · {totalInterests} total
               </span>
             </div>
@@ -259,7 +259,7 @@ export default function AnalyticsPage() {
                       </span>
                     )}
                   </div>
-                  <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.04em" }}>{d.label}</span>
+                  <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.04em" }}>{d.label}</span>
                 </div>
               ))}
             </div>
@@ -270,13 +270,13 @@ export default function AnalyticsPage() {
               <p className="mono" style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.12em", textTransform: "uppercase" }}>
                 § Top cheques
               </p>
-              <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 By deal size
               </span>
             </div>
 
             {topInvestors.length === 0 ? (
-              <div className="py-10 mono" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              <div className="py-10 mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 No deal sizes tracked
               </div>
             ) : (
@@ -287,7 +287,7 @@ export default function AnalyticsPage() {
                     <div key={inv.id}
                       className="grid grid-cols-[30px_1fr_auto] gap-3 items-center py-3"
                       style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                      <span className="mono" style={{ fontSize: 11, color: "#334155", letterSpacing: "0.04em" }}>
+                      <span className="mono" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.04em" }}>
                         #{String(i + 1).padStart(2, "0")}
                       </span>
                       <div className="min-w-0">
@@ -330,7 +330,7 @@ function HeroStat({ label, value, hint, trend }: {
                        "#64748b"
   return (
     <div>
-      <div className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>
+      <div className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>
         {label}
       </div>
       <div className="serif text-white" style={{ fontSize: 34, fontWeight: 500, letterSpacing: "-0.02em", lineHeight: 1 }}>

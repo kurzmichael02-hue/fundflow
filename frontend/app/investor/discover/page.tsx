@@ -140,9 +140,9 @@ export default function InvestorDiscoverPage() {
           style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <div className="mono flex items-center gap-x-5 gap-y-2 flex-wrap" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
             <span>Deal flow</span>
-            <span style={{ color: "#334155" }}>·</span>
+            <span style={{ color: "#475569" }}>·</span>
             <span><span style={{ color: "#e5e7eb" }}>{projects.length}</span> live</span>
-            <span style={{ color: "#334155" }}>·</span>
+            <span style={{ color: "#475569" }}>·</span>
             <span>{filtered.length} shown</span>
           </div>
           <span className="mono flex items-center gap-1.5" style={{ fontSize: 11, color: "#34d399", letterSpacing: "0.08em", textTransform: "uppercase" }}>
@@ -171,13 +171,13 @@ export default function InvestorDiscoverPage() {
         <section className="flex flex-col md:flex-row items-stretch md:items-center gap-4 pb-5"
           style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <div style={{ position: "relative", flex: 1 }}>
-            <RiSearchLine size={14} style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", color: "#475569" }} />
+            <RiSearchLine size={14} style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", color: "#64748b" }} />
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Search by project, founder, or tag..."
               style={{
                 width: "100%",
                 background: "transparent", border: 0,
-                borderBottom: "1px solid rgba(255,255,255,0.12)",
+                borderBottom: "1px solid rgba(255,255,255,0.18)",
                 color: "#e5e7eb", fontSize: 14, outline: "none",
                 padding: "10px 0 10px 22px", fontFamily: "inherit",
               }} />
@@ -210,7 +210,7 @@ export default function InvestorDiscoverPage() {
             Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)
           ) : filtered.length === 0 ? (
             <div className="py-20 text-center">
-              <p className="mono" style={{ fontSize: 11, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              <p className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 {projects.length === 0 ? "No projects published yet" : "No projects match"}
               </p>
               {projects.length > 0 && (
@@ -239,7 +239,7 @@ export default function InvestorDiscoverPage() {
                         {STAGE_LABELS[project.stage || ""] || project.stage}
                       </span>
                     </div>
-                    <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.04em" }}>
+                    <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.04em" }}>
                       {project.chain}
                     </span>
                   </div>
@@ -272,18 +272,18 @@ export default function InvestorDiscoverPage() {
                     {project.goal && project.goal > 0 && (
                       <div>
                         <div className="flex items-baseline justify-between mb-2">
-                          <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>Raised</span>
+                          <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>Raised</span>
                           <div className="flex items-baseline gap-1.5">
                             <span className="serif" style={{ fontSize: 20, color: "#fff", fontWeight: 500, letterSpacing: "-0.02em" }}>
                               {formatAmount(project.raised || 0)}
                             </span>
-                            <span className="mono" style={{ fontSize: 10, color: "#475569" }}>/ {formatAmount(project.goal)}</span>
+                            <span className="mono" style={{ fontSize: 10, color: "#64748b" }}>/ {formatAmount(project.goal)}</span>
                           </div>
                         </div>
                         <div style={{ height: 2, background: "rgba(255,255,255,0.06)" }}>
                           <div style={{ width: `${pct}%`, height: "100%", background: stageColor, transition: "width 600ms ease" }} />
                         </div>
-                        <div className="mono mt-1.5 text-right" style={{ fontSize: 10, color: "#334155", letterSpacing: "0.04em" }}>
+                        <div className="mono mt-1.5 text-right" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.04em" }}>
                           {pct}% funded
                         </div>
                       </div>

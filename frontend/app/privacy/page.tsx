@@ -27,7 +27,7 @@ const SECTIONS: Array<{ num: string; title: string; body: React.ReactNode }> = [
           "Technical data: IP address, browser and device information",
         ].map(i => (
           <li key={i} className="flex items-start gap-3">
-            <span className="mono" style={{ fontSize: 10, color: "#475569", marginTop: 6 }}>—</span>
+            <span className="mono" style={{ fontSize: 10, color: "#64748b", marginTop: 6 }}>—</span>
             <span>{i}</span>
           </li>
         ))}
@@ -47,7 +47,7 @@ const SECTIONS: Array<{ num: string; title: string; body: React.ReactNode }> = [
           "Meet our legal obligations",
         ].map(i => (
           <li key={i} className="flex items-start gap-3">
-            <span className="mono" style={{ fontSize: 10, color: "#475569", marginTop: 6 }}>—</span>
+            <span className="mono" style={{ fontSize: 10, color: "#64748b", marginTop: 6 }}>—</span>
             <span>{i}</span>
           </li>
         ))}
@@ -79,7 +79,7 @@ const SECTIONS: Array<{ num: string; title: string; body: React.ReactNode }> = [
           ["PostHog EU", "Product analytics"],
         ].map(([name, desc]) => (
           <li key={name} className="flex items-start gap-3">
-            <span className="mono" style={{ fontSize: 10, color: "#475569", marginTop: 6 }}>—</span>
+            <span className="mono" style={{ fontSize: 10, color: "#64748b", marginTop: 6 }}>—</span>
             <span><span className="mono" style={{ color: "#e5e7eb" }}>{name}</span> &nbsp;·&nbsp; {desc}</span>
           </li>
         ))}

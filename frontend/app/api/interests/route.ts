@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
         subject: safeSubject,
         html: `
           <div style="font-family: Arial, Helvetica, sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 24px; background: #060608; color: #e5e7eb;">
-            <div style="font-family: Courier, monospace; font-size: 10px; color: #475569; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 20px;">
+            <div style="font-family: Courier, monospace; font-size: 10px; color: #64748b; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 20px;">
               FundFlow · Inbound signal
             </div>
             <h1 style="font-family: Georgia, 'Times New Roman', serif; font-size: 32px; line-height: 1.1; letter-spacing: -0.02em; color: #ffffff; font-weight: 500; margin: 0 0 20px;">
@@ -122,20 +122,20 @@ export async function POST(req: NextRequest) {
             <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; border-top: 1px solid rgba(255,255,255,0.08); border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 28px;">
               <tr>
                 <td style="padding: 14px 0; width: 120px; vertical-align: top;">
-                  <div style="font-family: Courier, monospace; font-size: 10px; color: #475569; letter-spacing: 0.12em; text-transform: uppercase;">Investor</div>
+                  <div style="font-family: Courier, monospace; font-size: 10px; color: #64748b; letter-spacing: 0.12em; text-transform: uppercase;">Investor</div>
                 </td>
                 <td style="padding: 14px 0; font-size: 15px; color: #ffffff; font-weight: 500;">${safeInvestorName}</td>
               </tr>
               ${safeInvestorEmail ? `
               <tr style="border-top: 1px solid rgba(255,255,255,0.06);">
                 <td style="padding: 14px 0; vertical-align: top;">
-                  <div style="font-family: Courier, monospace; font-size: 10px; color: #475569; letter-spacing: 0.12em; text-transform: uppercase;">Email</div>
+                  <div style="font-family: Courier, monospace; font-size: 10px; color: #64748b; letter-spacing: 0.12em; text-transform: uppercase;">Email</div>
                 </td>
                 <td style="padding: 14px 0; font-family: Courier, monospace; font-size: 13px; color: #cbd5e1;">${safeInvestorEmail}</td>
               </tr>` : ""}
               <tr style="border-top: 1px solid rgba(255,255,255,0.06);">
                 <td style="padding: 14px 0; vertical-align: top;">
-                  <div style="font-family: Courier, monospace; font-size: 10px; color: #475569; letter-spacing: 0.12em; text-transform: uppercase;">Project</div>
+                  <div style="font-family: Courier, monospace; font-size: 10px; color: #64748b; letter-spacing: 0.12em; text-transform: uppercase;">Project</div>
                 </td>
                 <td style="padding: 14px 0; font-size: 15px; color: #ffffff;">${safeProjectName}</td>
               </tr>
@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
             <a href="https://fundflow-omega.vercel.app/dashboard" style="display: inline-block; background: #10b981; color: #ffffff; text-decoration: none; padding: 12px 20px; font-family: Courier, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600;">
               Open dashboard &rarr;
             </a>
-            <p style="font-family: Courier, monospace; font-size: 10px; color: #475569; letter-spacing: 0.06em; margin: 40px 0 0; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06);">
+            <p style="font-family: Courier, monospace; font-size: 10px; color: #64748b; letter-spacing: 0.06em; margin: 40px 0 0; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06);">
               FundFlow · The investor CRM for Web3 founders
             </p>
           </div>

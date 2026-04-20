@@ -76,7 +76,7 @@ export default function InvestorRegisterPage() {
           </AuthField>
 
           <AuthField label="Password" aside={
-            <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.06em" }}>
+            <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.06em" }}>
               min. 8 chars
             </span>
           }>
@@ -99,7 +99,7 @@ export default function InvestorRegisterPage() {
             {loading ? "Creating account..." : <>Create account <RiArrowRightLine size={14} /></>}
           </button>
 
-          <p className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.06em", lineHeight: 1.7 }}>
+          <p className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.06em", lineHeight: 1.7 }}>
             By creating an account you agree to our{" "}
             <Link href="/terms" style={{ color: "#94a3b8", textDecoration: "none" }}>Terms</Link> and{" "}
             <Link href="/privacy" style={{ color: "#94a3b8", textDecoration: "none" }}>Privacy Policy</Link>.

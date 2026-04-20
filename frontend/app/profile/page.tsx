@@ -341,7 +341,7 @@ export default function ProfilePage() {
             {editProfile
               ? <input value={profileForm.name || ""} onChange={e => setProfileForm({ ...profileForm, name: e.target.value })}
                   placeholder="Your name" style={underlineInput} />
-              : <span style={valueStyle}>{profile.name || <span style={{ color: "#475569" }}>—</span>}</span>
+              : <span style={valueStyle}>{profile.name || <span style={{ color: "#64748b" }}>—</span>}</span>
             }
           </FieldRow>
           <FieldRow label="Email">
@@ -351,14 +351,14 @@ export default function ProfilePage() {
             {editProfile
               ? <input value={profileForm.company || ""} onChange={e => setProfileForm({ ...profileForm, company: e.target.value })}
                   placeholder="Your company or project" style={underlineInput} />
-              : <span style={valueStyle}>{profile.company || <span style={{ color: "#475569" }}>—</span>}</span>
+              : <span style={valueStyle}>{profile.company || <span style={{ color: "#64748b" }}>—</span>}</span>
             }
           </FieldRow>
           <FieldRow label="Bio">
             {editProfile
               ? <input value={profileForm.bio || ""} onChange={e => setProfileForm({ ...profileForm, bio: e.target.value })}
                   placeholder="Short bio..." style={underlineInput} />
-              : <span style={valueStyle}>{profile.bio || <span style={{ color: "#475569" }}>—</span>}</span>
+              : <span style={valueStyle}>{profile.bio || <span style={{ color: "#64748b" }}>—</span>}</span>
             }
           </FieldRow>
         </Section>
@@ -373,7 +373,7 @@ export default function ProfilePage() {
                 <span className="mono" style={{ fontSize: 13, color: "#e5e7eb", letterSpacing: "0.02em" }}>
                   {truncateAddress(profile.wallet_address)}
                 </span>
-                <span className="mono hidden sm:inline" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.02em" }}>
+                <span className="mono hidden sm:inline" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.02em" }}>
                   {profile.wallet_address}
                 </span>
               </div>
@@ -385,7 +385,7 @@ export default function ProfilePage() {
             </div>
           ) : walletMode === "manual" ? (
             <div className="py-6" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-              <div className="mono mb-2" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+              <div className="mono mb-2" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
                 Paste address
               </div>
               <input value={manualAddress} onChange={e => setManualAddress(e.target.value)}
@@ -421,7 +421,7 @@ export default function ProfilePage() {
                     <div style={{ fontSize: 14, color: "#e5e7eb", fontWeight: 500 }}>{w.label}</div>
                     <div className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.04em", marginTop: 2 }}>{w.hint}</div>
                   </div>
-                  <RiArrowRightLine size={12} style={{ color: "#475569" }} />
+                  <RiArrowRightLine size={12} style={{ color: "#64748b" }} />
                 </button>
               ))}
               {profile.wallet_address && (
@@ -563,7 +563,7 @@ export default function ProfilePage() {
               <p style={{ fontSize: 15, color: "#94a3b8", lineHeight: 1.7, maxWidth: 560 }}>{project.description}</p>
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <div className="mono mb-1" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                  <div className="mono mb-1" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
                     Goal
                   </div>
                   <div className="serif" style={{ fontSize: 22, color: "#fff", fontWeight: 500, letterSpacing: "-0.02em" }}>
@@ -571,7 +571,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 <div>
-                  <div className="mono mb-1" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                  <div className="mono mb-1" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
                     Raised
                   </div>
                   <div className="serif" style={{ fontSize: 22, color: "#34d399", fontWeight: 500, letterSpacing: "-0.02em" }}>
@@ -664,7 +664,7 @@ function FieldRow({ label, children }: { label: string; children: React.ReactNod
   return (
     <div className="grid grid-cols-[120px_1fr] md:grid-cols-[160px_1fr] gap-4 py-4 items-baseline"
       style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-      <span className="mono" style={{ fontSize: 10, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+      <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
         {label}
       </span>
       <div>{children}</div>
