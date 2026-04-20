@@ -9,12 +9,23 @@ function getClient() {
   )
 }
 
+// Explicit allowlist — if the directory table ever grows internal columns
+// (contact emails, internal scoring notes, plan metadata, etc.), `*` would
+// leak them through this public endpoint without anyone noticing. Listing
+// the fields the frontend actually uses means a schema addition stays
+// invisible until someone wires it up here on purpose.
+const PUBLIC_COLUMNS = [
+  "id", "name", "firm", "sector", "stage",
+  "check_size_min", "check_size_max",
+  "web3_focus", "location", "website",
+].join(", ")
+
 export async function GET(req: NextRequest) {
   try {
     const supabase = getClient()
     const { data, error } = await supabase
       .from("investor_directory")
-      .select("*")
+      .select(PUBLIC_COLUMNS)
       .order("name", { ascending: true })
     if (error) throw error
     return NextResponse.json(data)
