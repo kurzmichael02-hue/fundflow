@@ -1,10 +1,17 @@
-# FundFlow
+<h1 align="left">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./frontend/public/fundflow-wordmark-dark.svg">
+    <img alt="fundflow" src="./frontend/public/fundflow-wordmark.svg" width="240">
+  </picture>
+</h1>
 
 Investor CRM for Web3 founders. Private pipeline for tracking investor
 relationships end-to-end, a public deal-flow page for inbound interest, and
 analytics to tell you where the round actually stands.
 
 **Live:** <https://fundflow-omega.vercel.app>
+&nbsp;·&nbsp;
+**Built by:** [Michael Kurz](https://www.linkedin.com/in/kurzmichael02)
 
 ---
 

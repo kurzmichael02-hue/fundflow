@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { RiMenuLine, RiCloseLine, RiArrowRightLine } from "react-icons/ri"
+import Logo from "@/components/Logo"
 
 // The editorial masthead shared by every public-facing page.
 // Kept deliberately flat: hairline bottom border, no backdrop-blur, no
@@ -33,10 +34,10 @@ export default function PublicNav() {
     <>
       <nav style={{ position: "sticky", top: 0, zIndex: 50, background: "#060608", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <div className="max-w-[1180px] mx-auto px-6 md:px-10 flex items-center justify-between" style={{ height: 64 }}>
-          <Link href="/" className="flex items-baseline gap-3 no-underline">
-            <span className="serif text-white" style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.02em" }}>FundFlow</span>
+          <div className="flex items-baseline gap-3">
+            <Logo size="sm" href="/" />
             <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>Beta · v0.1</span>
-          </Link>
+          </div>
 
           <div className="hidden md:flex items-center" style={{ gap: 32 }}>
             {LINKS.map(l => {

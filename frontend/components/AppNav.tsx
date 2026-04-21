@@ -9,6 +9,7 @@ import {
 } from "react-icons/ri"
 import CommandPalette from "@/components/CommandPalette"
 import ShortcutsCheatsheet from "@/components/ShortcutsCheatsheet"
+import Logo from "@/components/Logo"
 
 // AppNav — the masthead shown to authenticated users across /dashboard,
 // /investors, /pipeline, /analytics, /profile.
@@ -179,14 +180,12 @@ export default function AppNav() {
         <div className="max-w-[1280px] mx-auto px-6 md:px-10 flex items-center justify-between" style={{ height: 64 }}>
 
           {/* ── Left: wordmark + plan */}
-          <Link href="/dashboard" className="flex items-baseline gap-3 no-underline">
-            <span className="serif text-white" style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.02em" }}>
-              FundFlow
-            </span>
+          <div className="flex items-baseline gap-3">
+            <Logo size="sm" href="/dashboard" />
             <span className="mono" style={{ fontSize: 10, color: plan === "pro" ? "#10b981" : "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
               {plan === "pro" ? "Pro" : "Free"}
             </span>
-          </Link>
+          </div>
 
           {/* ── Centre: section links */}
           <div className="hidden md:flex items-center" style={{ gap: 28 }}>
