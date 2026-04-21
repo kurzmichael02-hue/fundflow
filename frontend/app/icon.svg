@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" fill="#060608"/>
+  <!-- The emerald dot. Same dot that ends the wordmark; at favicon
+       size the word would be illegible so we strip everything except
+       the mark. Offset toward the baseline-right so it reads as a
+       period trailing a word you can't quite see. -->
+  <circle cx="22" cy="23" r="5" fill="#10b981"/>
+</svg>

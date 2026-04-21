@@ -47,7 +47,12 @@ export default function InvestorDatabasePage() {
 
   async function fetchDirectory() {
     try {
-      const res = await fetch("/api/investor-directory")
+      // Directory endpoint now requires auth + is rate-limited. Pass the
+      // token so the backend can match us; 401 still means session died.
+      const token = localStorage.getItem("token")
+      const res = await fetch("/api/investor-directory", {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      })
       if (res.status === 401) {
         localStorage.removeItem("token")
         localStorage.removeItem("user_type")
@@ -141,8 +146,8 @@ export default function InvestorDatabasePage() {
             Curated funds, tagged honestly.
           </h1>
           <p style={{ fontSize: 16, color: "#94a3b8", marginTop: 20, maxWidth: 560, lineHeight: 1.6 }}>
-            Investors hand-picked by sector, stage, and cheque size. Tap Add to pull one
-            straight into your pipeline as Outreach.
+            Hand-curated by check size, stage, and sector. No spam, no auto-generated lists.
+            Tap Add to drop one into your pipeline as Outreach.
           </p>
         </section>
 

@@ -245,21 +245,26 @@ function PipelineEmpty() {
             Outreach all the way to Closed. The board mirrors your CRM, so anything you
             change here lives in the data room too.
           </p>
-          <div className="flex flex-wrap gap-3 mt-8">
-            <Link href="/investors?new=1" className="mono no-underline flex items-center gap-1.5"
+          {/* Primary CTA gets real weight — 14px padding, bigger type,
+              emerald block with a subtle outer glow to say "this is the
+              move". Secondary "Browse directory" kept low-key so it
+              reads as an alternative, not a competing action. */}
+          <div className="flex flex-wrap gap-3 mt-8 items-center">
+            <Link href="/investors?new=1" className="no-underline flex items-center justify-center gap-2"
               style={{
-                fontSize: 11, color: "#fff", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600,
-                padding: "10px 18px", background: "#10b981", borderRadius: 2,
+                fontSize: 14, color: "#fff", fontWeight: 600,
+                padding: "14px 22px",
+                background: "#10b981", borderRadius: 2,
+                boxShadow: "0 0 0 1px #10b981, 0 10px 28px rgba(16,185,129,0.22)",
               }}>
-              Add an investor <RiArrowRightLine size={12} />
+              Add your first investor <RiArrowRightLine size={14} />
             </Link>
-            <Link href="/investors/database" className="mono no-underline flex items-center gap-1.5"
+            <Link href="/investors/database" className="mono no-underline"
               style={{
-                fontSize: 11, color: "#cbd5e1", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500,
-                padding: "10px 18px", background: "transparent",
-                border: "1px solid rgba(255,255,255,0.12)", borderRadius: 2,
+                fontSize: 11, color: "#94a3b8", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500,
+                padding: "10px 4px",
               }}>
-              Browse the directory →
+              or browse the directory →
             </Link>
           </div>
         </div>

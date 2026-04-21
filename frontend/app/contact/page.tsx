@@ -78,7 +78,7 @@ export default function ContactPage() {
           <div className="flex items-center justify-between pt-10 md:pt-14 pb-8 md:pb-12"
             style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
             <span className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-              Contact · Hello, good morning
+              Contact · Support & partnerships
             </span>
             <span className="mono flex items-center gap-1.5" style={{ fontSize: 11, color: "#34d399", letterSpacing: "0.08em", textTransform: "uppercase" }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981" }} />
@@ -108,11 +108,11 @@ export default function ContactPage() {
 
               <div className="mt-10 pt-8" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
                 <p className="mono mb-3" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                  Or email us directly
+                  Or email directly
                 </p>
-                <a href="mailto:hello@fundflow.io" className="no-underline"
+                <a href="mailto:kurzmichael02@gmail.com" className="no-underline"
                   style={{ fontSize: 22, color: "#10b981", fontWeight: 500, letterSpacing: "-0.01em" }}>
-                  hello@fundflow.io
+                  kurzmichael02@gmail.com
                 </a>
               </div>
 
@@ -135,8 +135,28 @@ export default function ContactPage() {
             </div>
 
             {/* ─── Right column — form ─── */}
+            {/* Real boxed panel instead of top/bottom hairlines. Every
+                other editorial section on the site uses hairlines, so the
+                form used to read as "just another read-section". A solid
+                border + faint emerald-tinted background makes it
+                visually say "this is a form, go here, submit here". */}
             <div className="md:col-span-7">
-              <div style={{ borderTop: "1px solid rgba(255,255,255,0.12)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "40px 0" }}>
+              <div style={{
+                border: "1px solid rgba(255,255,255,0.12)",
+                background: "rgba(16,185,129,0.025)",
+                padding: "44px 40px",
+                borderRadius: 2,
+                position: "relative",
+              }}>
+                <span className="mono" style={{
+                  position: "absolute", top: -11, left: 24,
+                  background: "#060608",
+                  color: "#10b981",
+                  padding: "2px 10px",
+                  fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 600,
+                }}>
+                  Send a message
+                </span>
                 {success ? (
                   <div style={{ padding: "40px 0", textAlign: "center" }}>
                     <div style={{

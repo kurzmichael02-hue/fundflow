@@ -32,9 +32,9 @@ const TEAM = [
   {
     initials: "MK",
     name: "Michael Kurz",
-    role: "Technical Manager",
-    handle: "@MichaelKurz",
-    bio: "Builds and ships the frontend. Manages releases, handles the public landing + investor portal UI.",
+    role: "Founder & Engineer",
+    handle: "@kurzmichael02",
+    bio: "Designed and built the entire platform — frontend, backend, payments, auth, the investor portal, everything that runs here.",
   },
 ]
 

@@ -48,7 +48,7 @@ export default function LoginPage() {
     <AuthShell
       kicker="Sign in"
       title={<>Welcome<br />back.</>}
-      intro="Sign in to pick up where you left off — your pipeline, your deals, and your public project page."
+      intro="Sign in to pick up where you left off — your pipeline, your deals, your signals."
       side="founder">
       <form onSubmit={handleLogin} className="flex flex-col gap-7">
         <AuthField label="Email">

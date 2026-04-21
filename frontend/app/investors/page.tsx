@@ -6,6 +6,7 @@ import { ToastContainer, useToast } from "@/components/Toast"
 import ConfirmDialog from "@/components/ConfirmDialog"
 import CsvImportDialog from "@/components/CsvImportDialog"
 import FollowUpPill from "@/components/FollowUpPill"
+import UpgradeModal, { UpgradeReason } from "@/components/UpgradeModal"
 import { useTimeTick } from "@/lib/useTimeTick"
 import { requireToken } from "@/lib/api"
 import {
@@ -134,6 +135,12 @@ function InvestorsPage() {
   type SortKey = "name" | "status" | "deal_size" | "updated_at"
   const [sortKey, setSortKey] = useState<SortKey | null>(null)
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
+
+  // Upgrade modal — fires when the free-plan cap blocks an action.
+  // `reason` drives the modal's copy so it lands in-context instead of
+  // reading like a generic pricing-page pop-up.
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
+  const [upgradeReason, setUpgradeReason] = useState<UpgradeReason>("generic")
 
   // ── Sync state into the URL (replace, don't push, so back button works) ─
   const writeUrl = useCallback((next: Record<string, string | null>) => {
@@ -343,7 +350,11 @@ function InvestorsPage() {
       const data = await res.json()
       if (!res.ok) {
         if (data.limit) {
-          addToast("Free plan limit reached — upgrade to Pro for unlimited", "error")
+          // Cap hit. Caller WANTED to add — don't just tell them "no".
+          // Pop the upgrade modal with the right in-context copy and the
+          // checkout button right there.
+          setUpgradeReason("investor-cap")
+          setUpgradeOpen(true)
         } else {
           throw new Error(data.error)
         }
@@ -1159,6 +1170,19 @@ function InvestorsPage() {
             addToast(`${count} investor${count === 1 ? "" : "s"} imported`)
           }
         }}
+        onCapHit={() => {
+          // CSV dialog flags when a row bounced off the plan cap — we
+          // close it and let the upgrade modal take over in-context.
+          setCsvOpen(false)
+          setUpgradeReason("bulk-import-cap")
+          setUpgradeOpen(true)
+        }}
+      />
+
+      <UpgradeModal
+        open={upgradeOpen}
+        reason={upgradeReason}
+        onClose={() => setUpgradeOpen(false)}
       />
     </main>
   )

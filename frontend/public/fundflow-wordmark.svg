@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 72" role="img" aria-label="fundflow">
+  <!-- README / light-background variant. Dark text so it reads on GitHub's
+       default light theme. Serif stack falls back through: the Fraunces
+       webfont if the rendering environment has it, then Georgia (macOS /
+       iOS / most Windows), then the generic serif. Same sizing + spacing
+       as the in-app Logo component so the wordmark feels like one system. -->
+  <style>
+    .w { font-family: "Fraunces", Georgia, "Times New Roman", serif; font-weight: 600; font-size: 56px; letter-spacing: -2px; }
+  </style>
+  <text x="4" y="54" class="w" fill="#0a0a0a">fundflow</text>
+  <!-- The emerald period. Matches #10b981 everywhere else. -->
+  <circle cx="284" cy="52" r="8" fill="#10b981"/>
+</svg>

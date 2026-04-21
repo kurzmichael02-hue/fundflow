@@ -1,5 +1,6 @@
 "use client"
 import Link from "next/link"
+import Logo from "@/components/Logo"
 
 // Colophon-style footer. Set in the three typefaces the landing uses —
 // Fraunces for the wordmark, DM Sans for links, JetBrains Mono for the
@@ -29,7 +30,7 @@ export default function PublicFooter() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
           <div className="col-span-2">
             <div className="flex items-baseline gap-3 mb-3">
-              <span className="serif text-white" style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.02em" }}>FundFlow</span>
+              <Logo size="sm" href="/" />
               <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>Beta · v0.1</span>
             </div>
             <p style={{ fontSize: 13, color: "#64748b", maxWidth: 280, lineHeight: 1.6 }}>

@@ -86,14 +86,14 @@ export default function Home() {
                 letterSpacing: "-0.045em",
                 fontWeight: 500,
               }}>
-                Track every investor. Close your round.
+                Your pipeline, and the VCs who find it.
               </h1>
               <p style={{
                 fontSize: 17, lineHeight: 1.6, color: "#94a3b8",
                 marginTop: 24, maxWidth: 460, fontWeight: 400,
               }}>
-                The CRM Web3 founders use to manage their pipeline, get found by VCs,
-                and know exactly where the round stands. Free up to 25 investors.
+                A private CRM for every investor you talk to, and a public deal-room page
+                where VCs browse you back. Two sides, one funnel. Free up to 25 investors.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 mt-8">

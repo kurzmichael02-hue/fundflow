@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 72" role="img" aria-label="fundflow">
+  <!-- Dark-theme variant. Loaded via the <picture> tag in the README when
+       the viewer has GitHub in dark mode. Same geometry, inverted text. -->
+  <style>
+    .w { font-family: "Fraunces", Georgia, "Times New Roman", serif; font-weight: 600; font-size: 56px; letter-spacing: -2px; }
+  </style>
+  <text x="4" y="54" class="w" fill="#ffffff">fundflow</text>
+  <circle cx="284" cy="52" r="8" fill="#10b981"/>
+</svg>
