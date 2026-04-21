@@ -10,6 +10,7 @@ import {
   RiArrowRightLine, RiBellLine, RiCheckboxCircleLine,
   RiRocketLine, RiAccountCircleLine, RiUserLine,
   RiArrowUpLine, RiCalendarEventLine,
+  RiCloseLine, RiInformationLine,
 } from "react-icons/ri"
 
 // Dashboard — editorial "command center" layout.
@@ -142,6 +143,29 @@ export default function DashboardPage() {
   // path that crosses a Pro-gated line.
   const [upgradeOpen, setUpgradeOpen] = useState(false)
   const [upgradeReason, setUpgradeReason] = useState<UpgradeReason>("generic")
+
+  // Stripe Checkout redirects back to /dashboard?upgraded=true on success
+  // and /dashboard?cancelled=true on cancel. Without surfacing either the
+  // user just lands on a normal dashboard — no confirmation, no "welcome
+  // to Pro". That's a brutal UX beat right after a $99 charge. Read the
+  // param once on mount, stash it for the banner, and clean the URL up so
+  // a refresh doesn't re-show.
+  const [checkoutReturn, setCheckoutReturn] = useState<"upgraded" | "cancelled" | null>(null)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("upgraded") === "true") {
+      setCheckoutReturn("upgraded")
+      params.delete("upgraded")
+      const qs = params.toString()
+      window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""))
+    } else if (params.get("cancelled") === "true") {
+      setCheckoutReturn("cancelled")
+      params.delete("cancelled")
+      const qs = params.toString()
+      window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""))
+    }
+  }, [])
 
   useEffect(() => {
     const token = localStorage.getItem("token")
@@ -392,6 +416,50 @@ export default function DashboardPage() {
       <AppNav />
 
       <div className="max-w-[1280px] mx-auto px-6 md:px-10">
+
+        {/* ── Checkout-return banner ─── Stripe just sent the user back.
+             Upgraded: emerald with a "Welcome to Pro" beat + receipt link.
+             Cancelled: neutral, low-key "no charge, pick back up when
+             you're ready". Dismissable so it's out of the way on refresh. */}
+        {checkoutReturn && (
+          <div className="mt-6 flex items-start gap-3"
+            style={{
+              background: checkoutReturn === "upgraded" ? "rgba(16,185,129,0.06)" : "rgba(255,255,255,0.03)",
+              border: checkoutReturn === "upgraded" ? "1px solid rgba(16,185,129,0.3)" : "1px solid rgba(255,255,255,0.08)",
+              borderLeft: checkoutReturn === "upgraded" ? "2px solid #10b981" : "2px solid rgba(255,255,255,0.2)",
+              padding: "16px 20px",
+              borderRadius: 2,
+            }}>
+            <span style={{ color: checkoutReturn === "upgraded" ? "#10b981" : "#64748b", marginTop: 2, flexShrink: 0 }}>
+              {checkoutReturn === "upgraded"
+                ? <RiCheckboxCircleLine size={16} />
+                : <RiInformationLine size={16} />}
+            </span>
+            <div className="flex-1">
+              <div className="mono mb-1" style={{
+                fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 600,
+                color: checkoutReturn === "upgraded" ? "#34d399" : "#94a3b8",
+              }}>
+                {checkoutReturn === "upgraded" ? "Payment received · You're on Pro" : "Checkout cancelled"}
+              </div>
+              <div style={{ fontSize: 14, color: "#e5e7eb", lineHeight: 1.55 }}>
+                {checkoutReturn === "upgraded"
+                  ? <>Receipt&apos;s in your inbox from Stripe. The plan badge should flip to PRO within a minute — if it doesn&apos;t, reload. Everything&apos;s unlocked: unlimited investors, directory, advanced analytics, CSV export at scale.</>
+                  : <>No charge made. You can pick this back up from the banner below whenever you&apos;re ready.</>}
+              </div>
+            </div>
+            <button onClick={() => setCheckoutReturn(null)}
+              aria-label="Dismiss"
+              style={{
+                width: 24, height: 24,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "#64748b", flexShrink: 0,
+                background: "transparent", border: 0, cursor: "pointer",
+              }}>
+              <RiCloseLine size={14} />
+            </button>
+          </div>
+        )}
 
         {/* ── Ticker strip ─── mono facts bar, Bloomberg-style */}
         <div className="flex items-center justify-between flex-wrap gap-3 pt-8 pb-6"
