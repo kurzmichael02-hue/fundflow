@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@supabase/supabase-js"
 import AppNav from "@/components/AppNav"
+import UpgradeModal, { UpgradeReason } from "@/components/UpgradeModal"
 import { ApiError, requireToken } from "@/lib/api"
 import { useTimeTick } from "@/lib/useTimeTick"
 import {
@@ -136,6 +137,11 @@ export default function DashboardPage() {
   // Re-render every minute so the overdue-count ticker, followUps memo
   // and "Xh late" copy stay fresh without a manual refresh.
   const tick = useTimeTick()
+  // Upgrade modal state — shared with handleUpgrade / handleSeedDemo /
+  // the plan banner CTA, so the same in-context copy surfaces from every
+  // path that crosses a Pro-gated line.
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
+  const [upgradeReason, setUpgradeReason] = useState<UpgradeReason>("generic")
 
   useEffect(() => {
     const token = localStorage.getItem("token")
@@ -234,11 +240,13 @@ export default function DashboardPage() {
       // Report clearly: fully done, hit cap mid-seed, or nothing imported.
       if (imported === samples.length) {
         // All 8 landed — no toast, the dashboard filling up is its own signal.
-      } else if (imported > 0 && hitCap) {
-        const skipped = samples.length - imported
-        alert(`Seeded ${imported} — hit the free plan cap after that (${skipped} skipped). Upgrade to Pro to seed the rest.`)
-      } else if (imported === 0 && hitCap) {
-        alert("Couldn't seed — you're already at the free plan cap. Upgrade to Pro for unlimited.")
+      } else if (hitCap) {
+        // Partial or full cap block — swap the alert for the upgrade
+        // modal. The modal's copy explains that existing rows stay put
+        // and the rest land after the upgrade clears, so the user
+        // doesn't worry they lost anything.
+        setUpgradeReason("bulk-import-cap")
+        setUpgradeOpen(true)
       } else if (imported === 0) {
         alert("Couldn't seed demo data. Check the console, or refresh and try again.")
       } else {
@@ -522,19 +530,45 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* ── Plan banner ─── */}
-        {plan === "free" ? (
+        {/* ── Plan banner ─── Urgency ramps as you approach the free-plan
+             cap. 0-19 investors: calm emerald, "Upgrade for unlimited".
+             20-24: amber "X slots left", louder headline. 25 (at cap):
+             red "Cap reached", pops the in-context modal instead of going
+             straight to Stripe so the user sees what Pro gets them. */}
+        {plan === "free" ? (() => {
+          const left = Math.max(0, 25 - stats.total)
+          const atCap  = left === 0
+          const nearCap = !atCap && left <= 5
+          const tone = atCap
+            ? { accent: "#f87171", bg: "rgba(239,68,68,0.05)", border: "rgba(239,68,68,0.25)" }
+            : nearCap
+              ? { accent: "#fbbf24", bg: "rgba(251,191,36,0.05)", border: "rgba(251,191,36,0.25)" }
+              : { accent: "#34d399", bg: "rgba(16,185,129,0.04)", border: "rgba(16,185,129,0.2)" }
+          const kicker = atCap
+            ? `Free plan · Cap reached (25 / 25)`
+            : nearCap
+              ? `Free plan · ${left} slot${left === 1 ? "" : "s"} left`
+              : `Starter plan · ${stats.total} / 25 investors`
+          const headline = atCap
+            ? "You're at the cap — upgrade to keep adding."
+            : nearCap
+              ? `${left} away from the cap.`
+              : "Upgrade to Pro for unlimited."
+          return (
           <section className="my-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
-            style={{ border: "1px solid rgba(16,185,129,0.2)", padding: "20px 24px", borderRadius: 2, background: "rgba(16,185,129,0.04)" }}>
+            style={{ border: `1px solid ${tone.border}`, padding: "20px 24px", borderRadius: 2, background: tone.bg }}>
             <div>
-              <div className="mono mb-1.5" style={{ fontSize: 10, color: "#34d399", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                Starter plan · {stats.total} / 25 investors
+              <div className="mono mb-1.5" style={{ fontSize: 10, color: tone.accent, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                {kicker}
               </div>
               <div className="serif text-white" style={{ fontSize: 20, fontWeight: 500, letterSpacing: "-0.01em" }}>
-                Upgrade to Pro for unlimited.
+                {headline}
               </div>
             </div>
-            <button onClick={handleUpgrade} disabled={upgrading}
+            <button onClick={atCap
+              ? () => { setUpgradeReason("investor-cap"); setUpgradeOpen(true) }
+              : handleUpgrade}
+              disabled={upgrading}
               className="mono"
               style={{
                 background: "#10b981", color: "#fff",
@@ -545,10 +579,13 @@ export default function DashboardPage() {
                 opacity: upgrading ? 0.6 : 1,
                 display: "flex", alignItems: "center", gap: 8,
               }}>
-              {upgrading ? "Redirecting..." : <>Upgrade · $99/mo <RiArrowRightLine size={12} /></>}
+              {upgrading ? "Redirecting..." : atCap
+                ? <>See Pro <RiArrowRightLine size={12} /></>
+                : <>Upgrade · $99/mo <RiArrowRightLine size={12} /></>}
             </button>
           </section>
-        ) : (
+          )
+        })() : (
           <section className="my-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
             style={{ border: "1px solid rgba(255,255,255,0.08)", padding: "20px 24px", borderRadius: 2 }}>
             <div>
@@ -817,6 +854,12 @@ export default function DashboardPage() {
 
         <div style={{ height: 80 }} />
       </div>
+
+      <UpgradeModal
+        open={upgradeOpen}
+        reason={upgradeReason}
+        onClose={() => setUpgradeOpen(false)}
+      />
     </main>
   )
 }

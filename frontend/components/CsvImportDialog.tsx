@@ -30,9 +30,12 @@ interface Props {
   open: boolean
   onClose: () => void
   onImported: (count: number) => void
+  // Fires when the plan cap interrupts the import. Parent can use this
+  // to swap in the upgrade modal (high-intent moment, don't just toast).
+  onCapHit?: () => void
 }
 
-export default function CsvImportDialog({ open, onClose, onImported }: Props) {
+export default function CsvImportDialog({ open, onClose, onImported, onCapHit }: Props) {
   const [stage, setStage] = useState<"drop" | "map" | "running" | "done">("drop")
   const [headers, setHeaders] = useState<string[]>([])
   const [rows, setRows] = useState<string[][]>([])
@@ -188,6 +191,10 @@ export default function CsvImportDialog({ open, onClose, onImported }: Props) {
       setError("Session expired mid-import. Sign in again and re-run the import.")
     } else if (aborted === "limit") {
       setError(`Hit the free-plan cap after ${done - failed} rows. Upgrade to Pro for unlimited imports.`)
+      // Surface the upgrade modal immediately — the user just blew past
+      // the cap and their intent to use the product is maximum. Parent
+      // typically dismisses this dialog and takes over.
+      if (onCapHit) setTimeout(() => onCapHit(), 400)
     }
     setStage("done")
     onImported(done - failed)
