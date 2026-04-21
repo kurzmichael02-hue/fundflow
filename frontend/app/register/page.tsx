@@ -33,7 +33,7 @@ export default function RegisterPage() {
     <AuthShell
       kicker="Create account"
       title={<>Start tracking<br />your round.</>}
-      intro="Founder sign-up — free forever up to 25 investors. No credit card needed, no onboarding calls, just a form and a dashboard."
+      intro="Founder sign-up. Free up to 25 investors. Thirty seconds, no card, no calls — fill this in and you're in the pipeline builder."
       side="founder">
       <form onSubmit={handleRegister} className="flex flex-col gap-7">
         <AuthField label="Full name">

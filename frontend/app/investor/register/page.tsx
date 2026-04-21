@@ -40,7 +40,7 @@ export default function InvestorRegisterPage() {
       }
       intro={success
         ? `We sent a confirmation link to ${form.email}. Click it to activate your investor account, then sign in to start browsing deals.`
-        : "Get access to curated Web3 founders actively raising, filter by stage and sector, and express interest directly."
+        : "Live deal flow from Web3 founders actively raising. Filter by stage, chain, and check size. Tap Express Interest and the founder gets a realtime ping — usually replies within 48h."
       }
       side="investor">
 

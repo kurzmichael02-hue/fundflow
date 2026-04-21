@@ -86,14 +86,14 @@ export default function Home() {
                 letterSpacing: "-0.045em",
                 fontWeight: 500,
               }}>
-                Track every investor. Close your round.
+                Your pipeline, and the VCs who find it.
               </h1>
               <p style={{
                 fontSize: 17, lineHeight: 1.6, color: "#94a3b8",
                 marginTop: 24, maxWidth: 460, fontWeight: 400,
               }}>
-                The CRM Web3 founders use to manage their pipeline, get found by VCs,
-                and know exactly where the round stands. Free up to 25 investors.
+                A private CRM for every investor you talk to, and a public deal-room page
+                where VCs browse you back. Two sides, one funnel. Free up to 25 investors.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 mt-8">
@@ -248,98 +248,6 @@ export default function Home() {
                 {item.label}
               </span>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── NOTE FROM THE MAKER ─── deliberate template-breaker.
-           Everything else on this page is editorial-template: serif
-           display, mono kicker, hairline borders, perfectly gridded. A
-           visitor who's seen ten of those this week (because every AI
-           generator spits the same thing) can smell it. This block is
-           on purpose NOT that — first person, mono, off-grid, a real
-           name at the bottom. It's the one thing the generators can't
-           fake. Sits between the product sections and pricing, which is
-           the exact moment a visitor is deciding whether this is a
-           person or a template.
-      */}
-      <section style={{ paddingTop: 80, paddingBottom: 20 }}>
-        <div className="max-w-[1180px] mx-auto px-6 md:px-10">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            {/* Offset to the right — breaks the left-aligned grid on
-                purpose, so the eye registers this is a different kind
-                of block. Hairline rule on the left instead of a card. */}
-            <div className="md:col-start-3 md:col-span-8"
-              style={{
-                borderLeft: "1px solid rgba(255,255,255,0.14)",
-                paddingLeft: 28,
-              }}>
-              <div className="mono mb-5" style={{
-                fontSize: 10, color: "#64748b",
-                letterSpacing: "0.18em", textTransform: "uppercase",
-              }}>
-                — Note from the maker —
-              </div>
-
-              {/* Typewriter body — no serif, no display font. Feels hand-
-                  written even though it's just well-chosen mono. Shorter
-                  line length so it reads like a letter, not marketing. */}
-              <div className="mono" style={{
-                fontSize: 15, lineHeight: 1.8, color: "#e5e7eb",
-                maxWidth: 560,
-                letterSpacing: "-0.005em",
-              }}>
-                <p>I&apos;m Michael. 19, from Germany, dual-study IT.</p>
-                <p style={{ marginTop: 14 }}>
-                  FundFlow started because I watched three friends
-                  half-miss their rounds. Their &quot;CRM&quot; was a
-                  Notion page that nobody updated. Investors got missed.
-                  Meetings never got logged. One of them forgot a term
-                  sheet was sitting in an unopened email for eleven days.
-                </p>
-                <p style={{ marginTop: 14 }}>
-                  I&apos;ve been building this solo for about six months,
-                  on weekends and between lectures. No VC, no team. Just
-                  a laptop and a lot of coffee.
-                </p>
-                <p style={{ marginTop: 14 }}>
-                  If something&apos;s broken, tell me — I read every
-                  message and fix bugs within 24h most days. If $99
-                  feels wrong, tell me that too. I&apos;ll listen.
-                </p>
-                <p style={{ marginTop: 18, color: "#cbd5e1" }}>
-                  — M
-                </p>
-              </div>
-
-              {/* Tiny fact strip under the signature — makes the
-                  "solo founder" claim concrete instead of just a line. */}
-              <div className="mono flex flex-wrap gap-x-6 gap-y-2 mt-10"
-                style={{
-                  fontSize: 10, color: "#64748b",
-                  letterSpacing: "0.08em", textTransform: "uppercase",
-                  paddingTop: 18,
-                  borderTop: "1px dashed rgba(255,255,255,0.1)",
-                }}>
-                <span>
-                  <span style={{ color: "#e5e7eb" }}>1</span> developer
-                </span>
-                <span style={{ color: "#475569" }}>·</span>
-                <span>
-                  <span style={{ color: "#e5e7eb" }}>6</span> months in
-                </span>
-                <span style={{ color: "#475569" }}>·</span>
-                <span>
-                  <span style={{ color: "#e5e7eb" }}>0</span> investors raised
-                </span>
-                <span style={{ color: "#475569" }}>·</span>
-                <a href="mailto:kurzmichael02@gmail.com"
-                  className="no-underline"
-                  style={{ color: "#34d399" }}>
-                  kurzmichael02@gmail.com
-                </a>
-              </div>
-            </div>
           </div>
         </div>
       </section>

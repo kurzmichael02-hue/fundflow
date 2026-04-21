@@ -444,8 +444,8 @@ export default function DashboardPage() {
               </div>
               <div style={{ fontSize: 14, color: "#e5e7eb", lineHeight: 1.55 }}>
                 {checkoutReturn === "upgraded"
-                  ? <>Receipt&apos;s in your inbox from Stripe. The plan badge should flip to PRO within a minute — if it doesn&apos;t, reload. Everything&apos;s unlocked: unlimited investors, directory, advanced analytics, CSV export at scale.</>
-                  : <>No charge made. You can pick this back up from the banner below whenever you&apos;re ready.</>}
+                  ? <>You&apos;re on Pro. Unlimited investors, directory, advanced analytics, CSV export at scale — all unlocked. Receipt in your inbox.</>
+                  : <>No charge made. Jump back in when you&apos;re ready.</>}
               </div>
             </div>
             <button onClick={() => setCheckoutReturn(null)}
