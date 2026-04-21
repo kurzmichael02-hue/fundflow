@@ -38,9 +38,12 @@ export default async function TwitterImage() {
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 18 }}>
-            <span style={{ fontFamily: "Serif", fontSize: 36, color: "#fff", letterSpacing: "-0.02em", fontWeight: 500 }}>
-              FundFlow
-            </span>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 4 }}>
+              <span style={{ fontFamily: "Serif", fontSize: 36, color: "#fff", letterSpacing: "-0.03em", fontWeight: 600 }}>
+                fundflow
+              </span>
+              <div style={{ width: 10, height: 10, borderRadius: 9999, background: "#10b981", marginBottom: 4 }} />
+            </div>
             <span style={{ fontSize: 14, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
               Beta · v0.1
             </span>
