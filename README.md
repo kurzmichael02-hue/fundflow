@@ -74,6 +74,7 @@ STRIPE_PRO_PRICE_ID
 STRIPE_WEBHOOK_SECRET
 RESEND_API_KEY
 CONTACT_EMAIL
+ANTHROPIC_API_KEY         # for the "Draft opener" feature in the investor drawer
 ```
 
 Apply the Supabase migrations once per environment:
