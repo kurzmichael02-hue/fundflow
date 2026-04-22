@@ -478,65 +478,212 @@ export default function Home() {
 // chrome appears on the deep-dive mocks further down, so doubling it here
 // would feel repetitive.
 // ─────────────────────────────────────────────────────────────────────────────
+// Interactive hero mock — a real three-column pipeline where a visitor
+// can drag cards between stages without signing up. Most SaaS landings
+// show a static screenshot and tell you the product "feels fast"; this
+// lets the person actually feel it in ten seconds.
+//
+// Desktop: HTML5 DnD. Mobile / touch: tap a card, tap a target column
+// (since HTML5 DnD is unreliable on touch). The "Try it" pulse over the
+// first card fades after the first interaction.
+//
+// Card IDs are stable so React can reconcile across drops; column IDs
+// are the same Status keys the real app uses (outreach/meeting/term_sheet).
+type DemoColId = "outreach" | "meeting" | "term_sheet"
+type DemoCard = { id: string; name: string; size: string; col: DemoColId }
+
 function HeroPipeline() {
-  // Anonymised stand-in names. The previous version used real fund names
-  // (a16z Crypto, Paradigm, Multicoin) which suggested those VCs were on
-  // the platform — they're not. Better to show realistic-but-fictional
-  // names than to imply social proof we haven't earned.
-  // The middle card (Atlas Mint, Meeting) gets the .drift class so it
-  // sways gently — hint of motion without a fake live demo.
-  const cols: Array<{ label: string; color: string; items: Array<{ name: string; size: string; drift?: boolean }> }> = [
-    { label: "Outreach",   color: "#94a3b8", items: [{ name: "Sarah K.",    size: "$500k" }, { name: "Lighthouse Capital", size: "$2M" }] },
-    { label: "Meeting",    color: "#fbbf24", items: [{ name: "Atlas Mint",  size: "$1M",   drift: true }] },
-    { label: "Term Sheet", color: "#10b981", items: [{ name: "Apollo Cap.", size: "$3M" }] },
+  const [cards, setCards] = useState<DemoCard[]>([
+    { id: "c1", name: "Sarah K.",           size: "$500k", col: "outreach"   },
+    { id: "c2", name: "Lighthouse Capital", size: "$2M",   col: "outreach"   },
+    { id: "c3", name: "Atlas Mint",         size: "$1M",   col: "meeting"    },
+    { id: "c4", name: "Apollo Cap.",        size: "$3M",   col: "term_sheet" },
+  ])
+  // "Have they interacted yet" — drives the pulsing nudge on card c1
+  // and the "Try it — drag a card" hint strip. Cleared on first move.
+  const [touched, setTouched] = useState(false)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [dragOverCol, setDragOverCol] = useState<DemoColId | null>(null)
+  // Mobile fallback — tapped card opens a tiny column picker popover.
+  const [pickerFor, setPickerFor] = useState<string | null>(null)
+
+  const cols: Array<{ id: DemoColId; label: string; color: string }> = [
+    { id: "outreach",   label: "Outreach",   color: "#94a3b8" },
+    { id: "meeting",    label: "Meeting",    color: "#fbbf24" },
+    { id: "term_sheet", label: "Term Sheet", color: "#10b981" },
   ]
+
+  function move(cardId: string, target: DemoColId) {
+    setCards(prev => prev.map(c => c.id === cardId ? { ...c, col: target } : c))
+    setTouched(true)
+    setDraggingId(null)
+    setDragOverCol(null)
+    setPickerFor(null)
+  }
+
+  // Derived counts per column for the footer + column headers.
+  const counts = {
+    outreach:   cards.filter(c => c.col === "outreach").length,
+    meeting:    cards.filter(c => c.col === "meeting").length,
+    term_sheet: cards.filter(c => c.col === "term_sheet").length,
+    total:      cards.length,
+    active:     cards.filter(c => c.col !== "term_sheet").length,
+  }
+
   return (
-    <div style={{ border: "1px solid rgba(255,255,255,0.08)", background: "#0a0a0d", borderRadius: 2 }}>
+    <div style={{ border: "1px solid rgba(255,255,255,0.08)", background: "#0a0a0d", borderRadius: 2, position: "relative" }}>
       <div className="flex items-center justify-between px-4 py-3"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <span className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
           app · pipeline
         </span>
-        <span className="mono flex items-center gap-1.5" style={{ fontSize: 10, color: "#34d399", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-          <span className="live-dot" style={{ width: 5, height: 5, borderRadius: "50%", background: "#10b981" }} />
-          Live
+        <span className="mono flex items-center gap-1.5" style={{ fontSize: 10, color: touched ? "#34d399" : "#fbbf24", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          <span className="live-dot" style={{ width: 5, height: 5, borderRadius: "50%", background: touched ? "#10b981" : "#fbbf24" }} />
+          {touched ? "Live" : "Try it · drag a card"}
         </span>
       </div>
       <div className="p-4">
         <div className="grid grid-cols-3 gap-2">
-          {cols.map(col => (
-            <div key={col.label} style={{ borderTop: `1px solid ${col.color}55`, paddingTop: 10 }}>
-              <div className="flex items-center justify-between mb-2.5">
-                <span className="mono" style={{ fontSize: 10, color: col.color, letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                  {col.label}
-                </span>
-                <span className="mono" style={{ fontSize: 10, color: "#64748b" }}>{col.items.length}</span>
+          {cols.map(col => {
+            const colCards = cards.filter(c => c.col === col.id)
+            const isOver = dragOverCol === col.id
+            return (
+              <div key={col.id}
+                onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move" }}
+                onDragEnter={e => { e.preventDefault(); setDragOverCol(col.id) }}
+                onDragLeave={e => {
+                  // Only clear if we actually left the column, not when
+                  // hovering a child element inside it.
+                  const related = e.relatedTarget as Node | null
+                  if (!related || !(e.currentTarget as Node).contains(related)) {
+                    setDragOverCol(prev => prev === col.id ? null : prev)
+                  }
+                }}
+                onDrop={e => {
+                  e.preventDefault()
+                  const id = e.dataTransfer.getData("text/plain") || draggingId
+                  if (id) move(id, col.id)
+                }}
+                style={{
+                  borderTop: `1px solid ${col.color}55`,
+                  paddingTop: 10,
+                  background: isOver ? `${col.color}08` : "transparent",
+                  borderRadius: 2,
+                  transition: "background 120ms",
+                  minHeight: 80,
+                }}>
+                <div className="flex items-center justify-between mb-2.5 px-1">
+                  <span className="mono" style={{ fontSize: 10, color: col.color, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                    {col.label}
+                  </span>
+                  <span className="mono" style={{ fontSize: 10, color: "#64748b" }}>{colCards.length}</span>
+                </div>
+                <div className="flex flex-col gap-1.5 px-1">
+                  {colCards.map(card => {
+                    const isDragging = draggingId === card.id
+                    // The first card gets a subtle emerald nudge until
+                    // the user has interacted — a tiny visual cue that
+                    // the pipeline is clickable, not a dead screenshot.
+                    const pulse = !touched && card.id === "c1"
+                    return (
+                      <div key={card.id}
+                        draggable
+                        onDragStart={e => {
+                          e.dataTransfer.setData("text/plain", card.id)
+                          e.dataTransfer.effectAllowed = "move"
+                          setDraggingId(card.id)
+                        }}
+                        onDragEnd={() => setDraggingId(null)}
+                        onClick={() => {
+                          // Touch / click fallback: open the column picker.
+                          // Desktop users who happen to click instead of
+                          // drag also get this, which is a nice bonus.
+                          setPickerFor(prev => prev === card.id ? null : card.id)
+                        }}
+                        className={pulse ? "pulse-hint" : undefined}
+                        style={{
+                          background: "rgba(255,255,255,0.02)",
+                          border: `1px solid ${pulse ? col.color + "60" : "rgba(255,255,255,0.06)"}`,
+                          padding: "8px 10px", borderRadius: 2,
+                          opacity: isDragging ? 0.4 : 1,
+                          cursor: "grab",
+                          transition: "opacity 120ms, border-color 120ms",
+                          position: "relative",
+                        }}>
+                        <div style={{ fontSize: 12, color: "#e5e7eb", fontWeight: 500 }}>{card.name}</div>
+                        <div className="mono" style={{ fontSize: 10, color: col.color, marginTop: 2 }}>{card.size}</div>
+
+                        {/* Column picker popover — appears under a clicked
+                            card so touch users can move it without DnD. */}
+                        {pickerFor === card.id && (
+                          <div onClick={e => e.stopPropagation()}
+                            style={{
+                              position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 3,
+                              background: "#0a0a0d",
+                              border: "1px solid rgba(255,255,255,0.14)",
+                              borderRadius: 2,
+                              padding: 3,
+                              display: "flex", flexDirection: "column", gap: 2,
+                              boxShadow: "0 12px 32px rgba(0,0,0,0.6)",
+                            }}>
+                            {cols.filter(c2 => c2.id !== card.col).map(c2 => (
+                              <button key={c2.id}
+                                onClick={() => move(card.id, c2.id)}
+                                className="mono"
+                                style={{
+                                  textAlign: "left",
+                                  padding: "6px 8px",
+                                  fontSize: 10, color: c2.color,
+                                  letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 500,
+                                  background: "transparent", border: 0, cursor: "pointer",
+                                }}>
+                                → {c2.label}
+                              </button>
+                            ))}
+                            <button onClick={() => setPickerFor(null)}
+                              className="mono"
+                              style={{
+                                textAlign: "left", padding: "6px 8px",
+                                fontSize: 10, color: "#64748b",
+                                letterSpacing: "0.06em", textTransform: "uppercase",
+                                background: "transparent", border: 0, cursor: "pointer",
+                                borderTop: "1px solid rgba(255,255,255,0.06)",
+                                marginTop: 2,
+                              }}>
+                              cancel
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                  {colCards.length === 0 && (
+                    <div className="mono"
+                      style={{
+                        fontSize: 9, color: isOver ? col.color : "#475569",
+                        letterSpacing: "0.1em", textTransform: "uppercase",
+                        padding: "12px 8px", textAlign: "center",
+                        border: `1px dashed ${isOver ? col.color : "rgba(255,255,255,0.06)"}`,
+                        borderRadius: 2,
+                        transition: "color 120ms, border-color 120ms",
+                      }}>
+                      {isOver ? "drop here" : "empty"}
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex flex-col gap-1.5">
-                {col.items.map(c => (
-                  <div key={c.name}
-                    className={c.drift ? "drift" : undefined}
-                    style={{
-                      background: c.drift ? `${col.color}10` : "rgba(255,255,255,0.02)",
-                      border: c.drift ? `1px solid ${col.color}45` : "1px solid rgba(255,255,255,0.06)",
-                      padding: "8px 10px", borderRadius: 2,
-                      boxShadow: c.drift ? `0 6px 20px ${col.color}1a` : "none",
-                    }}>
-                    <div style={{ fontSize: 12, color: "#e5e7eb", fontWeight: 500 }}>{c.name}</div>
-                    <div className="mono" style={{ fontSize: 10, color: col.color, marginTop: 2 }}>{c.size}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
-        {/* Footer stats row */}
+        {/* Footer stats — counts move live with the drag. Closed is
+            frozen at 4 so the stat line doesn't mislead (none of the
+            demo cards ever reach Closed in this mock). */}
         <div className="grid grid-cols-3 gap-2 mt-5 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
           {[
-            { label: "Total", value: "47" },
-            { label: "Active", value: "23" },
-            { label: "Closed", value: "4" },
+            { label: "Total",  value: counts.total  },
+            { label: "Active", value: counts.active },
+            { label: "Closed", value: 4             },
           ].map(s => (
             <div key={s.label}>
               <div className="mono" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>{s.label}</div>

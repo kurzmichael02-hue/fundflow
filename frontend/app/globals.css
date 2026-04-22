@@ -161,3 +161,20 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .drift { animation: none; }
 }
+
+/* ── "Try it" pulse — shown on the first card of the interactive hero
+   mock until the visitor drags or taps. Emerald glow that breathes
+   slowly so it says "interact with me" without being obnoxious. The
+   shadow colour matches the accent, so it feels like the card is
+   holding a soft light of its own. Stops the moment the user moves
+   anything (class dropped from the element). */
+@keyframes ff-pulse-hint {
+  0%, 100% { box-shadow: 0 0 0 0   rgba(16,185,129,0.28); }
+  50%      { box-shadow: 0 0 0 6px rgba(16,185,129,0.00); }
+}
+.pulse-hint {
+  animation: ff-pulse-hint 1.9s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pulse-hint { animation: none; }
+}
