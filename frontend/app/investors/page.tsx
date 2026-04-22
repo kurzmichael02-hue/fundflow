@@ -16,6 +16,7 @@ import {
   RiHistoryLine, RiArrowRightLine, RiEditBoxLine, RiAddCircleLine,
   RiCoinLine, RiArrowUpSLine, RiArrowDownSLine,
   RiAlarmLine, RiMailSendLine, RiCalendarScheduleLine,
+  RiQuillPenLine, RiFileCopyLine,
 } from "react-icons/ri"
 
 // Investors page — editorial CRM with shareable filters and bulk operations.
@@ -1239,6 +1240,160 @@ function SortHeader({
   )
 }
 
+// Draft-opener block. Sits above the Notes textarea in the detail drawer.
+// Click "Draft opener" → POST to /api/investors/{id}/draft-opener → render
+// three email variants with copy buttons. One of the few moments in a
+// CRM where the tool actually saves the founder time, not just tracks it.
+//
+// Deliberately low-key in naming: the button says "Draft opener", not
+// "AI-powered magic drafts". The feature works, it doesn't need to
+// announce itself.
+type DraftVariant = { tone: "direct" | "warm" | "technical"; subject: string; body: string }
+function DraftOpenerBlock({ investorId }: { investorId: string }) {
+  const [loading, setLoading] = useState(false)
+  const [variants, setVariants] = useState<DraftVariant[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null)
+
+  async function handleDraft() {
+    setLoading(true)
+    setError(null)
+    try {
+      const token = localStorage.getItem("token")
+      const res = await fetch(`/api/investors/${investorId}/draft-opener`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" },
+        body: "{}",
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) {
+        setError(data?.error || `Draft failed (${res.status})`)
+        return
+      }
+      setVariants(data?.variants || [])
+    } catch {
+      setError("Network hiccup. Try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function copyVariant(idx: number, v: DraftVariant) {
+    const text = `Subject: ${v.subject}\n\n${v.body}`
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedIdx(idx)
+      setTimeout(() => setCopiedIdx(prev => (prev === idx ? null : prev)), 1800)
+    } catch {
+      // Clipboard API blocked (insecure context or denied permission) —
+      // fall back to a selection so the founder can cmd+C themselves.
+      setError("Clipboard blocked. Select the text and copy manually.")
+    }
+  }
+
+  const TONE_COPY: Record<DraftVariant["tone"], { label: string; color: string }> = {
+    direct:    { label: "Direct",    color: "#38bdf8" },
+    warm:      { label: "Warm",      color: "#fbbf24" },
+    technical: { label: "Technical", color: "#a78bfa" },
+  }
+
+  return (
+    <div>
+      <div className="mono flex items-center gap-2 mb-3" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+        <RiQuillPenLine size={11} /> Draft opener
+      </div>
+
+      {!variants && (
+        <>
+          <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 12, lineHeight: 1.5 }}>
+            Three short cold-outreach emails tailored to this investor and your project. Pick one, tweak, send.
+          </p>
+          <button onClick={handleDraft} disabled={loading}
+            className="mono flex items-center gap-2"
+            style={{
+              padding: "8px 14px", fontSize: 10,
+              color: loading ? "#64748b" : "#10b981",
+              letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600,
+              background: "transparent",
+              border: `1px solid ${loading ? "rgba(255,255,255,0.1)" : "rgba(16,185,129,0.35)"}`,
+              borderRadius: 2, cursor: loading ? "not-allowed" : "pointer",
+            }}>
+            <RiQuillPenLine size={11} />
+            {loading ? "Drafting three variants..." : "Draft three openers"}
+          </button>
+        </>
+      )}
+
+      {variants && (
+        <div className="flex flex-col gap-3">
+          {variants.map((v, i) => {
+            const t = TONE_COPY[v.tone]
+            const copied = copiedIdx === i
+            return (
+              <div key={i}
+                style={{
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderLeft: `2px solid ${t.color}`,
+                  padding: "14px 16px",
+                  borderRadius: 2,
+                  background: "rgba(255,255,255,0.015)",
+                }}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="mono" style={{
+                    fontSize: 9, color: t.color,
+                    letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 600,
+                  }}>
+                    {t.label}
+                  </span>
+                  <button onClick={() => copyVariant(i, v)}
+                    className="mono flex items-center gap-1.5"
+                    style={{
+                      padding: "3px 8px", fontSize: 9,
+                      color: copied ? "#34d399" : "#94a3b8",
+                      letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500,
+                      background: "transparent",
+                      border: `1px solid ${copied ? "rgba(16,185,129,0.35)" : "rgba(255,255,255,0.1)"}`,
+                      borderRadius: 2, cursor: "pointer",
+                    }}>
+                    {copied ? <><RiCheckLine size={10} /> Copied</> : <><RiFileCopyLine size={10} /> Copy</>}
+                  </button>
+                </div>
+                <div style={{ fontSize: 12, color: "#cbd5e1", fontWeight: 500, marginBottom: 8, lineHeight: 1.4 }}>
+                  {v.subject}
+                </div>
+                <div style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.65, whiteSpace: "pre-wrap" }}>
+                  {v.body}
+                </div>
+              </div>
+            )
+          })}
+          <button onClick={() => { setVariants(null); setError(null); setCopiedIdx(null) }}
+            className="mono self-start"
+            style={{
+              padding: "6px 10px", fontSize: 9,
+              color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500,
+              background: "transparent", border: 0, cursor: "pointer",
+            }}>
+            ← regenerate
+          </button>
+        </div>
+      )}
+
+      {error && (
+        <div className="mono mt-3" style={{
+          fontSize: 11, color: "#f87171", letterSpacing: "0.04em",
+          padding: "8px 12px",
+          background: "rgba(239,68,68,0.06)",
+          border: "1px solid rgba(239,68,68,0.2)",
+          borderRadius: 2,
+        }}>
+          {error}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function IconBtn({ icon, onClick, color, danger }: {
   icon: React.ReactNode; onClick: () => void; color: string; danger?: boolean
 }) {
@@ -1403,6 +1558,8 @@ function DetailDrawer({
             onSet={onFollowUpSet}
             onLogContact={onLogContact}
           />
+
+          <DraftOpenerBlock investorId={inv.id} />
 
           <div>
             <div className="mono flex items-center gap-2 mb-3" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
