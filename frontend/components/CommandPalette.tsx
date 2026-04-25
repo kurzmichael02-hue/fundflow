@@ -6,7 +6,7 @@ import {
   RiAccountCircleLine, RiDatabase2Line, RiListCheck2,
   RiAddLine, RiDownloadLine, RiLogoutBoxLine, RiSearchLine,
   RiCornerDownLeftLine, RiArrowUpLine, RiArrowDownLine,
-  RiAlarmLine,
+  RiAlarmLine, RiCalculatorLine,
 } from "react-icons/ri"
 
 // ⌘K command palette. The goal is a Linear/Raycast-style pane that lets
@@ -141,6 +141,9 @@ export default function CommandPalette() {
     { id: "nav:profile", section: "navigate", label: "Profile", hint: "Identity + project",
       icon: <RiAccountCircleLine size={14} />,
       run: () => router.push("/profile"), keywords: "settings account project" },
+    { id: "nav:tokenomics", section: "navigate", label: "Tokenomics modeler", hint: "Round + SAFT math",
+      icon: <RiCalculatorLine size={14} />,
+      run: () => router.push("/tokenomics"), keywords: "saft cap discount price token vest schedule fdv allocation" },
 
     { id: "action:add-investor", section: "action", label: "Add investor",
       hint: "Opens /investors", icon: <RiAddLine size={14} />,

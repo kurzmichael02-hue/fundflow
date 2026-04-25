@@ -16,7 +16,7 @@ import {
   RiHistoryLine, RiArrowRightLine, RiEditBoxLine, RiAddCircleLine,
   RiCoinLine, RiArrowUpSLine, RiArrowDownSLine,
   RiAlarmLine, RiMailSendLine, RiCalendarScheduleLine,
-  RiQuillPenLine, RiFileCopyLine,
+  RiQuillPenLine, RiFileCopyLine, RiCalculatorLine,
 } from "react-icons/ri"
 
 // Investors page — editorial CRM with shareable filters and bulk operations.
@@ -1240,6 +1240,50 @@ function SortHeader({
   )
 }
 
+// Tiny shortcut into the tokenomics modeler with the cheque pre-filled
+// from this investor's deal_size. Only shown on term-sheet investors —
+// that's the actual moment a founder wants to model SAFT terms. The
+// parse here mirrors the analytics + dashboard parser so $5M / 5M /
+// 5,000,000 all collapse to 5_000_000.
+function SaftJumpLink({ dealSize }: { dealSize: string }) {
+  const cheque = useMemo(() => {
+    const s = String(dealSize || "").trim().toLowerCase()
+    if (!s) return 0
+    let mult = 1
+    if (/\bb\b|billion/.test(s))            mult = 1_000_000_000
+    else if (/\bm\b|million|mm\b/.test(s))  mult = 1_000_000
+    else if (/\bk\b|thousand/.test(s))      mult = 1_000
+    const onlyNums = s.replace(/[^0-9.,]/g, "")
+    const hasCommaDecimal = /\d,\d{1,2}(?!\d)/.test(onlyNums) && !/\.\d/.test(onlyNums)
+    const normalised = hasCommaDecimal
+      ? onlyNums.replace(/\./g, "").replace(",", ".")
+      : onlyNums.replace(/,/g, "")
+    const n = parseFloat(normalised)
+    return isNaN(n) ? 0 : n * mult
+  }, [dealSize])
+
+  const href = cheque > 0 ? `/tokenomics?saft=1&cheque=${Math.round(cheque)}` : "/tokenomics?saft=1"
+
+  return (
+    <a href={href}
+      className="mono flex items-center justify-between gap-2 no-underline"
+      style={{
+        padding: "10px 14px",
+        fontSize: 11, color: "#a78bfa",
+        letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 500,
+        background: "rgba(167,139,250,0.05)",
+        border: "1px solid rgba(167,139,250,0.25)",
+        borderRadius: 2,
+      }}>
+      <span className="flex items-center gap-2">
+        <RiCalculatorLine size={12} />
+        Run SAFT math {cheque > 0 ? `for ${dealSize}` : ""}
+      </span>
+      <span style={{ color: "#64748b", fontSize: 9 }}>→ /tokenomics</span>
+    </a>
+  )
+}
+
 // Draft-opener block. Sits above the Notes textarea in the detail drawer.
 // Click "Draft opener" → POST to /api/investors/{id}/draft-opener → render
 // three email variants with copy buttons. One of the few moments in a
@@ -1539,6 +1583,13 @@ function DetailDrawer({
               </div>
             ))}
           </div>
+
+          {/* Contextual SAFT shortcut. Only shows when the investor is on
+              term-sheet — that's the moment a founder actually wants the
+              math. Pre-fills the cheque field from this row's deal_size. */}
+          {inv.status === "term_sheet" && (
+            <SaftJumpLink dealSize={inv.deal_size || ""} />
+          )}
 
           {inv.updated_at && (
             <div className="mono flex items-center gap-2" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase" }}>
