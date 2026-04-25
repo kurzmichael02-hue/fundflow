@@ -25,6 +25,7 @@ export type UpgradeReason =
   | "bulk-import-cap"     // CSV import would cross the cap
   | "analytics-locked"    // locked advanced analytics view
   | "directory-locked"    // directory on free plan
+  | "draft-locked"        // AI email draft on free plan
   | "generic"             // catch-all fallback
 
 const REASON_COPY: Record<UpgradeReason, { kicker: string; title: string; body: string }> = {
@@ -48,6 +49,11 @@ const REASON_COPY: Record<UpgradeReason, { kicker: string; title: string; body: 
     title: "The curated investor directory is Pro.",
     body: "30+ hand-vetted web3 funds with check sizes and focus areas. Saves you a week of scraping Twitter bios.",
   },
+  "draft-locked": {
+    kicker: "Pro feature",
+    title: "Email drafts are Pro.",
+    body: "Three cold-outreach openers per investor in ten seconds — direct, warm, and technical. Tailored to your pitch and the investor's profile. Pick one, tweak, send.",
+  },
   "generic": {
     kicker: "Unlock Pro",
     title: "This one's on the Pro plan.",
@@ -57,6 +63,7 @@ const REASON_COPY: Record<UpgradeReason, { kicker: string; title: string; body: 
 
 const FEATURES: Array<{ label: string }> = [
   { label: "Unlimited investors" },
+  { label: "AI email drafts (3 tones per investor)" },
   { label: "Curated directory (30+ web3 funds)" },
   { label: "Advanced analytics & cohort funnel" },
   { label: "CSV export at scale" },
