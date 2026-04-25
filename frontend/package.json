@@ -19,7 +19,7 @@
     "@walletconnect/modal": "^2.7.0",
     "axios": "^1.13.6",
     "jose": "^6.2.2",
-    "next": "16.1.6",
+    "next": "16.2.4",
     "posthog-js": "^1.360.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -34,7 +34,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
