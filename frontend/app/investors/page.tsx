@@ -16,7 +16,7 @@ import {
   RiHistoryLine, RiArrowRightLine, RiEditBoxLine, RiAddCircleLine,
   RiCoinLine, RiArrowUpSLine, RiArrowDownSLine,
   RiAlarmLine, RiMailSendLine, RiCalendarScheduleLine,
-  RiQuillPenLine, RiFileCopyLine,
+  RiQuillPenLine, RiFileCopyLine, RiCalculatorLine,
 } from "react-icons/ri"
 
 // Investors page — editorial CRM with shareable filters and bulk operations.
@@ -143,6 +143,10 @@ function InvestorsPage() {
   const [upgradeOpen, setUpgradeOpen] = useState(false)
   const [upgradeReason, setUpgradeReason] = useState<UpgradeReason>("generic")
 
+  // Plan from /api/profile — gates Pro-only blocks like Draft opener.
+  // Defaults to "free" so we err on the side of locking, not leaking.
+  const [plan, setPlan] = useState<string>("free")
+
   // ── Sync state into the URL (replace, don't push, so back button works) ─
   const writeUrl = useCallback((next: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -216,15 +220,24 @@ function InvestorsPage() {
 
   async function fetchInvestors(token: string) {
     try {
-      const res = await fetch("/api/investors", { headers: { Authorization: `Bearer ${token}` } })
-      if (res.status === 401) {
+      // Two fetches in parallel — investors list + the caller's profile.
+      // Profile gives us `plan` so we can gate Pro-only blocks in the
+      // detail drawer without a second roundtrip when the user clicks a
+      // row. One auth check on each, but they share the request batch.
+      const [invRes, profileRes] = await Promise.all([
+        fetch("/api/investors", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/profile",   { headers: { Authorization: `Bearer ${token}` } }),
+      ])
+      if (invRes.status === 401 || profileRes.status === 401) {
         localStorage.removeItem("token")
         localStorage.removeItem("user_type")
         router.push("/login")
         return
       }
-      const data = await res.json()
+      const data = await invRes.json()
       setInvestors(Array.isArray(data) ? data : [])
+      const profileData = await profileRes.json().catch(() => null)
+      setPlan(profileData?.plan || "free")
     } catch {
       addToast("Failed to load investors", "error")
     } finally {
@@ -1142,6 +1155,8 @@ function InvestorsPage() {
         onStatusChange={handlePanelStatusChange}
         onFollowUpSet={handlePanelFollowUp}
         onLogContact={handlePanelLogContact}
+        plan={plan}
+        onUnlockPro={() => { setUpgradeReason("draft-locked"); setUpgradeOpen(true) }}
         onDelete={() => requestDelete(selectedInv.id, selectedInv.name)} />}
 
       <ConfirmDialog
@@ -1237,6 +1252,91 @@ function SortHeader({
         ? <RiArrowUpSLine size={12} />
         : <RiArrowDownSLine size={12} />)}
     </button>
+  )
+}
+
+// Tiny shortcut into the tokenomics modeler with the cheque pre-filled
+// from this investor's deal_size. Only shown on term-sheet investors —
+// that's the actual moment a founder wants to model SAFT terms. The
+// parse here mirrors the analytics + dashboard parser so $5M / 5M /
+// 5,000,000 all collapse to 5_000_000.
+function SaftJumpLink({ dealSize }: { dealSize: string }) {
+  const cheque = useMemo(() => {
+    const s = String(dealSize || "").trim().toLowerCase()
+    if (!s) return 0
+    let mult = 1
+    if (/\bb\b|billion/.test(s))            mult = 1_000_000_000
+    else if (/\bm\b|million|mm\b/.test(s))  mult = 1_000_000
+    else if (/\bk\b|thousand/.test(s))      mult = 1_000
+    const onlyNums = s.replace(/[^0-9.,]/g, "")
+    const hasCommaDecimal = /\d,\d{1,2}(?!\d)/.test(onlyNums) && !/\.\d/.test(onlyNums)
+    const normalised = hasCommaDecimal
+      ? onlyNums.replace(/\./g, "").replace(",", ".")
+      : onlyNums.replace(/,/g, "")
+    const n = parseFloat(normalised)
+    return isNaN(n) ? 0 : n * mult
+  }, [dealSize])
+
+  const href = cheque > 0 ? `/tokenomics?saft=1&cheque=${Math.round(cheque)}` : "/tokenomics?saft=1"
+
+  return (
+    <a href={href}
+      className="mono flex items-center justify-between gap-2 no-underline"
+      style={{
+        padding: "10px 14px",
+        fontSize: 11, color: "#a78bfa",
+        letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 500,
+        background: "rgba(167,139,250,0.05)",
+        border: "1px solid rgba(167,139,250,0.25)",
+        borderRadius: 2,
+      }}>
+      <span className="flex items-center gap-2">
+        <RiCalculatorLine size={12} />
+        Run SAFT math {cheque > 0 ? `for ${dealSize}` : ""}
+      </span>
+      <span style={{ color: "#64748b", fontSize: 9 }}>→ /tokenomics</span>
+    </a>
+  )
+}
+
+// Locked variant of the Draft-opener block — what Free users see. Same
+// slot, same vertical rhythm, just an upgrade nudge instead of a button.
+// Keeps the surface honest: nobody clicks something that gives them a
+// 403, they see what's behind the gate before they pay.
+function DraftOpenerLockedBlock({ onUnlock }: { onUnlock: () => void }) {
+  return (
+    <div>
+      <div className="mono flex items-center gap-2 mb-3" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+        <RiQuillPenLine size={11} /> Draft opener
+        <span className="mono" style={{
+          fontSize: 9, color: "#10b981",
+          letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600,
+          padding: "2px 6px",
+          background: "rgba(16,185,129,0.08)",
+          border: "1px solid rgba(16,185,129,0.25)",
+          borderRadius: 2,
+          marginLeft: 4,
+        }}>
+          Pro
+        </span>
+      </div>
+      <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 12, lineHeight: 1.55 }}>
+        Three short cold-outreach emails tailored to this investor and your project — direct, warm, and technical tones.
+        Pick one, tweak, send.
+      </p>
+      <button onClick={onUnlock}
+        className="mono flex items-center gap-2"
+        style={{
+          padding: "8px 14px", fontSize: 10,
+          color: "#10b981",
+          letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600,
+          background: "transparent",
+          border: "1px solid rgba(16,185,129,0.35)",
+          borderRadius: 2, cursor: "pointer",
+        }}>
+        Unlock with Pro <RiArrowRightLine size={11} />
+      </button>
+    </div>
   )
 }
 
@@ -1424,6 +1524,7 @@ type InvestorEvent = {
 function DetailDrawer({
   inv, onClose, panelNotes, setPanelNotes, savingNotes, onSaveNotes,
   onStatusChange, onFollowUpSet, onLogContact, onDelete,
+  plan, onUnlockPro,
 }: {
   inv: Investor
   onClose: () => void
@@ -1435,6 +1536,8 @@ function DetailDrawer({
   onFollowUpSet: (iso: string | null) => void
   onLogContact: () => void
   onDelete: () => void
+  plan: string
+  onUnlockPro: () => void
 }) {
   const color = STATUS_COLOR[inv.status]
 
@@ -1540,6 +1643,13 @@ function DetailDrawer({
             ))}
           </div>
 
+          {/* Contextual SAFT shortcut. Only shows when the investor is on
+              term-sheet — that's the moment a founder actually wants the
+              math. Pre-fills the cheque field from this row's deal_size. */}
+          {inv.status === "term_sheet" && (
+            <SaftJumpLink dealSize={inv.deal_size || ""} />
+          )}
+
           {inv.updated_at && (
             <div className="mono flex items-center gap-2" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase" }}>
               <RiTimeLine size={11} />
@@ -1559,7 +1669,9 @@ function DetailDrawer({
             onLogContact={onLogContact}
           />
 
-          <DraftOpenerBlock investorId={inv.id} />
+          {plan === "pro"
+            ? <DraftOpenerBlock investorId={inv.id} />
+            : <DraftOpenerLockedBlock onUnlock={onUnlockPro} />}
 
           <div>
             <div className="mono flex items-center gap-2 mb-3" style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>

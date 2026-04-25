@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { requireUser } from "@/lib/auth"
+import { rateLimit } from "@/lib/ratelimit"
 
 function getClient() {
   return createClient(
@@ -10,12 +11,30 @@ function getClient() {
   )
 }
 
+// Explicit allowlist of columns the public deal-room page actually
+// renders. Same defensive pattern as /api/investor-directory: if the
+// projects table grows internal columns later (admin notes, internal
+// scoring, plan flags, …), `select("*")` would silently leak them.
+// Listing the public surface means a schema addition stays invisible
+// until somebody opts it in here on purpose.
+const PUBLIC_COLUMNS = [
+  "id", "user_id", "name", "description", "stage", "chain",
+  "tags", "goal", "raised", "published", "created_at",
+].join(", ")
+
 // GET — public. Returns every published project for the investor deal flow.
-export async function GET() {
+// Rate-limited per IP because this is the most expensive public endpoint
+// (joins profiles, no auth wall) — a curl loop could otherwise grind it.
+// 60/h is generous: the deal-flow page on /investor/discover loads it once
+// per visit, and a Realtime client wouldn't poll this endpoint.
+export async function GET(req: NextRequest) {
+  const limited = await rateLimit(req, "projects-public", 60, "1 h")
+  if (limited) return limited
+
   const supabase = getClient()
   const { data, error } = await supabase
     .from("projects")
-    .select("*, profiles(name, company)")
+    .select(`${PUBLIC_COLUMNS}, profiles(name, company)`)
     .eq("published", true)
     .order("created_at", { ascending: false })
 

@@ -303,11 +303,11 @@ export default function Home() {
                 featured: true,
                 features: [
                   "Unlimited investors",
+                  "AI email drafts (3 tones per investor)",
                   "Advanced analytics + funnel",
                   "Curated investor directory",
                   "Investor timeline (history)",
                   "Priority support",
-                  "API access (coming soon)",
                 ],
                 cta: "Upgrade to Pro",
               },

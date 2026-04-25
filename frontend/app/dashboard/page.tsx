@@ -315,6 +315,14 @@ export default function DashboardPage() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     )
 
+    // Hand Realtime the user's Supabase JWT so the WebSocket connection
+    // identifies as `authenticated`, not `anon`. Without this, RLS sees
+    // auth.uid() = NULL, every row gets filtered out, and the channel
+    // subscribes successfully but emits zero events. The token from
+    // /api/auth/login is the Supabase access_token — same token RLS
+    // policies match against `auth.uid() = user_id`.
+    supabase.realtime.setAuth(token)
+
     const invChannel = supabase
       .channel("investors-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "investors", filter: `user_id=eq.${userId}` }, payload => {

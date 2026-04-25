@@ -137,7 +137,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       .maybeSingle(),
     supabase
       .from("profiles")
-      .select("name, company, bio")
+      .select("name, company, bio, plan")
       .eq("id", user.id)
       .maybeSingle(),
   ])
@@ -148,6 +148,20 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   }
   const project = projectRes.data
   const profile = profileRes.data
+
+  // Pro-only feature. Free callers get a 403 with `upgrade: true` so the
+  // UI can pop the upgrade modal in-context. We do this AFTER the parallel
+  // fetch (one round-trip vs. two sequential), but BEFORE the Anthropic
+  // call — Free users never trigger an LLM cost.
+  if (profile?.plan !== "pro") {
+    return NextResponse.json(
+      {
+        error: "Draft opener is a Pro feature. Upgrade to unlock.",
+        upgrade: true,
+      },
+      { status: 403 },
+    )
+  }
 
   // Build the founder context block. If the founder hasn't published a
   // project yet, fall back to profile fields — thin context, but the
