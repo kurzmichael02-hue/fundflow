@@ -7,7 +7,7 @@ import { requireToken } from "@/lib/api"
 import {
   RiCheckLine, RiEditLine, RiCloseLine, RiRocketLine,
   RiEyeLine, RiEyeOffLine, RiWallet3Line, RiQrCodeLine, RiPencilLine,
-  RiArrowRightLine,
+  RiArrowRightLine, RiFileCopyLine, RiShareLine, RiExternalLinkLine,
 } from "react-icons/ri"
 
 type Profile = {
@@ -18,6 +18,7 @@ type Profile = {
   wallet_address?: string | null
 }
 type Project = {
+  id?: string
   name?: string
   description?: string
   stage?: string
@@ -600,6 +601,12 @@ export default function ProfilePage() {
                   ))}
                 </div>
               )}
+
+              {/* Public-link share block. Only when published — drafts
+                  return 404 on /p/[id] so there's nothing to share. */}
+              {project.published && project.id && (
+                <ShareLink projectId={project.id} addToast={addToast} />
+              )}
             </div>
           )}
         </Section>
@@ -676,6 +683,83 @@ function FieldRow({ label, children }: { label: string; children: React.ReactNod
         {label}
       </span>
       <div>{children}</div>
+    </div>
+  )
+}
+
+// The thing a founder DMs to a VC. Shows the public URL of their project
+// page, with a copy button + an "Open" link to preview what the VC will
+// see. Only renders for published projects — drafts return 404 on /p/[id]
+// so there'd be nothing to share. Lives in the Deal-room section.
+function ShareLink({ projectId, addToast }: { projectId: string; addToast: (msg: string, type?: "success" | "error" | "info") => void }) {
+  const [copied, setCopied] = useState(false)
+  const url = typeof window !== "undefined"
+    ? `${window.location.origin}/p/${projectId}`
+    : `/p/${projectId}`
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    } catch {
+      addToast("Couldn't copy. Select the URL and copy manually.", "error")
+    }
+  }
+
+  return (
+    <div className="mt-4" style={{
+      border: "1px solid rgba(16,185,129,0.25)",
+      background: "rgba(16,185,129,0.04)",
+      padding: "16px 18px",
+      borderRadius: 2,
+    }}>
+      <div className="mono mb-2 flex items-center gap-2" style={{
+        fontSize: 10, color: "#34d399",
+        letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 600,
+      }}>
+        <RiShareLine size={11} />
+        Public link
+      </div>
+      <div className="flex items-center gap-2 flex-wrap">
+        <code className="mono flex-1 truncate"
+          style={{
+            fontSize: 12, color: "#e5e7eb",
+            padding: "8px 10px",
+            background: "#060608",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 2,
+            minWidth: 0,
+          }}>
+          {url}
+        </code>
+        <button onClick={copy}
+          className="mono cursor-pointer flex items-center gap-1.5 flex-shrink-0"
+          style={{
+            padding: "8px 12px", fontSize: 10,
+            color: copied ? "#34d399" : "#cbd5e1",
+            letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500,
+            background: "transparent",
+            border: `1px solid ${copied ? "rgba(16,185,129,0.4)" : "rgba(255,255,255,0.12)"}`,
+            borderRadius: 2,
+          }}>
+          {copied ? <><RiCheckLine size={11} /> Copied</> : <><RiFileCopyLine size={11} /> Copy</>}
+        </button>
+        <a href={url} target="_blank" rel="noopener noreferrer"
+          className="mono no-underline cursor-pointer flex items-center gap-1.5 flex-shrink-0"
+          style={{
+            padding: "8px 12px", fontSize: 10,
+            color: "#94a3b8",
+            letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500,
+            background: "transparent",
+            border: "1px solid rgba(255,255,255,0.12)", borderRadius: 2,
+          }}>
+          <RiExternalLinkLine size={11} /> Open
+        </a>
+      </div>
+      <p style={{ fontSize: 11, color: "#64748b", marginTop: 10, lineHeight: 1.5 }}>
+        Drop this in DMs to VCs. Twitter, LinkedIn and Telegram render a preview with the project name and pitch.
+      </p>
     </div>
   )
 }
