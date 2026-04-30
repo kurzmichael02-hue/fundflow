@@ -8,8 +8,8 @@
 A CRM for founders raising Web3 rounds.
 
 **Live:** <https://fundflow-omega.vercel.app>
-&nbsp;·&nbsp;
-**Built by:** [Michael Kurz](https://www.linkedin.com/in/kurzmichael02)
+
+
 
 ---
 
