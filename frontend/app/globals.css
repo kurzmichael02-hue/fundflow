@@ -1,10 +1,10 @@
-/* Font @imports must precede every other at-rule aside from @charset/@layer.
-   Fraunces is the editorial display serif used by the landing page (opsz 144
-   for the big headlines). Syne is the previous display face, kept because
-   the authenticated app (dashboard/pipeline/etc.) still uses it. JetBrains
-   Mono carries data/monospaced accents — URLs, numbers, kickers. DM Sans
-   stays the body face across the board. */
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,400&family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+/* Mono-first stack. JetBrains Mono is the product's voice — every
+   headline, label, status pill, hash. DM Sans handles the few places
+   prose runs longer than a sentence (descriptions, paragraphs of body
+   text) where mono gets hard to read at scale. No serif anymore — the
+   editorial era is over; this product wants to feel like a terminal,
+   not a magazine. */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -29,7 +29,9 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Mono for the chrome — every label, number, status code reads as
+     "this is data". DM Sans only inside `.body` blocks for prose. */
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 /* ── Editorial colour scale
@@ -46,15 +48,53 @@ body {
      #10b981  emerald         5.9 : 1   primary accent
      #34d399  emerald-light   8.9 : 1   accent on small text
 */
-/* ── Editorial type helpers used across every public page.
-   Keeping them global means every page can write `className="serif"` or
-   `className="mono"` without each one needing its own <style> block. */
+/* ── Type helpers, used across every page.
+   `.serif` survived only as a className legacy — the actual style is
+   now mono semibold with a tighter tracking. Everywhere a page wrote
+   className="serif" stays valid; the visual is just terminal-style now.
+   `.mono` is the same JetBrains Mono. `.body` is for prose runs. */
 .serif {
-  font-family: 'Fraunces', Georgia, serif;
-  font-variation-settings: "opsz" 144;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 .mono {
   font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.body {
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+}
+
+/* ── Terminal-style row stripes. Tables get alternating background
+   on hover so the eye can track across long rows. Use on
+   <div className="term-row">. */
+.term-row {
+  background: transparent;
+  transition: background 80ms;
+}
+.term-row:hover {
+  background: rgba(255,255,255,0.025);
+}
+
+/* ── Status pill — a coloured dot + uppercase mono label. The dot's
+   colour is set inline (one of the status accents); the pill is just
+   the layout container. */
+.term-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.term-pill::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 /* Shared scroll-reveal used by the landing + about + contact pages. */

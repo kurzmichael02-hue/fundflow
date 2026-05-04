@@ -65,17 +65,12 @@ export default function Home() {
       <section>
         <div className="max-w-[1180px] mx-auto px-6 md:px-10">
 
-          {/* Trust strip — concrete, not a magazine masthead. */}
-          <div className="flex items-center justify-between gap-3 pt-8 md:pt-10 pb-6 flex-wrap"
-            style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <span className="mono" style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-              Built for Web3 founders raising pre-seed → Series A
-            </span>
-            <span className="mono flex items-center gap-1.5" style={{ fontSize: 11, color: "#34d399", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-              <span className="live-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981" }} />
-              Live · Beta
-            </span>
-          </div>
+          {/* Block-header strip — terminal vibe, not a magazine masthead.
+              Real wall-clock + a deterministic faux block-number computed
+              from the timestamp (Ethereum's 12s block time as the divisor).
+              Honest enough to look real, not actually claiming on-chain. */}
+          <BlockHeader />
+
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 pt-12 md:pt-16 pb-16 md:pb-20 items-center">
             {/* Left column — claim + CTAs. No italic gimmick anymore. */}
@@ -478,6 +473,50 @@ export default function Home() {
 // chrome appears on the deep-dive mocks further down, so doubling it here
 // would feel repetitive.
 // ─────────────────────────────────────────────────────────────────────────────
+// Block header — the strip above the hero. Real wall-clock client-side,
+// plus a faked Ethereum-style block number derived from the timestamp
+// (12s blocks). Honest cosmetic — nobody reads the number, but it sets
+// the visual tone: "this product talks in block-time, not marketing".
+// SSR-safe: renders a placeholder until mount so hydration matches.
+function BlockHeader() {
+  const [now, setNow] = useState<Date | null>(null)
+  useEffect(() => {
+    setNow(new Date())
+    const id = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  // 1-second tick is fine for the strip; block tick is every 12s by
+  // construction, so the rendered block-number stays stable for ~12s
+  // even though the clock updates every second.
+  const stamp = now
+    ? now.toISOString().slice(0, 19).replace("T", " ") + " UTC"
+    : "----.--.-- --:--:-- UTC"
+  // Ethereum genesis: 1438269973. 12s blocks since then.
+  const block = now
+    ? Math.floor(((now.getTime() / 1000) - 1438269973) / 12).toLocaleString("en-US")
+    : "—"
+
+  return (
+    <div className="flex items-center justify-between gap-3 pt-8 md:pt-10 pb-4 flex-wrap"
+      style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+      <div className="mono flex items-center gap-x-5 gap-y-1 flex-wrap"
+        style={{ fontSize: 11, color: "#64748b", letterSpacing: "0.04em" }}>
+        <span>{stamp}</span>
+        <span style={{ color: "#475569" }}>·</span>
+        <span>BLOCK <span style={{ color: "#cbd5e1" }}>{block}</span></span>
+        <span style={{ color: "#475569" }}>·</span>
+        <span>fundflow / mainnet</span>
+      </div>
+      <span className="mono flex items-center gap-1.5"
+        style={{ fontSize: 11, color: "#34d399", letterSpacing: "0.04em" }}>
+        <span className="live-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981" }} />
+        LIVE · BETA
+      </span>
+    </div>
+  )
+}
+
 // Interactive hero mock — a real three-column pipeline where a visitor
 // can drag cards between stages without signing up. Most SaaS landings
 // show a static screenshot and tell you the product "feels fast"; this

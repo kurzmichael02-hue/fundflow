@@ -31,27 +31,23 @@ export default function Logo({
   className?: string
 }) {
   const isSm = size === "sm"
-  const fontSize = isSm ? 17 : 38
-  const dotSize = isSm ? 6 : 12
-  const dotOffset = isSm ? 2 : 4
+  const fontSize = isSm ? 15 : 32
+  const dotSize = isSm ? 5 : 10
+  const dotOffset = isSm ? 2 : 3
 
   const content = (
     <span className={`flex items-baseline ${className}`} style={{ gap: 1 }}>
       <span
         style={{
-          fontFamily: "'Fraunces', 'Times New Roman', serif",
-          // Slightly heavier than body serif — the wordmark is the one
-          // place where 600 reads as "definitely a logo" instead of "a
-          // regular heading that happens to be the brand name".
-          fontWeight: 600,
+          // Mono wordmark — same family as the rest of the product chrome.
+          // Lowercase + heavier weight = reads as a logo without needing
+          // a separate display face.
+          fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+          fontWeight: 700,
           fontSize,
-          letterSpacing: "-0.035em",
+          letterSpacing: "-0.04em",
           color: "#fff",
           lineHeight: 1,
-          // fontOpticalSizing pulls the right master from Fraunces variable —
-          // at 38px it's sharper, at 17px it's chunkier. That's the whole
-          // point of an optical-size font, let's actually use it.
-          fontOpticalSizing: "auto",
         }}>
         fundflow
       </span>
@@ -64,11 +60,9 @@ export default function Logo({
           background: "#10b981",
           display: "inline-block",
           marginLeft: dotOffset,
-          // Drop the dot to baseline — that's where a normal period would
-          // sit, which is the entire joke. Set `alignSelf` to avoid the
-          // flex baseline hoisting it into the body of the word.
+          // Drop the dot to baseline — same period-as-dot joke as before.
           alignSelf: "flex-end",
-          marginBottom: isSm ? 1 : 3,
+          marginBottom: isSm ? 1 : 2,
         }} />
     </span>
   )
