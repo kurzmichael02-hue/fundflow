@@ -36,16 +36,6 @@ One private side for tracking deals. One public page so VCs can find you. One fu
 
 ---
 
-## Screenshots
-
-> Add screenshots to `./docs/screenshots/` and they'll render below.
-
-| Founder dashboard | Public deal-room | Investor drawer |
-|---|---|---|
-| ![dashboard](./docs/screenshots/dashboard.png) | ![dealroom](./docs/screenshots/dealroom.png) | ![drawer](./docs/screenshots/drawer.png) |
-
----
-
 ## What's in it
 
 - **Kanban pipeline** — drag-and-drop between stages, bulk ops, URL filters
