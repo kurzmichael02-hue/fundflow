@@ -28,7 +28,7 @@ A CRM for founders raising Web3 rounds.
                       └────────────┘
 ```
 
-One private side for tracking deals. One public page so VCs can find you. One funnel so you know where the round actually stands.
+One private side for tracking deals. One public page so VCs can find you. One funnel so you know where the round stands — not where it pretends to.
 
 ## Inside
 
